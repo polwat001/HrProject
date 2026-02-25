@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useCompany } from "@/contexts/CompanyContext";
+import { useCompany } from "@/contexts/CompanyContexts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -145,7 +145,7 @@ const Dashboard = () => {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(214 20% 90%)" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} />
                 <YAxis tick={{ fontSize: 12 }} tickLine={false} tickFormatter={(v) => `฿${(v / 1000).toFixed(0)}K`} />
-                <Tooltip formatter={(v: number) => [`฿${v.toLocaleString()}`, "OT Cost"]} />
+                <Tooltip formatter={((v: number) => [`฿${v.toLocaleString()}`, "OT Cost"]) as any} />
                 <Line type="monotone" dataKey="amount" stroke="hsl(175 60% 40%)" strokeWidth={2} dot={{ r: 4 }} />
               </LineChart>
             </ResponsiveContainer>

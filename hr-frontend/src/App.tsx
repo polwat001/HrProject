@@ -3,19 +3,19 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { CompanyProvider } from "@/contexts/CompanyContext";
+import { CompanyProvider } from "@/contexts/CompanyContexts";
 import AppLayout from "@/components/AppLayout";
-import Dashboard from "@/pages/Dashboard";
-import EmployeeList from "@/pages/EmployeeList";
-import EmployeeProfile from "@/pages/EmployeeProfile";
-import OrganizationStructure from "@/pages/OrganizationStructure";
-import PositionMaster from "@/pages/PositionMaster";
-import TimeAttendance from "@/pages/TimeAttendance";
-import LeaveManagement from "@/pages/LeaveManagement";
-import ContractManagement from "@/pages/ContractManagement";
-import Reports from "@/pages/Reports";
-import UserPermissions from "@/pages/UserPermissions";
-import NotFound from "@/pages/NotFound";
+import Dashboard from "@/routes/Dashboard";
+import EmployeeList from "@/routes/EmployeeList";
+import EmployeeProfile from "@/routes/EmployeeProfile";
+import OrganizationStructure from "@/routes/OrganizationStructure";
+import PositionMaster from "@/routes/PositionMaster";
+import TimeAttendance from "@/routes/TimeAttendance";
+import LeaveManagement from "@/routes/LeaveManagement";
+import ContractManagement from "@/routes/ContractManagement";
+import Reports from "@/routes/Reports";
+import UserPermissions from "@/routes/UserPermission";
+import NotFound from "@/routes/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -48,5 +48,3 @@ const App = () => (
 );
 
 export default App;
-export { default } from "@/layout";
-export { default } from "@/page";
