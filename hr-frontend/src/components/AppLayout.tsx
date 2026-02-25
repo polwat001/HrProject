@@ -38,7 +38,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             HR
           </div>
           {!collapsed && (
-            <span className="text-sidebar-foreground font-semibold text-sm truncate">
+            <span className="text-sidebar-foregroundbar font-semibold text-sm truncate">
               HR Core System
             </span>
           )}

@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HR Core System - Frontend
 
-## Getting Started
+ระบบบริหารทุนมนุษย์ (Human Resource Management System) ขั้นสูง
 
-First, run the development server:
+## 📋 ข้อกำหนดเบื้องต้น
+
+- Node.js v18 ขึ้นไป
+- npm หรือ yarn
+
+## 🚀 การติดตั้งและเปิดระบบ
+
+### 1. ติดตั้ง Dependencies
+
+```bash
+npm install
+# หรือ
+yarn install
+```
+
+### 2. รัน Development Server
 
 ```bash
 npm run dev
-# or
+# หรือ
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+เปิดเบราว์เซอร์ไปที่ [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Build สำหรับ Production
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 📁 โครงสร้างโปรเจค
 
-To learn more about Next.js, take a look at the following resources:
+```
+hr-frontend/
+├── public/                 # ไฟล์สาธารณะ
+├── src/
+│   ├── components/        # React Components
+│   ├── pages/             # Next.js Pages
+│   ├── routes/            # Route Components
+│   ├── contexts/          # React Contexts
+│   ├── hooks/             # Custom Hooks
+│   ├── lib/               # Utility Functions
+│   ├── data/              # Mock Data
+│   ├── App.tsx            # Main App Component
+│   ├── index.css          # Global Styles
+│   ├── globals.css        # Tailwind Styles
+│   └── layout.tsx         # Root Layout
+├── package.json
+├── tsconfig.json
+├── tailwind.config.ts
+└── next.config.ts
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🛠 เทคโนโลยีที่ใช้
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Next.js 16** - React Framework
+- **TypeScript** - Type Safety
+- **Tailwind CSS** - Styling
+- **React Router** - Client-side Routing
+- **React Query** - Data Fetching
+- **Recharts** - Charts & Graphs
+- **Radix UI** - UI Components
 
-## Deploy on Vercel
+## 📦 Scripts ที่มี
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Command | účel |
+|---------|------|
+| `npm run dev` | เปิด development server |
+| `npm run build` | Build สำหรับ production |
+| `npm start` | รัน production server |
+| `npm run lint` | ตรวจสอบ code style |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🔌 Backend API
+
+Frontend นี้เชื่อมต่อกับ Backend API ที่ทำงานใน `http://localhost:5000`
+
+### เปิด Backend:
+```bash
+cd ../hr-backend-api
+npm install
+npm start
+```
+
+## 📝 Features หลัก
+
+- ✅ Dashboard - สรุปข้อมูล HR
+- ✅ Employee Management - จัดการข้อมูลพนักงาน
+- ✅ Organization Structure - โครงสร้างองค์กร
+- ✅ Time & Attendance - บันทึกการเข้างาน
+- ✅ Leave Management - บริหารการลา
+- ✅ Contracts - จัดการสัญญาจ้าง
+- ✅ Reports - รายงาน HR
+- ✅ Permissions - สิทธิ์ในการใช้ระบบ
+
+## 🎨 Customization
+
+### เปลี่ยนสีและ Theme
+ดูไฟล์ `src/index.css` ในส่วน `:root` CSS variables
+
+### เปลี่ยน Tailwind Config
+ดูไฟล์ `tailwind.config.ts`
+
+## 📖 Learn More
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Documentation](https://react.dev)
+- [Tailwind CSS](https://tailwindcss.com)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs)
+
+## 📧 Support
+
+หากมีปัญหา กรุณาติดต่อทีม Development
+
+---
+
+**HR Core System v1.0** | Created with ❤️
