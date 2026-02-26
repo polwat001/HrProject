@@ -1,7 +1,7 @@
 "use client";
 
 import type { AppProps } from "next/app";
-import "@/globals.css";
+import "@/app/globals.css";
 import "@/index.css";
 import "@/App.css";
 
