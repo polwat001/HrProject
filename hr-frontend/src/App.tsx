@@ -29,7 +29,7 @@ const App = () => (
           <AppLayout>
             <Routes>
               <Route path="/" element={<Dashboard />} />
-              <Route path="/organization" element={<OrganizationStructure />} />
+              <Route path="/companies" element={<OrganizationStructure />} />
               <Route path="/positions" element={<PositionMaster />} />
               <Route path="/employees" element={<EmployeeList />} />
               <Route path="/employees/:id" element={<EmployeeProfile />} />

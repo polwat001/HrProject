@@ -3,8 +3,12 @@
 import { useState, useEffect } from 'react';
 import { organizationAPI } from '@/services/api';
 import { useAppStore } from '@/store/useAppStore';
-import { Plus, Edit2, Trash2, Loader, Briefcase, Users } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader, Briefcase, Users, X } from 'lucide-react';
 import type { Department, Position } from '@/types';
+
+const COMPANIES = [
+  { company_id: 1, name_th: 'บริษัท ทดสอบ จำกัด' },
+];
 
 export default function OrganizationPage() {
   const { currentCompanyId } = useAppStore();
@@ -12,6 +16,16 @@ export default function OrganizationPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<'departments' | 'positions'>('departments');
+  const [showModal, setShowModal] = useState(false);
+
+  // Department form
+  const [deptForm, setDeptForm] = useState({ name: '', costCenter: '', companyId: 1 });
+
+  // Position form
+  const [posForm, setPosForm] = useState({ title_th: '', level: '', companyId: 1 });
+
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     loadData();
@@ -24,12 +38,74 @@ export default function OrganizationPage() {
         organizationAPI.getDepartments(currentCompanyId ?? undefined),
         organizationAPI.getPositions(),
       ]);
-      setDepartments(depRes.data);
-      setPositions(posRes.data);
+
+      const mappedDepartments = depRes.data.map((d: any) => ({
+        id: d.id,
+        name: d.NAME ?? '-',
+        headCount: 0,
+        costCenterCode: d.cost_center ?? '-',
+        companyId: d.company_id,
+        parentDeptId: d.parent_dept_id,
+      }));
+
+      const mappedPositions = posRes.data.map((p: any) => ({
+        id: p.id,
+        name: p.title_th ?? '-',
+        code: p.LEVEL ?? '-',
+        companyId: p.company_id,
+        companyName: COMPANIES.find(c => c.company_id === p.company_id)?.name_th ?? '-',
+        isActive: true,
+      }));
+
+      setDepartments(mappedDepartments);
+      setPositions(mappedPositions);
     } catch (err) {
       console.error('Error loading organization data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setFormError('');
+    setDeptForm({ name: '', costCenter: '', companyId: 1 });
+    setPosForm({ title_th: '', level: '', companyId: 1 });
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    setFormError('');
+    setSaving(true);
+    try {
+      if (selectedTab === 'departments') {
+        if (!deptForm.name.trim()) {
+          setFormError('กรุณากรอกชื่อแผนก');
+          setSaving(false);
+          return;
+        }
+        await organizationAPI.createDepartment({
+          name: deptForm.name,
+          costCenterCode: deptForm.costCenter,
+          companyId: deptForm.companyId,
+        });
+      } else {
+        if (!posForm.title_th.trim()) {
+          setFormError('กรุณากรอกชื่อตำแหน่ง');
+          setSaving(false);
+          return;
+        }
+        await organizationAPI.createPosition({
+          name: posForm.title_th,
+          code: posForm.level,
+          companyId: posForm.companyId,
+        });
+      }
+      setShowModal(false);
+      await loadData(); // reload ข้อมูลใหม่
+    } catch (err: any) {
+      setFormError(err.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -52,9 +128,12 @@ export default function OrganizationPage() {
           <h1 className="text-3xl font-bold text-slate-900">🏢 Organization Structure</h1>
           <p className="text-slate-600 mt-1">Manage departments and positions</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium">
+        <button
+          onClick={handleOpenModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium"
+        >
           <Plus size={20} />
-          Add New
+          Add New {selectedTab === 'departments' ? 'Department' : 'Position'}
         </button>
       </div>
 
@@ -156,8 +235,8 @@ export default function OrganizationPage() {
                   <thead>
                     <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
                       <th className="text-left py-4 px-6 font-semibold text-slate-700">Position Name</th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Code</th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Companies</th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Level</th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Company</th>
                       <th className="text-left py-4 px-6 font-semibold text-slate-700">Status</th>
                       <th className="text-center py-4 px-6 font-semibold text-slate-700">Actions</th>
                     </tr>
@@ -178,17 +257,13 @@ export default function OrganizationPage() {
                         </td>
                         <td className="py-4 px-6">
                           <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                            {pos.companyIds.length} companies
+                            {pos.companyName}
                           </span>
                         </td>
                         <td className="py-4 px-6">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-bold ${
-                              pos.isActive
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-slate-100 text-slate-700'
-                            }`}
-                          >
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                            pos.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
+                          }`}>
                             {pos.isActive ? '✓ Active' : 'Inactive'}
                           </span>
                         </td>
@@ -225,6 +300,155 @@ export default function OrganizationPage() {
           <p className="text-sm text-purple-700 mt-2">Total job positions</p>
         </div>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowModal(false)}
+          />
+
+          {/* Modal Box */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
+              <div className="flex items-center gap-3">
+                {selectedTab === 'departments' ? (
+                  <Briefcase size={20} className="text-blue-600" />
+                ) : (
+                  <Users size={20} className="text-blue-600" />
+                )}
+                <h3 className="text-lg font-bold text-slate-900">
+                  {selectedTab === 'departments' ? 'เพิ่มแผนกใหม่' : 'เพิ่มตำแหน่งใหม่'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-slate-200 rounded-lg transition-colors text-slate-500"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="px-6 py-5 space-y-4">
+              {formError && (
+                <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 rounded text-sm text-red-700">
+                  {formError}
+                </div>
+              )}
+
+              {selectedTab === 'departments' ? (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      ชื่อแผนก <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={deptForm.name}
+                      onChange={e => setDeptForm({ ...deptForm, name: e.target.value })}
+                      placeholder="เช่น ฝ่ายบุคคล"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      Cost Center Code
+                    </label>
+                    <input
+                      type="text"
+                      value={deptForm.costCenter}
+                      onChange={e => setDeptForm({ ...deptForm, costCenter: e.target.value })}
+                      placeholder="เช่น CC001"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      บริษัท <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={deptForm.companyId}
+                      onChange={e => setDeptForm({ ...deptForm, companyId: Number(e.target.value) })}
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    >
+                      {COMPANIES.map(c => (
+                        <option key={c.company_id} value={c.company_id}>{c.name_th}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      ชื่อตำแหน่ง <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={posForm.title_th}
+                      onChange={e => setPosForm({ ...posForm, title_th: e.target.value })}
+                      placeholder="เช่น ผู้จัดการ"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      Level
+                    </label>
+                    <input
+                      type="number"
+                      value={posForm.level}
+                      onChange={e => setPosForm({ ...posForm, level: e.target.value })}
+                      placeholder="เช่น 1, 2, 3"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      บริษัท <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={posForm.companyId}
+                      onChange={e => setPosForm({ ...posForm, companyId: Number(e.target.value) })}
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    >
+                      {COMPANIES.map(c => (
+                        <option key={c.company_id} value={c.company_id}>{c.name_th}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+              >
+                {saving ? (
+                  <Loader size={16} className="animate-spin" />
+                ) : (
+                  <Plus size={16} />
+                )}
+                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

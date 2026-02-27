@@ -193,22 +193,32 @@ export const contractExpiring = [
   { employeeId: "emp-002", name: "สมหญิง ใจดี", company: "ABC Holdings", expireDate: "2026-03-15", daysLeft: 20 },
 ];
 
-export const orgStructure = {
+export interface OrgNode {
+  id: string;
+  name: string;
+  type: "group" | "company" | "branch" | "department";
+  costCenter?: string;
+  children: OrgNode[];
+}
+
+export const orgStructure: OrgNode = {
   id: "group",
   name: "HR Group (Holding)",
-  type: "group" as const,
+  type: "group",
   children: [
     {
       id: "company-a",
       name: "ABC Holdings Co., Ltd.",
-      type: "company" as const,
+      type: "company",
       children: [
         {
-          id: "branch-a1", name: "สำนักงานใหญ่", type: "branch" as const,
+          id: "branch-a1",
+          name: "สำนักงานใหญ่",
+          type: "branch",
           children: [
-            { id: "dept-hr-a", name: "Human Resources", type: "department" as const, costCenter: "CC-A-HR01", children: [] },
-            { id: "dept-it-a", name: "IT", type: "department" as const, costCenter: "CC-A-IT01", children: [] },
-            { id: "dept-mkt-a", name: "Marketing", type: "department" as const, costCenter: "CC-A-MK01", children: [] },
+            { id: "dept-hr-a", name: "Human Resources", type: "department", costCenter: "CC-A-HR01", children: [] },
+            { id: "dept-it-a", name: "IT", type: "department", costCenter: "CC-A-IT01", children: [] },
+            { id: "dept-mkt-a", name: "Marketing", type: "department", costCenter: "CC-A-MK01", children: [] },
           ]
         }
       ]
@@ -216,30 +226,23 @@ export const orgStructure = {
     {
       id: "company-b",
       name: "XYZ Services Co., Ltd.",
-      type: "company" as const,
+      type: "company",
       children: [
         {
-          id: "branch-b1", name: "สาขากรุงเทพ", type: "branch" as const,
+          id: "branch-b1",
+          name: "สาขากรุงเทพ",
+          type: "branch",
           children: [
-            { id: "dept-hr-b", name: "Human Resources", type: "department" as const, costCenter: "CC-B-HR01", children: [] },
-            { id: "dept-fin-b", name: "Finance", type: "department" as const, costCenter: "CC-B-FN01", children: [] },
-          ]
-        }
-      ]
-    },
-    {
-      id: "company-c",
-      name: "DEF Manufacturing Co., Ltd.",
-      type: "company" as const,
-      children: [
-        {
-          id: "branch-c1", name: "โรงงาน 1", type: "branch" as const,
-          children: [
-            { id: "dept-prod-c", name: "Production", type: "department" as const, costCenter: "CC-C-PD01", children: [] },
-            { id: "dept-qa-c", name: "Quality", type: "department" as const, costCenter: "CC-C-QA01", children: [] },
+            { id: "dept-hr-b", name: "Human Resources", type: "department", costCenter: "CC-B-HR01", children: [] },
+            { id: "dept-fin-b", name: "Finance", type: "department", costCenter: "CC-B-FN01", children: [] },
           ]
         }
       ]
     }
   ]
 };
+
+export const positions = [
+  { id: "p1", title: "HR Director", department: "Human Resources" },
+  { id: "p2", title: "Senior Developer", department: "IT" },
+];

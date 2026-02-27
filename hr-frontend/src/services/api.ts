@@ -10,9 +10,10 @@ import type {
 } from '@/types';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/',
   headers: {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-cache',
   },
 });
 
@@ -31,24 +32,42 @@ api.interceptors.request.use(
 );
 
 // Response Interceptor
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('hr_token');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 401) {
+//       localStorage.removeItem('hr_token');
+//       window.location.href = '/login';
+//     }
+//     return Promise.reject(error);
+//   }
+// );
+
+api.interceptors.request.use(
+  (config) => {
+
+    // 🔥 ใส่ token ตายตัวตรงนี้เลย
+    config.headers.Authorization =
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjE2OTkwNiwiZXhwIjoxNzcyMjU2MzA2fQ.x21_JF9hKK_MPmm2FQvO-LTnN_GKS7yYkQFM0Bp6FrM";
+
+    return config;
+  },
+  (error) => Promise.reject(error)
 );
 
 // ============ AUTHENTICATION ============
 export const authAPI = {
-  login: (username: string, password: string) =>
-    api.post('/auth/login', { username, password }),
-  logout: () => api.post('/auth/logout'),
-  getCurrentUser: () => api.get<User>('/auth/me'),
-  refreshToken: () => api.post('/auth/refresh'),
+  login: async (username: string, password: string) => {
+    const res = await api.post("/auth/login", {
+      username,
+      password,
+    });
+
+    const token = res.data.token; // 👈 backend ต้องส่ง token กลับมา
+    localStorage.setItem("hr_token", token);
+
+    return res;
+  },
 };
 
 // ============ DASHBOARD ============

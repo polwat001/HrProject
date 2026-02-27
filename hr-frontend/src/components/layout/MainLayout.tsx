@@ -103,10 +103,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }`}
                 title={!sidebarOpen ? item.name : undefined}
               >
-                <Icon size={20} className="flex-shrink-0" />
+                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
                 {sidebarOpen && (
                   <>
-                    <span className="text-sm font-medium flex-1">{item.name}</span>
+                    <span className="text-sm font-medium flex-1 text-white">{item.name}</span>
                   </>
                 )}
               </Link>
@@ -209,7 +209,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   {user?.lastName?.charAt(0)}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-slate-900">{user?.username}</p>
+                  <p className="text-sm font-semibold text-slate-900 ">{user?.username}</p>
                   <p className="text-xs text-slate-500">
                     {user?.is_super_admin ? '👑 Super Admin' : '👤 User'}
                   </p>

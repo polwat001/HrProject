@@ -65,7 +65,9 @@ export interface Position {
   code: string;
   name: string;
   level?: string;
-  companyIds: number[]; // Positions can be used in multiple companies
+  companyIds: number[];     // เก็บไว้เหมือนเดิม
+  companyId?: number;       // เพิ่ม optional
+  companyName?: string;  // Positions can be used in multiple companies
   isActive: boolean;
 }
 

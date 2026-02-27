@@ -28,42 +28,92 @@ export default function EmployeesPage() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [showFilters, setShowFilters] = useState(false);
-
-  useEffect(() => {
+  
+useEffect(() => {
+  const delay = setTimeout(() => {
     loadData();
-  }, [filterCompanyId]);
+  }, 400); // debounce search
 
-  const loadData = async () => {
+  return () => clearTimeout(delay);
+}, [filterCompanyId, filterDepartmentId, searchTerm]);
+
+useEffect(() => {
+  const autoLogin = async () => {
     try {
-      setLoading(true);
-      const [empRes, coRes, depRes] = await Promise.all([
-        employeeAPI.getEmployees(),
-        organizationAPI.getCompanies(),
-        organizationAPI.getDepartments(filterCompanyId ?? undefined),
-      ]);
-
-      setEmployees(empRes.data);
-      setCompanies(coRes.data);
-      setDepartments(depRes.data);
+      const res = await authAPI.login("superadmin", "123456");
+      console.log("Login success", res.data);
+      loadData();
     } catch (err) {
-      console.error('Error loading employee data:', err);
-    } finally {
-      setLoading(false);
+      console.error("Login failed", err);
     }
   };
 
+  autoLogin();
+}, []);
+
+const loadData = async () => {
+  try {
+    setLoading(true);
+
+    const token = localStorage.getItem("token");
+
+    const filters = {
+      companyId: filterCompanyId ?? undefined,
+      departmentId: filterDepartmentId ?? undefined,
+      search: searchTerm || undefined,
+    };
+
+    const [empRes, coRes, depRes] = await Promise.all([
+      employeeAPI.getEmployees(filters),
+      organizationAPI.getCompanies(),
+      organizationAPI.getDepartments(filterCompanyId ?? undefined),
+    ]);
+
+    // 🔥 MAP DATA จาก API → ให้ตรงกับ UI
+    const mappedEmployees = empRes.data.map((emp: any) => ({
+      id: emp.id,
+      code: emp.employee_code,
+      firstName: emp.firstname_th,
+      lastName: emp.lastname_th,
+      nickname: emp.nickname,
+      companyId: emp.current_company_id,
+      status: emp.STATUS?.toLowerCase(),
+      email: emp.email ?? "-", // ถ้าไม่มี field นี้
+      positionId: emp.position_id ?? "-", // ถ้า backend ยังไม่มี
+      departmentId: emp.department_id ?? null,
+      joinDate: emp.join_date ?? new Date().toISOString(),
+      avatar: emp.avatar_url,
+    }));
+
+    setEmployees(mappedEmployees);
+    setCompanies(coRes.data);
+    setDepartments(depRes.data);
+
+  } catch (err) {
+    console.error("Error loading employee data:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
   const filteredEmployees = employees.filter((emp) => {
-    const matchSearch =
-      emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (emp.email?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+  const firstName = emp.firstName ?? "";
+  const lastName = emp.lastName ?? "";
+  const code = emp.code ?? "";
+  const email = emp.email ?? "";
+  console.log("Filtering employee:", filteredEmployees);
 
-    const matchCompany = !filterCompanyId || emp.companyId === filterCompanyId;
-    const matchDepartment = !filterDepartmentId || emp.departmentId === filterDepartmentId;
+  const matchSearch =
+    firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    email.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchSearch && matchCompany && matchDepartment;
-  });
+  const matchCompany = !filterCompanyId || emp.companyId === filterCompanyId;
+  const matchDepartment = !filterDepartmentId || emp.departmentId === filterDepartmentId;
+
+  return matchSearch && matchCompany && matchDepartment;
+});
 
   if (loading) {
     return (
