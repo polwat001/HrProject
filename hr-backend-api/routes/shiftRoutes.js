@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const shiftController = require('../controllers/shiftController');
-const auth = require('../middleware/authMiddleware'); // ดึงยามมาเฝ้า
+const { verifyToken } = require('../middleware/authMiddleware'); // ดึงยามมาเฝ้า
 
-router.get('/', auth, shiftController.getAllShifts);
-router.post('/', auth, shiftController.createShift);
+router.get('/', verifyToken, shiftController.getAllShifts);
+router.post('/', verifyToken, shiftController.createShift);
 
 module.exports = router; // สำคัญที่สุด!

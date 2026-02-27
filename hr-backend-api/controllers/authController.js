@@ -7,8 +7,21 @@ exports.login = async (req, res) => {
     const { username, password } = req.body;
 
     // 1. ค้นหาผู้ใช้จาก Database
-    const [users] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
+    let [users] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
     
+    // 🛠️ AUTO-CREATE: ถ้าไม่มี user "admin" ให้สร้างอัตโนมัติ
+    if (users.length === 0 && username === 'admin' && password === '123456') {
+      console.log("🛠️ ระบบกำลัง Auto-Create: สร้าง User admin ใหม่...");
+      const realHash = await bcrypt.hash('123456', 10);
+      const [result] = await db.query(
+        'INSERT INTO users (username, password_hash, is_super_admin) VALUES (?, ?, ?)',
+        [username, realHash, 1]
+      );
+      console.log("✅ สร้าง User admin สำเร็จ!");
+      // ดึง user ที่เพิ่งสร้างมา
+      [users] = await db.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+    }
+
     if (users.length === 0) {
       return res.status(401).json({ message: 'ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง' });
     }

@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useRouter } from "next/navigation";
 import { employees, companies } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +13,9 @@ const typeIcons: Record<string, string> = {
 };
 
 const EmployeeProfile = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const params = useParams();
+  const router = useRouter();
+  const id = params?.id as string;
   const emp = employees.find((e) => e.id === id);
 
   if (!emp) {
@@ -29,7 +30,7 @@ const EmployeeProfile = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <Button variant="ghost" size="sm" onClick={() => navigate("/employees")} className="gap-2">
+      <Button variant="ghost" size="sm" onClick={() => router.push("/employees")} className="gap-2">
         <ArrowLeft className="h-4 w-4" /> Back to List
       </Button>
 

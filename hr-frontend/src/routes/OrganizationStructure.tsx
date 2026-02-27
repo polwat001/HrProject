@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChevronRight, ChevronDown, Building2, Building, GitBranch, FolderOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
-import error from "next/error";
+import { apiGet } from "@/lib/api";
 
 const typeConfig: Record<string, { icon: any; color: string }> = {
   group: { icon: Building2, color: "text-primary" },
@@ -60,16 +60,40 @@ const TreeNode = ({ node, level = 0 }: { node: OrgNode; level?: number }) => {
 const OrganizationStructure = () => {
   const [data, setData] = useState<OrgNode | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/organization/departments");
-        const json = await res.json();
-        setData(json);
-      }catch(error){
+        const json = await apiGet<any>("/companies");
+        console.log("API Response:", json);
+        
+        // ถ้า response เป็น array ให้ wrap ด้วย root node
+        if (Array.isArray(json)) {
+          const rootNode: OrgNode = {
+            id: "root",
+            NAME: "Organization",
+            type: "group",
+            children: json.map((company: any) => ({
+              id: company.id,
+              NAME: company.name_th || company.CODE,
+              type: "company",
+              costCenter: company.CODE,
+              children: []
+            }))
+          };
+          setData(rootNode);
+        } else if (json && json.id) {
+          // ถ้า response เป็น object เดียว
+          setData(json);
+        } else {
+          setError("Invalid data format from API");
+        }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
         console.error("Failed to fetch org structure:", error);
-      }finally{
+        setError(errorMsg);
+      } finally {
         setLoading(false);
       }
     };
@@ -77,6 +101,7 @@ const OrganizationStructure = () => {
   }, []);
 
   if (loading) return <div className="p-6 text-center">Loading organization structure... </div>
+  if (error) return <div className="p-6 text-center text-red-600">Error: {error}</div>;
   if (!data) return <div className="p-6 text-center">No organization structure data available.</div>;
   return (
     <div className="space-y-6 animate-fade-in">

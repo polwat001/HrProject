@@ -28,6 +28,8 @@ app.use('/api/schedules', require('./routes/scheduleRoutes'));
 app.use('/api/shifts', require('./routes/shiftRoutes'));
 app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/companies', require('./routes/companyRoutes'));
+
 // 🟡 โมดูลที่กำลังจะสร้าง (คอมเมนต์ไว้ก่อน)
 
 

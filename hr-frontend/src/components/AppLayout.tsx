@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
+import Link from "next/link";
 import {
   LayoutDashboard, Users, Building, Clock, CalendarDays,
-  FileText, BarChart3, Shield, ChevronLeft, ChevronRight, Briefcase,
+  FileText, BarChart3, Shield, ChevronLeft, ChevronRight, Briefcase, LogOut,
 } from "lucide-react";
 import CompanySwitcher from "@/components/CompanySwitcher";
 import { cn } from "@/lib/utils";
+import { logout, apiGet } from "@/lib/api";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -21,7 +23,29 @@ const navItems = [
 
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [collapsed, setCollapsed] = useState(false);
-  const location = useLocation();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const router = useRouter();
+  const location = router.pathname;
+
+  // Fetch current user
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const userData = await apiGet<any>("/users/current");
+        setCurrentUser(userData);
+      } catch (error) {
+        console.error("Failed to fetch current user:", error);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
+
+  const handleLogout = () => {
+    if (confirm("ต้องการออกจากระบบหรือไม่?")) {
+      logout();
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -47,25 +71,36 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         {/* Nav */}
         <nav className="flex-1 py-4 space-y-1 px-2 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path || 
-              (item.path !== "/" && location.pathname.startsWith(item.path));
+            const isActive = location === item.path || 
+              (item.path !== "/" && location.startsWith(item.path));
             return (
-              <NavLink
+              <Link
                 key={item.path}
-                to={item.path}
+                href={item.path}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm  transition-colors-300",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors-300",
                   isActive
                     ? "bg-white/15 text-white font-medium "
-                    : "text-white "
+                    : "text-white hover:bg-white/10"
                 )}
               >
                 <item.icon className={cn("h-5 w-5 shrink-0", isActive && "text-sidebar-primary")} />
                 {!collapsed && <span className="truncate">{item.label}</span>}
-              </NavLink>
+              </Link>
             );
           })}
         </nav>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className={cn(
+            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors-300 text-white hover:bg-white/10 mx-2 mb-4 w-[calc(100%-1rem)]",
+          )}
+        >
+          <LogOut className="h-5 w-5 shrink-0" />
+          {!collapsed && <span className="truncate">Logout</span>}
+        </button>
 
         {/* Collapse toggle */}
         <button
@@ -83,8 +118,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               {navItems.find(i => 
-                location.pathname === i.path || 
-                (i.path !== "/" && location.pathname.startsWith(i.path))
+                location === i.path || 
+                (i.path !== "/" && location.startsWith(i.path))
               )?.label || "Dashboard"}
             </h1>
           </div>
@@ -92,11 +127,11 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
             <CompanySwitcher />
             <div className="flex items-center gap-2 pl-4 border-l border-border">
               <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-medium">
-                SC
+                {currentUser?.username?.[0]?.toUpperCase() || "U"}
               </div>
               <div className="text-sm">
-                <div className="font-medium text-foreground">สมชาย ว.</div>
-                <div className="text-xs text-muted-foreground">HR Director</div>
+                <div className="font-medium text-foreground">{currentUser?.username || "User"}</div>
+                <div className="text-xs text-muted-foreground">{currentUser?.role || "Employee"}</div>
               </div>
             </div>
           </div>

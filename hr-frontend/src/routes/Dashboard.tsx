@@ -1,4 +1,5 @@
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { useCompany } from "@/contexts/CompanyContexts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,10 +10,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend,
 } from "recharts";
-import {
-  headcountByCompany, headcountByDepartment, attendanceData,
-  otCostData, contractExpiring, employees,
-} from "@/data/mockData";
+import { apiGet } from "@/lib/api";
 
 const ATTENDANCE_COLORS = [
   "hsl(145 60% 42%)", "hsl(38 92% 50%)", "hsl(0 72% 55%)", "hsl(205 80% 55%)",
@@ -20,24 +18,102 @@ const ATTENDANCE_COLORS = [
 
 const Dashboard = () => {
   const { selectedCompany } = useCompany();
-  const navigate = useNavigate();
+  const router = useRouter();
   const isAll = selectedCompany.id === "all";
 
-  const barData = isAll
-    ? headcountByCompany
-    : (headcountByDepartment[selectedCompany.id as keyof typeof headcountByDepartment] || []);
+  // States
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [contracts, setContracts] = useState<any[]>([]);
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [otCostData, setOtCostData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const totalHeadcount = isAll
-    ? headcountByCompany.reduce((s, c) => s + c.count, 0)
-    : (headcountByDepartment[selectedCompany.id as keyof typeof headcountByDepartment] || [])
-        .reduce((s, d) => s + d.count, 0);
+  // Fetch data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        
+        // ดึง current user
+        try {
+          const userData = await apiGet<any>("/users/current");
+          setCurrentUser(userData);
+        } catch (error) {
+          console.error("Failed to fetch current user:", error);
+        }
+        
+        // ดึง employees
+        const empData = await apiGet<any[]>("/employees");
+        setEmployees(empData || []);
+
+        // ดึง contracts
+        const contractData = await apiGet<any[]>("/contracts");
+        setContracts(contractData || []);
+
+        // ดึง attendance (mock สำหรับตอนนี้)
+        setAttendanceData([
+          { name: "Present", value: 150 },
+          { name: "Late", value: 25 },
+          { name: "Absent", value: 10 },
+          { name: "WFH", value: 65 },
+        ]);
+
+        // ดึง OT Cost (mock สำหรับตอนนี้)
+        setOtCostData([
+          { month: "Sep", amount: 85000 },
+          { month: "Oct", amount: 92000 },
+          { month: "Nov", amount: 78000 },
+          { month: "Dec", amount: 110000 },
+          { month: "Jan", amount: 98000 },
+          { month: "Feb", amount: 105000 },
+        ]);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Filter data by selected company
+  const filteredEmployees = isAll
+    ? employees
+    : employees.filter((e) => e.companyId === selectedCompany.id);
 
   const filteredContracts = isAll
-    ? contractExpiring
-    : contractExpiring.filter((c) => {
+    ? contracts
+    : contracts.filter((c) => {
         const emp = employees.find((e) => e.id === c.employeeId);
         return emp?.companyId === selectedCompany.id;
       });
+
+  // Prepare bar chart data
+  const barData = isAll
+    ? employees.reduce((acc: any[], emp: any) => {
+        const existing = acc.find((item) => item.company === emp.companyId);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          acc.push({ company: emp.companyId, count: 1, companyId: emp.companyId });
+        }
+        return acc;
+      }, [])
+    : employees
+        .filter((e) => e.companyId === selectedCompany.id)
+        .reduce((acc: any[], emp: any) => {
+          const existing = acc.find((item) => item.department === emp.department);
+          if (existing) {
+            existing.count += 1;
+          } else {
+            acc.push({ department: emp.department, count: 1 });
+          }
+          return acc;
+        }, []);
+
+  const totalHeadcount = filteredEmployees.length;
 
   const statCards = [
     { label: "Total Headcount", value: totalHeadcount, icon: Users, color: "text-primary" },
@@ -46,8 +122,22 @@ const Dashboard = () => {
     { label: "OT Cost (Month)", value: "฿198K", icon: TrendingUp, color: "text-accent" },
   ];
 
+  if (loading) {
+    return <div className="p-6 text-center">Loading dashboard...</div>;
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* User Welcome Header */}
+      <div className="mb-4">
+        <h1 className="text-3xl font-bold text-grey-900">
+          {currentUser ? `Welcome back, ${currentUser.username || currentUser.name || "User"}` : "Welcome to Dashboard"}
+        </h1>
+        <p className="text-sm text-grey-600 mt-1">
+          {selectedCompany.id === "all" ? "All Companies" : selectedCompany.shortName}
+        </p>
+      </div>
+
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => (
@@ -94,7 +184,7 @@ const Dashboard = () => {
                   cursor="pointer"
                   onClick={(data: any) => {
                     if (isAll && data?.companyId) {
-                      navigate(`/employees?company=${data.companyId}`);
+                      router.push(`/employees?company=${data.companyId}`);
                     }
                   }}
                 />

@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = function(req, res, next) {
+const verifyToken = function(req, res, next) {
   // 1. รับ Token จาก Header (รูปแบบคือ Authorization: Bearer <token>)
   const authHeader = req.header('Authorization');
   
@@ -30,3 +30,5 @@ module.exports = function(req, res, next) {
     res.status(401).json({ message: 'Token ไม่ถูกต้อง หรือ หมดอายุแล้ว' });
   }
 };
+
+module.exports = { verifyToken };

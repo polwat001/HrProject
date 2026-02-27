@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCompany } from "@/contexts/CompanyContexts";
 import { employees, companies } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +16,8 @@ const statusStyles: Record<string, string> = {
 
 const EmployeeList = () => {
   const { selectedCompany } = useCompany();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
 
@@ -101,7 +101,7 @@ const EmployeeList = () => {
                     <tr
                       key={emp.id}
                       className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => navigate(`/employees/${emp.id}`)}
+                      onClick={() => router.push(`/employees/${emp.id}`)}
                     >
                       <td className="px-4 py-3 font-mono text-xs">{emp.employeeCode}</td>
                       <td className="px-4 py-3">
