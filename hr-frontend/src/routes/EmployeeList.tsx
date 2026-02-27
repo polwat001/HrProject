@@ -1,12 +1,33 @@
-import { useState, useMemo } from "react";
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCompany } from "@/contexts/CompanyContexts";
-import { employees, companies } from "@/data/mockData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter } from "lucide-react";
+
+// 1. Interface ให้ตรงกับ Mapper ของ Backend
+interface Employee {
+  id: string;
+  employeeCode: string;
+  firstname_th: string;
+  lastname_th: string;
+  position: string;
+  department: string;
+  companyId: string;
+  STATUS: string;
+  avatar: string;
+}
+
+interface Company {
+  id: string;
+  name: string;
+  shortName: string;
+  logo: string;
+}
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
@@ -18,113 +39,172 @@ const EmployeeList = () => {
   const { selectedCompany } = useCompany();
   const searchParams = useSearchParams();
   const router = useRouter();
+  
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("all");
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 2. ดึงข้อมูลจาก API จริง
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const headers = { "Authorization": `Bearer ${token}` };
+
+        const [empRes, compRes] = await Promise.all([
+          fetch("http://localhost:5000/api/employees", { headers }),
+          fetch("http://localhost:5000/api/companies", { headers })
+        ]);
+
+        if (empRes.ok && compRes.ok) {
+          setEmployees(await empRes.json());
+          setCompanies(await compRes.json());
+        }
+      } catch (error) {
+        console.error("Fetch error:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  // 3. ระบบ Filter ที่รองรับทั้ง UUID และ Company ID จาก Context
   const companyFilter = searchParams.get("company") || selectedCompany.id;
 
   const filtered = useMemo(() => {
     return employees.filter((emp) => {
-      if (companyFilter !== "all" && emp.companyId !== companyFilter) return false;
+      // เปรียบเทียบ ID โดยตัด prefix 'company-' ออกถ้ามี
+      const empCompId = String(emp.companyId);
+      const targetCompId = String(companyFilter).replace("company-", "");
+      
+      if (companyFilter !== "all" && empCompId !== targetCompId) return false;
       if (deptFilter !== "all" && emp.department !== deptFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        return (
-          emp.firstName.toLowerCase().includes(q) ||
-          emp.lastName.toLowerCase().includes(q) ||
-          emp.employeeCode.toLowerCase().includes(q) ||
-          emp.position.toLowerCase().includes(q)
-        );
-      }
+      
+if (search) {
+  const q = search.toLowerCase();
+  return (
+    // ใช้ Optional Chaining (?.) หรือเช็คค่าก่อนดึง .toLowerCase()
+    (emp.firstname_th?.toLowerCase().includes(q) ?? false) ||
+    (emp.lastname_th?.toLowerCase().includes(q) ?? false) ||
+    (emp.employeeCode?.toLowerCase().includes(q) ?? false) ||
+    (emp.position?.toLowerCase().includes(q) ?? false)
+  );
+}
       return true;
     });
-  }, [companyFilter, deptFilter, search]);
+  }, [employees, companyFilter, deptFilter, search]);
 
-  const departments = [...new Set(employees.map((e) => e.department))];
+  // ดึงรายชื่อแผนกที่ไม่ซ้ำกันเพื่อทำ Dropdown
+  const departments = useMemo(() => {
+    return [...new Set(employees.map((e) => e.department))].filter(Boolean);
+  }, [employees]);
+
+  if (isLoading) return <div className="p-8 text-center animate-pulse text-muted-foreground">กำลังโหลดข้อมูลพนักงาน...</div>;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Filters */}
+      {/* Filters Section */}
       <Card className="shadow-card">
         <CardContent className="p-4">
           <div className="flex flex-wrap items-center gap-3">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search employee..."
+                placeholder="ค้นหารหัส หรือชื่อพนักงาน..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
               />
             </div>
+            
             <Select value={deptFilter} onValueChange={setDeptFilter}>
               <SelectTrigger className="w-[180px]">
-                <Filter className="h-4 w-4 mr-2 text-muted-foreground" />
-                <SelectValue placeholder="Department" />
+                <div className="flex items-center gap-2">
+                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="แผนกทั้งหมด" />
+                </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
+                <SelectItem value="all">แผนกทั้งหมด</SelectItem>
                 {departments.map((d) => (
                   <SelectItem key={d} value={d}>{d}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <div className="text-sm text-muted-foreground">
-              {filtered.length} employee(s)
+
+            <div className="text-sm text-muted-foreground ml-auto">
+              พบ {filtered.length} รายชื่อ
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Table */}
+      {/* Table Section */}
       <Card className="shadow-card overflow-hidden">
-        <CardHeader className="pb-0">
-          <CardTitle className="text-base">Employee List</CardTitle>
+        <CardHeader className="pb-0 border-b bg-muted/10">
+          <CardTitle className="text-base py-2">รายชื่อพนักงาน (Employee List)</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/40">
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Code</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Name</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Company</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Department</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Position</th>
-                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">รหัสพนักงาน</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">ชื่อ-นามสกุล</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">บริษัท</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">แผนก</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">ตำแหน่ง</th>
+                  <th className="text-left px-4 py-3 font-medium text-muted-foreground">สถานะ</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((emp) => {
-                  const company = companies.find((c) => c.id === emp.companyId);
-                  return (
-                    <tr
-                      key={emp.id}
-                      className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => router.push(`/employees/${emp.id}`)}
-                    >
-                      <td className="px-4 py-3 font-mono text-xs">{emp.employeeCode}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{emp.avatar}</span>
-                          <span className="font-medium">{emp.firstName} {emp.lastName}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-xs">
-                          {company?.logo} {company?.shortName}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">{emp.department}</td>
-                      <td className="px-4 py-3">{emp.position}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className={statusStyles[emp.status]}>
-                          {emp.status}
-                        </Badge>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {filtered.length > 0 ? (
+                  filtered.map((emp) => {
+                    const company = companies.find((c) => String(c.id) === String(emp.companyId));
+                    return (
+                      <tr
+                        key={emp.id}
+                        className="border-b last:border-b-0 hover:bg-muted/30 cursor-pointer transition-colors"
+                        onClick={() => router.push(`/employees/${emp.id}`)}
+                      >
+                        <td className="px-4 py-3 font-mono text-xs">{emp.employeeCode}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">
+                              {emp.avatar?.startsWith("http") ? (
+                                <img src={emp.avatar} className="w-6 h-6 rounded-full object-cover" alt="avatar" />
+                              ) : (
+                                emp.avatar || "👤"
+                              )}
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {emp.firstname_th} {emp.lastname_th}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground">
+                            {company?.logo} {company?.shortName || "N/A"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">{emp.department}</td>
+                        <td className="px-4 py-3">{emp.position}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={statusStyles[emp.STATUS?.toLowerCase()] || ""}>
+                            {emp.STATUS || "N/A"}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="p-8 text-center text-muted-foreground">ไม่พบข้อมูลพนักงาน</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
