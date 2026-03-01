@@ -6,17 +6,18 @@ import { useAppStore } from '@/store/useAppStore';
 import { Plus, Edit2, Trash2, Loader, Briefcase, Users, X } from 'lucide-react';
 import type { Department, Position } from '@/types';
 
-const COMPANIES = [
-  { company_id: 1, name_th: 'บริษัท ทดสอบ จำกัด' },
-];
+
 
 export default function OrganizationPage() {
   const { currentCompanyId } = useAppStore();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
+  const [companies, setCompanies] = useState<any[]>([]);
   const [selectedTab, setSelectedTab] = useState<'departments' | 'positions'>('departments');
   const [showModal, setShowModal] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+const [editingId, setEditingId] = useState<number | null>(null);
 
   // Department form
   const [deptForm, setDeptForm] = useState({ name: '', costCenter: '', companyId: 1 });
@@ -32,39 +33,45 @@ export default function OrganizationPage() {
   }, [currentCompanyId]);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const [depRes, posRes] = await Promise.all([
-        organizationAPI.getDepartments(currentCompanyId ?? undefined),
-        organizationAPI.getPositions(),
-      ]);
+  try {
+    setLoading(true);
 
-      const mappedDepartments = depRes.data.map((d: any) => ({
-        id: d.id,
-        name: d.NAME ?? '-',
-        headCount: 0,
-        costCenterCode: d.cost_center ?? '-',
-        companyId: d.company_id,
-        parentDeptId: d.parent_dept_id,
-      }));
+    const [depRes, posRes, companyRes] = await Promise.all([
+      organizationAPI.getDepartments(currentCompanyId ?? undefined),
+      organizationAPI.getPositions(),
+      organizationAPI.getCompanies(),   // 👈 เพิ่มตรงนี้
+    ]);
 
-      const mappedPositions = posRes.data.map((p: any) => ({
-        id: p.id,
-        name: p.title_th ?? '-',
-        code: p.LEVEL ?? '-',
-        companyId: p.company_id,
-        companyName: COMPANIES.find(c => c.company_id === p.company_id)?.name_th ?? '-',
-        isActive: true,
-      }));
 
-      setDepartments(mappedDepartments);
-      setPositions(mappedPositions);
-    } catch (err) {
-      console.error('Error loading organization data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setCompanies(companyRes.data); // 👈 เก็บ companies จริงจาก DB
+
+    const mappedDepartments = depRes.data.map((d: any) => ({
+      id: d.id,
+      name: d.NAME ?? '-',
+      headCount: 0,
+      costCenterCode: d.cost_center ?? '-',
+      companyId: d.company_id,
+      parentDeptId: d.parent_dept_id,
+    }));
+
+    const mappedPositions = posRes.data.map((p: any) => ({
+      id: p.id,
+      name: p.title_th ?? '-',
+      code: p.LEVEL ?? '-',
+      companyId: p.company_id,
+      companyName:
+        companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ?? '-',
+      isActive: true,
+    }));
+
+    setDepartments(mappedDepartments);
+    setPositions(mappedPositions);
+  } catch (err) {
+    console.error('Error loading organization data:', err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleOpenModal = () => {
     setFormError('');
@@ -83,23 +90,46 @@ export default function OrganizationPage() {
           setSaving(false);
           return;
         }
-        await organizationAPI.createDepartment({
-          name: deptForm.name,
-          costCenterCode: deptForm.costCenter,
-          companyId: deptForm.companyId,
-        });
+        if (isEditMode && editingId) {
+  await organizationAPI.updateDepartment(editingId, {
+    NAME: deptForm.name,
+    cost_center: deptForm.costCenter,
+    company_id: deptForm.companyId,
+  });
+} else {
+  await organizationAPI.createDepartment({
+    NAME: deptForm.name,
+    cost_center: deptForm.costCenter,
+    company_id: deptForm.companyId,
+  });
+}
       } else {
         if (!posForm.title_th.trim()) {
           setFormError('กรุณากรอกชื่อตำแหน่ง');
           setSaving(false);
           return;
         }
-        await organizationAPI.createPosition({
-          name: posForm.title_th,
-          code: posForm.level,
-          companyId: posForm.companyId,
-        });
-      }
+        
+         if (isEditMode && editingId) {
+    // ✅ UPDATE
+    await organizationAPI.updatePosition(editingId, {
+      title_th: posForm.title_th,
+      LEVEL: posForm.level,
+      company_id: posForm.companyId,
+    });
+  } else {
+    // ✅ CREATE
+    await organizationAPI.createPosition({
+      title_th: posForm.title_th,
+      LEVEL: posForm.level,
+      company_id: posForm.companyId,
+    });
+  }
+}
+       
+      setIsEditMode(false);
+setEditingId(null);
+
       setShowModal(false);
       await loadData(); // reload ข้อมูลใหม่
     } catch (err: any) {
@@ -119,6 +149,48 @@ export default function OrganizationPage() {
       </div>
     );
   }
+const handleDeleteDepartment = async (id: number) => {
+  if (!confirm('ยืนยันการลบแผนกนี้ ?')) return;
+  try {
+    await organizationAPI.deleteDepartment(id);
+    await loadData();
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
+};
+
+const handleEditDepartment = (dept: Department) => {
+  setDeptForm({
+    name: dept.name,
+    costCenter: dept.costCenterCode || '',
+    companyId: dept.companyId,
+  });
+  setSelectedTab('departments');
+  setShowModal(true);
+};
+
+
+const handleDeletePosition = async (id: number) => {
+  if (!confirm('ยืนยันการลบตำแหน่งนี้ ?')) return;
+  try {
+    await organizationAPI.deletePosition(id);
+    await loadData();
+  } catch (err) {
+    console.error("Delete failed:", err);
+  }
+};
+
+const handleEditPosition = (pos: Position) => {
+  setPosForm({
+    title_th: pos.name,
+    level: pos.code || '',
+    companyId: pos.companyId,
+  });
+  setSelectedTab('positions');
+  setIsEditMode(true);        // ✅ ควรใส่
+  setEditingId(pos.id);  
+  setShowModal(true);
+};
 
   return (
     <div className="p-6 space-y-6">
@@ -197,10 +269,10 @@ export default function OrganizationPage() {
                         </div>
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
+                        <button onClick={() => handleEditDepartment(dept)} className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
                           <Edit2 size={16} />
                         </button>
-                        <button className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
+                        <button onClick={() => handleDeleteDepartment(dept.id)} className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -269,10 +341,10 @@ export default function OrganizationPage() {
                         </td>
                         <td className="py-4 px-6 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <button className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
+                            <button onClick={() => handleEditPosition(pos)} className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
                               <Edit2 size={16} />
                             </button>
-                            <button className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
+                            <button onClick={() => handleDeletePosition(pos.id)} className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -375,9 +447,11 @@ export default function OrganizationPage() {
                       onChange={e => setDeptForm({ ...deptForm, companyId: Number(e.target.value) })}
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
-                      {COMPANIES.map(c => (
-                        <option key={c.company_id} value={c.company_id}>{c.name_th}</option>
-                      ))}
+                      {companies.map(c => (
+  <option key={c.company_id} value={c.company_id}>
+    {c.name_th}
+  </option>
+))}
                     </select>
                   </div>
                 </>
@@ -416,9 +490,11 @@ export default function OrganizationPage() {
                       onChange={e => setPosForm({ ...posForm, companyId: Number(e.target.value) })}
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
-                      {COMPANIES.map(c => (
-                        <option key={c.company_id} value={c.company_id}>{c.name_th}</option>
-                      ))}
+                      {companies.map(c => (
+  <option key={c.company_id} value={c.company_id}>
+    {c.name_th}
+  </option>
+))}
                     </select>
                   </div>
                 </>

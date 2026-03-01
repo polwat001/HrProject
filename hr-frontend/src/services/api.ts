@@ -48,7 +48,7 @@ api.interceptors.request.use(
 
     // 🔥 ใส่ token ตายตัวตรงนี้เลย
     config.headers.Authorization =
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjE2OTkwNiwiZXhwIjoxNzcyMjU2MzA2fQ.x21_JF9hKK_MPmm2FQvO-LTnN_GKS7yYkQFM0Bp6FrM";
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjM1MDk1NCwiZXhwIjoxNzcyNDM3MzU0fQ.T_DbrZdVRIAIQhywbpDFjHtGig0JGY6SYhHE8LrHdWk";
 
     return config;
   },
