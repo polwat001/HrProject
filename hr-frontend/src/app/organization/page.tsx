@@ -1,12 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { organizationAPI } from '@/services/api';
-import { useAppStore } from '@/store/useAppStore';
-import { Plus, Edit2, Trash2, Loader, Briefcase, Users, X } from 'lucide-react';
-import type { Department, Position } from '@/types';
-
-
+import { useState, useEffect } from "react";
+import { organizationAPI } from "@/services/api";
+import { useAppStore } from "@/store/useAppStore";
+import { Plus, Edit2, Trash2, Loader, Briefcase, Users, X } from "lucide-react";
+import type { Department, Position } from "@/types";
 
 export default function OrganizationPage() {
   const { currentCompanyId } = useAppStore();
@@ -14,126 +12,138 @@ export default function OrganizationPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedTab, setSelectedTab] = useState<'departments' | 'positions'>('departments');
+  const [selectedTab, setSelectedTab] = useState<"departments" | "positions">(
+    "departments",
+  );
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
 
   // Department form
-  const [deptForm, setDeptForm] = useState({ name: '', costCenter: '', companyId: 1 });
+  const [deptForm, setDeptForm] = useState({
+    name: "",
+    costCenter: "",
+    companyId: 1,
+  });
 
   // Position form
-  const [posForm, setPosForm] = useState({ title_th: '', level: '', companyId: 1 });
+  const [posForm, setPosForm] = useState({
+    title_th: "",
+    level: "",
+    companyId: 1,
+  });
 
   const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState('');
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     loadData();
   }, [currentCompanyId]);
 
   const loadData = async () => {
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const [depRes, posRes, companyRes] = await Promise.all([
-      organizationAPI.getDepartments(currentCompanyId ?? undefined),
-      organizationAPI.getPositions(),
-      organizationAPI.getCompanies(),   // 👈 เพิ่มตรงนี้
-    ]);
+      const [depRes, posRes, companyRes] = await Promise.all([
+        organizationAPI.getDepartments(currentCompanyId ?? undefined),
+        organizationAPI.getPositions(),
+        organizationAPI.getCompanies(), // 👈 เพิ่มตรงนี้
+      ]);
 
+      setCompanies(companyRes.data); // 👈 เก็บ companies จริงจาก DB
 
-    setCompanies(companyRes.data); // 👈 เก็บ companies จริงจาก DB
+      const mappedDepartments = depRes.data.map((d: any) => ({
+        id: d.id,
+        name: d.NAME ?? "-",
+        headCount: 0,
+        costCenterCode: d.cost_center ?? "-",
+        companyId: d.company_id,
+        parentDeptId: d.parent_dept_id,
+      }));
 
-    const mappedDepartments = depRes.data.map((d: any) => ({
-      id: d.id,
-      name: d.NAME ?? '-',
-      headCount: 0,
-      costCenterCode: d.cost_center ?? '-',
-      companyId: d.company_id,
-      parentDeptId: d.parent_dept_id,
-    }));
+      const mappedPositions = posRes.data.map((p: any) => ({
+        id: p.id,
+        name: p.title_th ?? "-",
+        code: p.LEVEL ?? "-",
+        companyId: p.company_id,
+        companyName:
+          companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ??
+          "-",
+        isActive: true,
+      }));
 
-    const mappedPositions = posRes.data.map((p: any) => ({
-      id: p.id,
-      name: p.title_th ?? '-',
-      code: p.LEVEL ?? '-',
-      companyId: p.company_id,
-      companyName:
-        companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ?? '-',
-      isActive: true,
-    }));
-
-    setDepartments(mappedDepartments);
-    setPositions(mappedPositions);
-  } catch (err) {
-    console.error('Error loading organization data:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+      setDepartments(mappedDepartments);
+      setPositions(mappedPositions);
+    } catch (err) {
+      console.error("Error loading organization data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleOpenModal = () => {
-    setFormError('');
-    setDeptForm({ name: '', costCenter: '', companyId: 1 });
-    setPosForm({ title_th: '', level: '', companyId: 1 });
+    setFormError("");
+    setDeptForm({ name: "", costCenter: "", companyId: 1 });
+    setPosForm({ title_th: "", level: "", companyId: 1 });
     setShowModal(true);
   };
 
   const handleSave = async () => {
-    setFormError('');
+    setFormError("");
     setSaving(true);
     try {
-      if (selectedTab === 'departments') {
+      if (selectedTab === "departments") {
         if (!deptForm.name.trim()) {
-          setFormError('กรุณากรอกชื่อแผนก');
+          setFormError("กรุณากรอกชื่อแผนก");
           setSaving(false);
           return;
         }
         if (isEditMode && editingId) {
-  await organizationAPI.updateDepartment(editingId, {
-    NAME: deptForm.name,
-    cost_center: deptForm.costCenter,
-    company_id: deptForm.companyId,
-  });
-} else {
-  await organizationAPI.createDepartment({
-    NAME: deptForm.name,
-    cost_center: deptForm.costCenter,
-    company_id: deptForm.companyId,
-  });
-}
+          await organizationAPI.updateDepartment(editingId, {
+            NAME: deptForm.name,
+            cost_center: deptForm.costCenter,
+            company_id: deptForm.companyId,
+          });
+        } else {
+          await organizationAPI.createDepartment({
+            NAME: deptForm.name,
+            cost_center: deptForm.costCenter,
+            company_id: deptForm.companyId,
+          });
+        }
       } else {
         if (!posForm.title_th.trim()) {
-          setFormError('กรุณากรอกชื่อตำแหน่ง');
+          setFormError("กรุณากรอกชื่อตำแหน่ง");
           setSaving(false);
           return;
         }
-        
-         if (isEditMode && editingId) {
-    // ✅ UPDATE
-    await organizationAPI.updatePosition(editingId, {
-      title_th: posForm.title_th,
-      LEVEL: posForm.level,
-      company_id: posForm.companyId,
-    });
-  } else {
-    // ✅ CREATE
-    await organizationAPI.createPosition({
-      title_th: posForm.title_th,
-      LEVEL: posForm.level,
-      company_id: posForm.companyId,
-    });
-  }
-}
-       
+
+        if (isEditMode && editingId) {
+          // ✅ UPDATE
+          await organizationAPI.updatePosition(editingId, {
+            title_th: posForm.title_th,
+            LEVEL: posForm.level,
+            company_id: posForm.companyId,
+          });
+        } else {
+          // ✅ CREATE
+          await organizationAPI.createPosition({
+            title_th: posForm.title_th,
+            LEVEL: posForm.level,
+            company_id: posForm.companyId,
+          });
+        }
+      }
+
       setIsEditMode(false);
-setEditingId(null);
+      setEditingId(null);
 
       setShowModal(false);
       await loadData(); // reload ข้อมูลใหม่
     } catch (err: any) {
-      setFormError(err.response?.data?.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่');
+      setFormError(
+        err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      );
     } finally {
       setSaving(false);
     }
@@ -143,81 +153,105 @@ setEditingId(null);
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
-          <p className="text-slate-600 font-medium">Loading organization structure...</p>
+          <Loader
+            className="animate-spin text-blue-600 mx-auto mb-4"
+            size={40}
+          />
+          <p className="text-slate-600 font-medium">
+            Loading organization structure...
+          </p>
         </div>
       </div>
     );
   }
-const handleDeleteDepartment = async (id: number) => {
-  if (!confirm('ยืนยันการลบแผนกนี้ ?')) return;
-  try {
-    await organizationAPI.deleteDepartment(id);
-    await loadData();
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
-};
+  const handleDeleteDepartment = async (id: number) => {
+    if (!confirm("ยืนยันการลบแผนกนี้ ?")) return;
+    try {
+      await organizationAPI.deleteDepartment(id);
+      await loadData();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
-const handleEditDepartment = (dept: Department) => {
-  setDeptForm({
-    name: dept.name,
-    costCenter: dept.costCenterCode || '',
-    companyId: dept.companyId,
-  });
-  setSelectedTab('departments');
-  setShowModal(true);
-};
+  const handleEditDepartment = (dept: Department) => {
+    setDeptForm({
+      name: dept.name,
+      costCenter: dept.costCenterCode || "",
+      companyId: dept.companyId,
+    });
+    setSelectedTab("departments");
+    setShowModal(true);
+  };
 
+  const handleDeletePosition = async (id: number) => {
+    if (!confirm("ยืนยันการลบตำแหน่งนี้ ?")) return;
+    try {
+      await organizationAPI.deletePosition(id);
+      await loadData();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
 
-const handleDeletePosition = async (id: number) => {
-  if (!confirm('ยืนยันการลบตำแหน่งนี้ ?')) return;
-  try {
-    await organizationAPI.deletePosition(id);
-    await loadData();
-  } catch (err) {
-    console.error("Delete failed:", err);
-  }
-};
-
-const handleEditPosition = (pos: Position) => {
-  setPosForm({
-    title_th: pos.name,
-    level: pos.code || '',
-    companyId: pos.companyId,
-  });
-  setSelectedTab('positions');
-  setIsEditMode(true);        // ✅ ควรใส่
-  setEditingId(pos.id);  
-  setShowModal(true);
-};
+  const handleEditPosition = (pos: Position) => {
+    setPosForm({
+      title_th: pos.name,
+      level: pos.code || "",
+      companyId: pos.companyId,
+    });
+    setSelectedTab("positions");
+    setIsEditMode(true); // ✅ ควรใส่
+    setEditingId(pos.id);
+    setShowModal(true);
+  };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">🏢 Organization Structure</h1>
-          <p className="text-slate-600 mt-1">Manage departments and positions</p>
+          <h1 className="text-3xl font-bold text-slate-900">
+            🏢 Organization Structure
+          </h1>
+          <p className="text-slate-600 mt-1">
+            Manage departments and positions
+          </p>
         </div>
         <button
           onClick={handleOpenModal}
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium"
         >
           <Plus size={20} />
-          Add New {selectedTab === 'departments' ? 'Department' : 'Position'}
+          Add New {selectedTab === "departments" ? "Department" : "Position"}
         </button>
       </div>
 
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex border-b border-slate-200">
+          {/* companies */}
           <button
-            onClick={() => setSelectedTab('departments')}
+            onClick={() => setSelectedTab("company")}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              selectedTab === 'departments'
-                ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              selectedTab === "company"
+                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <Users size={20} />
+            Organization
+            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
+              {positions.length}
+            </span>
+          </button>
+          {/* departments */}
+          <button
+            onClick={() => setSelectedTab("departments")}
+            className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
+              selectedTab === "departments"
+                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
             <Briefcase size={20} />
@@ -226,12 +260,13 @@ const handleEditPosition = (pos: Position) => {
               {departments.length}
             </span>
           </button>
+          {/* positions */}
           <button
-            onClick={() => setSelectedTab('positions')}
+            onClick={() => setSelectedTab("positions")}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              selectedTab === 'positions'
-                ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              selectedTab === "positions"
+                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
           >
             <Users size={20} />
@@ -242,14 +277,82 @@ const handleEditPosition = (pos: Position) => {
           </button>
         </div>
 
+        {/* Companies Tab */}
+        {/* {selectedTab === "company" && (
+          <div className="p-6">
+            {companies.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="mx-auto text-slate-300 mb-3" size={48} />
+                <p className="text-slate-600 font-medium">
+                  No companies found
+                </p>
+                <p className="text-slate-500 text-sm mt-1">
+                  Create your first company to get started
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {companies.map((company) => (
+                  <div
+                    key={company.id}
+                    className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-300 group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
+                          {company.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-slate-900">
+                            {company.name}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {company.headCount} members
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => handleEditCompany(company)}
+                          className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCompany(company.id)}
+                          className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="pt-3 border-t border-slate-200">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-500">Cost Center</span>
+                        <span className="font-mono text-slate-700 font-semibold">
+                          {dept.costCenterCode || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )} */}
+
         {/* Departments Tab */}
-        {selectedTab === 'departments' && (
+        {selectedTab === "departments" && (
           <div className="p-6">
             {departments.length === 0 ? (
               <div className="text-center py-12">
                 <Briefcase className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-600 font-medium">No departments found</p>
-                <p className="text-slate-500 text-sm mt-1">Create your first department to get started</p>
+                <p className="text-slate-600 font-medium">
+                  No departments found
+                </p>
+                <p className="text-slate-500 text-sm mt-1">
+                  Create your first department to get started
+                </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -264,15 +367,25 @@ const handleEditPosition = (pos: Position) => {
                           {dept.name.charAt(0)}
                         </div>
                         <div>
-                          <h3 className="font-bold text-slate-900">{dept.name}</h3>
-                          <p className="text-xs text-slate-500">{dept.headCount} members</p>
+                          <h3 className="font-bold text-slate-900">
+                            {dept.name}
+                          </h3>
+                          <p className="text-xs text-slate-500">
+                            {dept.headCount} members
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleEditDepartment(dept)} className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
+                        <button
+                          onClick={() => handleEditDepartment(dept)}
+                          className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                        >
                           <Edit2 size={16} />
                         </button>
-                        <button onClick={() => handleDeleteDepartment(dept.id)} className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
+                        <button
+                          onClick={() => handleDeleteDepartment(dept.id)}
+                          className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -281,7 +394,7 @@ const handleEditPosition = (pos: Position) => {
                       <div className="flex items-center justify-between text-xs">
                         <span className="text-slate-500">Cost Center</span>
                         <span className="font-mono text-slate-700 font-semibold">
-                          {dept.costCenterCode || '-'}
+                          {dept.costCenterCode || "-"}
                         </span>
                       </div>
                     </div>
@@ -293,24 +406,36 @@ const handleEditPosition = (pos: Position) => {
         )}
 
         {/* Positions Tab */}
-        {selectedTab === 'positions' && (
+        {selectedTab === "positions" && (
           <div className="p-6">
             {positions.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="mx-auto text-slate-300 mb-3" size={48} />
                 <p className="text-slate-600 font-medium">No positions found</p>
-                <p className="text-slate-500 text-sm mt-1">Create your first position to get started</p>
+                <p className="text-slate-500 text-sm mt-1">
+                  Create your first position to get started
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Position Name</th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Level</th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Company</th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">Status</th>
-                      <th className="text-center py-4 px-6 font-semibold text-slate-700">Actions</th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Position Name
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Level
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Company
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Status
+                      </th>
+                      <th className="text-center py-4 px-6 font-semibold text-slate-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -320,7 +445,9 @@ const handleEditPosition = (pos: Position) => {
                         className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
                       >
                         <td className="py-4 px-6">
-                          <p className="font-semibold text-slate-900">{pos.name}</p>
+                          <p className="font-semibold text-slate-900">
+                            {pos.name}
+                          </p>
                         </td>
                         <td className="py-4 px-6">
                           <span className="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
@@ -333,18 +460,28 @@ const handleEditPosition = (pos: Position) => {
                           </span>
                         </td>
                         <td className="py-4 px-6">
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            pos.isActive ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-700'
-                          }`}>
-                            {pos.isActive ? '✓ Active' : 'Inactive'}
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-bold ${
+                              pos.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-slate-100 text-slate-700"
+                            }`}
+                          >
+                            {pos.isActive ? "✓ Active" : "Inactive"}
                           </span>
                         </td>
                         <td className="py-4 px-6 text-center">
                           <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => handleEditPosition(pos)} className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
+                            <button
+                              onClick={() => handleEditPosition(pos)}
+                              className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                            >
                               <Edit2 size={16} />
                             </button>
-                            <button onClick={() => handleDeletePosition(pos.id)} className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
+                            <button
+                              onClick={() => handleDeletePosition(pos.id)}
+                              className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
+                            >
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -363,12 +500,18 @@ const handleEditPosition = (pos: Position) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
           <h3 className="font-bold text-blue-900 mb-3">📊 Departments</h3>
-          <p className="text-4xl font-bold text-blue-900">{departments.length}</p>
-          <p className="text-sm text-blue-700 mt-2">Total organizational units</p>
+          <p className="text-4xl font-bold text-blue-900">
+            {departments.length}
+          </p>
+          <p className="text-sm text-blue-700 mt-2">
+            Total organizational units
+          </p>
         </div>
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
           <h3 className="font-bold text-purple-900 mb-3">👔 Positions</h3>
-          <p className="text-4xl font-bold text-purple-900">{positions.length}</p>
+          <p className="text-4xl font-bold text-purple-900">
+            {positions.length}
+          </p>
           <p className="text-sm text-purple-700 mt-2">Total job positions</p>
         </div>
       </div>
@@ -387,13 +530,15 @@ const handleEditPosition = (pos: Position) => {
             {/* Modal Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
               <div className="flex items-center gap-3">
-                {selectedTab === 'departments' ? (
+                {selectedTab === "departments" ? (
                   <Briefcase size={20} className="text-blue-600" />
                 ) : (
                   <Users size={20} className="text-blue-600" />
                 )}
                 <h3 className="text-lg font-bold text-slate-900">
-                  {selectedTab === 'departments' ? 'เพิ่มแผนกใหม่' : 'เพิ่มตำแหน่งใหม่'}
+                  {selectedTab === "departments"
+                    ? "เพิ่มแผนกใหม่"
+                    : "เพิ่มตำแหน่งใหม่"}
                 </h3>
               </div>
               <button
@@ -412,7 +557,7 @@ const handleEditPosition = (pos: Position) => {
                 </div>
               )}
 
-              {selectedTab === 'departments' ? (
+              {selectedTab === "departments" ? (
                 <>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -421,7 +566,9 @@ const handleEditPosition = (pos: Position) => {
                     <input
                       type="text"
                       value={deptForm.name}
-                      onChange={e => setDeptForm({ ...deptForm, name: e.target.value })}
+                      onChange={(e) =>
+                        setDeptForm({ ...deptForm, name: e.target.value })
+                      }
                       placeholder="เช่น ฝ่ายบุคคล"
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
@@ -433,7 +580,9 @@ const handleEditPosition = (pos: Position) => {
                     <input
                       type="text"
                       value={deptForm.costCenter}
-                      onChange={e => setDeptForm({ ...deptForm, costCenter: e.target.value })}
+                      onChange={(e) =>
+                        setDeptForm({ ...deptForm, costCenter: e.target.value })
+                      }
                       placeholder="เช่น CC001"
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
@@ -444,14 +593,19 @@ const handleEditPosition = (pos: Position) => {
                     </label>
                     <select
                       value={deptForm.companyId}
-                      onChange={e => setDeptForm({ ...deptForm, companyId: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setDeptForm({
+                          ...deptForm,
+                          companyId: Number(e.target.value),
+                        })
+                      }
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
-                      {companies.map(c => (
-  <option key={c.company_id} value={c.company_id}>
-    {c.name_th}
-  </option>
-))}
+                      {companies.map((c) => (
+                        <option key={c.company_id} value={c.company_id}>
+                          {c.name_th}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </>
@@ -464,7 +618,9 @@ const handleEditPosition = (pos: Position) => {
                     <input
                       type="text"
                       value={posForm.title_th}
-                      onChange={e => setPosForm({ ...posForm, title_th: e.target.value })}
+                      onChange={(e) =>
+                        setPosForm({ ...posForm, title_th: e.target.value })
+                      }
                       placeholder="เช่น ผู้จัดการ"
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
@@ -476,7 +632,9 @@ const handleEditPosition = (pos: Position) => {
                     <input
                       type="number"
                       value={posForm.level}
-                      onChange={e => setPosForm({ ...posForm, level: e.target.value })}
+                      onChange={(e) =>
+                        setPosForm({ ...posForm, level: e.target.value })
+                      }
                       placeholder="เช่น 1, 2, 3"
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
@@ -487,14 +645,19 @@ const handleEditPosition = (pos: Position) => {
                     </label>
                     <select
                       value={posForm.companyId}
-                      onChange={e => setPosForm({ ...posForm, companyId: Number(e.target.value) })}
+                      onChange={(e) =>
+                        setPosForm({
+                          ...posForm,
+                          companyId: Number(e.target.value),
+                        })
+                      }
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
-                      {companies.map(c => (
-  <option key={c.company_id} value={c.company_id}>
-    {c.name_th}
-  </option>
-))}
+                      {companies.map((c) => (
+                        <option key={c.company_id} value={c.company_id}>
+                          {c.name_th}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </>
@@ -519,7 +682,7 @@ const handleEditPosition = (pos: Position) => {
                 ) : (
                   <Plus size={16} />
                 )}
-                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+                {saving ? "กำลังบันทึก..." : "บันทึก"}
               </button>
             </div>
           </div>
