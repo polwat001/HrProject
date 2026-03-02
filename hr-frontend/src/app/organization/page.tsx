@@ -12,12 +12,30 @@ export default function OrganizationPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<any[]>([]);
-  const [selectedTab, setSelectedTab] = useState<"departments" | "positions">(
-    "departments",
-  );
+  const [selectedTab, setSelectedTab] = useState<
+    "departments" | "positions" | "companies" | "levels"
+  >("departments");
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+
+  const mockLevel = [
+    {
+      id: 1,
+      level: "s1",
+      level_title: "staff",
+    },
+    {
+      id: 2,
+      level: "h1",
+      level_title: "HR",
+    },
+    {
+      id: 3,
+      level: "m1",
+      level_title: "Manager",
+    },
+  ];
 
   // Department form
   const [deptForm, setDeptForm] = useState({
@@ -33,6 +51,9 @@ export default function OrganizationPage() {
     companyId: 1,
   });
 
+  const [companyForm, setCompanyForm] = useState({
+    name_th: "",
+  });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -45,21 +66,23 @@ export default function OrganizationPage() {
       setLoading(true);
 
       const [depRes, posRes, companyRes] = await Promise.all([
-        organizationAPI.getDepartments(currentCompanyId ?? undefined),
+        organizationAPI.getDepartments(),
         organizationAPI.getPositions(),
         organizationAPI.getCompanies(), // 👈 เพิ่มตรงนี้
       ]);
 
       setCompanies(companyRes.data); // 👈 เก็บ companies จริงจาก DB
 
-      const mappedDepartments = depRes.data.map((d: any) => ({
-        id: d.id,
-        name: d.NAME ?? "-",
-        headCount: 0,
-        costCenterCode: d.cost_center ?? "-",
-        companyId: d.company_id,
-        parentDeptId: d.parent_dept_id,
-      }));
+      const mappedDepartments: Department[] = depRes.data.map(
+        (dept: DepartmentAPI) => ({
+          id: dept.id,
+          name: dept.NAME,
+          companyId: dept.company_id,
+          parentId: dept.parent_dept_id ?? undefined,
+          costCenterCode: dept.cost_center ?? undefined,
+          headCount: 0, // ถ้ายังไม่มีจาก API
+        }),
+      );
 
       const mappedPositions = posRes.data.map((p: any) => ({
         id: p.id,
@@ -80,18 +103,91 @@ export default function OrganizationPage() {
       setLoading(false);
     }
   };
-
-  const handleOpenModal = () => {
-    setFormError("");
-    setDeptForm({ name: "", costCenter: "", companyId: 1 });
-    setPosForm({ title_th: "", level: "", companyId: 1 });
+  const handleEditCompany = (company: any) => {
+    setCompanyForm({
+      name_th: company.name_th,
+    });
+    setSelectedTab("companies");
+    setIsEditMode(true);
+    setEditingId(company.id);
     setShowModal(true);
   };
+
+  const handleDeleteCompany = async (id: number) => {
+    if (!confirm("ยืนยันการลบบริษัทนี้ ?")) return;
+    try {
+      await organizationAPI.deleteCompany(id);
+      await loadData();
+    } catch (err) {
+      console.error("Delete failed:", err);
+    }
+  };
+
+  const tabConfig = {
+    companies: { label: "Company" },
+    departments: { label: "Department" },
+    positions: { label: "Position" },
+    levels: { label: "Level" },
+  };
+
+  const currentTab = tabConfig[selectedTab];
+
+  const handleOpenModal = () => {
+  setIsEditMode(false);
+
+  if (selectedTab === "companies") {
+    setCompanyForm({ name_th: "" });
+  }
+
+  if (selectedTab === "departments") {
+    setDepartmentForm({
+      name: "",
+      companyId: 0,
+      parentId: undefined,
+      costCenterCode: "",
+    });
+  }
+
+  if (selectedTab === "positions") {
+    setPositionForm({
+      name: "",
+      code: "",
+      companyId: 0,
+      isActive: true,
+    });
+  }
+
+  if (selectedTab === "levels") {
+    setLevelForm({
+      level: "",
+      level_title: "",
+    });
+  }
+
+  setShowModal(true);
+};
 
   const handleSave = async () => {
     setFormError("");
     setSaving(true);
     try {
+      if (selectedTab === "companies") {
+        if (!companyForm.name_th.trim()) {
+          setFormError("กรุณากรอกชื่อบริษัท");
+          setSaving(false);
+          return;
+        }
+
+        if (isEditMode && editingId) {
+          await organizationAPI.updateCompany(editingId, {
+            name_th: companyForm.name_th,
+          });
+        } else {
+          await organizationAPI.createCompany({
+            name_th: companyForm.name_th,
+          });
+        }
+      }
       if (selectedTab === "departments") {
         if (!deptForm.name.trim()) {
           setFormError("กรุณากรอกชื่อแผนก");
@@ -223,7 +319,7 @@ export default function OrganizationPage() {
           className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium"
         >
           <Plus size={20} />
-          Add New {selectedTab === "departments" ? "Department" : "Position"}
+          Add New {currentTab.label}
         </button>
       </div>
 
@@ -232,9 +328,9 @@ export default function OrganizationPage() {
         <div className="flex border-b border-slate-200">
           {/* companies */}
           <button
-            onClick={() => setSelectedTab("company")}
+            onClick={() => setSelectedTab("companies")}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              selectedTab === "company"
+              selectedTab === "companies"
                 ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
             }`}
@@ -242,7 +338,7 @@ export default function OrganizationPage() {
             <Users size={20} />
             Organization
             <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
-              {positions.length}
+              {companies.length}
             </span>
           </button>
           {/* departments */}
@@ -275,71 +371,70 @@ export default function OrganizationPage() {
               {positions.length}
             </span>
           </button>
+          {/* Level */}
+          <button
+            onClick={() => setSelectedTab("levels")}
+            className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
+              selectedTab === "levels"
+                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
+                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+            }`}
+          >
+            <Users size={20} />
+            LEVEL
+            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
+              {mockLevel.length}
+            </span>
+          </button>
         </div>
 
         {/* Companies Tab */}
-        {/* {selectedTab === "company" && (
+        {selectedTab === "companies" && (
           <div className="p-6">
             {companies.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-600 font-medium">
-                  No companies found
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Create your first company to get started
-                </p>
+                <p className="text-slate-600 font-medium">No companies found</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {companies.map((company) => (
-                  <div
-                    key={company.id}
-                    className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-300 group"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {company.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900">
-                            {company.name}
-                          </h3>
-                          <p className="text-xs text-slate-500">
-                            {company.headCount} members
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditCompany(company)}
-                          className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCompany(company.id)}
-                          className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Cost Center</span>
-                        <span className="font-mono text-slate-700 font-semibold">
-                          {dept.costCenterCode || "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-slate-200">
+                      <th className="text-left py-3 px-4">ID</th>
+                      <th className="text-left py-3 px-4">Company Name</th>
+                      <th className="text-center py-3 px-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {companies.map((company) => (
+                      <tr key={company.id} className="border-b">
+                        <td className="py-3 px-4">{company.id}</td>
+                        <td className="py-3 px-4 font-semibold">
+                          {company.name_th}
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <button
+                            onClick={() => handleEditCompany(company)}
+                            className="mr-2 text-blue-600"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCompany(company.id)}
+                            className="text-red-600"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-        )} */}
+        )}
 
         {/* Departments Tab */}
         {selectedTab === "departments" && (
@@ -355,51 +450,69 @@ export default function OrganizationPage() {
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {departments.map((dept) => (
-                  <div
-                    key={dept.id}
-                    className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-300 group"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold">
-                          {dept.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-slate-900">
-                            {dept.name}
-                          </h3>
-                          <p className="text-xs text-slate-500">
-                            {dept.headCount} members
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => handleEditDepartment(dept)}
-                          className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteDepartment(dept.id)}
-                          className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="pt-3 border-t border-slate-200">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Cost Center</span>
-                        <span className="font-mono text-slate-700 font-semibold">
-                          {dept.costCenterCode || "-"}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Department Name
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Cost Center
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Company
+                      </th>
+                      <th className="text-center py-4 px-6 font-semibold text-slate-700">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-200">
+                    {departments.map((dept) => (
+                      <tr
+                        key={dept.id}
+                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
+                      >
+                        <td className="py-4 px-6 font-semibold text-slate-900">
+                          {dept.name}
+                        </td>
+
+                        <td className="py-4 px-6">
+                          <span className="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                            {dept.costCenterCode || "-"}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-6">
+                          <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                            {companies.find((c) => c.id === dept.companyId)
+                              ?.name_th || "-"}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-6 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => handleEditDepartment(dept)}
+                              className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteDepartment(dept.id)}
+                              className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
@@ -494,25 +607,81 @@ export default function OrganizationPage() {
             )}
           </div>
         )}
+
+        {/* LEVEL TAB */}
+        {selectedTab === "levels" && (
+          <div className="p-6">
+            {mockLevel.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="mx-auto text-slate-300 mb-3" size={48} />
+                <p className="text-slate-600 font-medium">No levels found</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        ID
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Level Code
+                      </th>
+                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                        Level Title
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-slate-200">
+                    {mockLevel.map((level) => (
+                      <tr
+                        key={level.id}
+                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
+                      >
+                        <td className="py-4 px-6 font-semibold text-slate-900">
+                          {level.id}
+                        </td>
+
+                        <td className="py-4 px-6">
+                          <span className="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
+                            {level.level}
+                          </span>
+                        </td>
+
+                        <td className="py-4 px-6">{level.level_title}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+          <h3 className="font-bold text-blue-900 mb-3">📊 Organization</h3>
+          <p className="text-4xl font-bold text-blue-900">{companies.length}</p>
+          <p className="text-sm text-blue-700 mt-2">
+            Total organizational units
+          </p>
+        </div>
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
           <h3 className="font-bold text-blue-900 mb-3">📊 Departments</h3>
           <p className="text-4xl font-bold text-blue-900">
             {departments.length}
           </p>
-          <p className="text-sm text-blue-700 mt-2">
-            Total organizational units
-          </p>
+          <p className="text-sm text-blue-700 mt-2">Total Department units</p>
         </div>
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
           <h3 className="font-bold text-purple-900 mb-3">👔 Positions</h3>
           <p className="text-4xl font-bold text-purple-900">
             {positions.length}
           </p>
-          <p className="text-sm text-purple-700 mt-2">Total job positions</p>
+          <p className="text-sm text-purple-700 mt-2">Total positions</p>
         </div>
       </div>
 
@@ -556,8 +725,21 @@ export default function OrganizationPage() {
                   {formError}
                 </div>
               )}
-
-              {selectedTab === "departments" ? (
+              {selectedTab === "companies" ? (
+                <div>
+                  <label className="block text-sm font-semibold mb-1">
+                    ชื่อบริษัท <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyForm.name_th}
+                    onChange={(e) =>
+                      setCompanyForm({ name_th: e.target.value })
+                    }
+                    className="w-full border rounded-lg px-4 py-2"
+                  />
+                </div>
+              ) : selectedTab === "departments" ? (
                 <>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">

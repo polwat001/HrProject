@@ -60,6 +60,14 @@ export interface Department {
   headCount: number;
 }
 
+export interface DepartmentAPI {
+  id: number;
+  company_id: number;
+  NAME: string;
+  parent_dept_id: number | null;
+  cost_center: string | null;
+}
+
 export interface Position {
   id: number;
   code: string;
