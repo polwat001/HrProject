@@ -1,22 +1,42 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useAppStore } from '@/store/useAppStore';
+import React, { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAppStore } from "@/store/useAppStore";
 import {
-  LayoutDashboard, Users, Building2, LogOut, Menu, X,
-  Clock, FileText, Calendar, BarChart3, Settings,
-  ChevronDown, User, Bell, HelpCircle, Sparkles
-} from 'lucide-react';
-import { authAPI } from '@/services/api';
+  LayoutDashboard,
+  Users,
+  Building2,
+  LogOut,
+  Menu,
+  X,
+  Clock,
+  FileText,
+  Calendar,
+  BarChart3,
+  Settings,
+  ChevronDown,
+  User,
+  Bell,
+  HelpCircle,
+  Sparkles,
+  Wallet,
+  UserCircle,
+  Shield,
+} from "lucide-react";
+import { authAPI } from "@/services/api";
 
-export default function MainLayout({ children }: { children: React.ReactNode }) {
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  
+
   const {
     currentCompanyId,
     setCurrentCompanyId,
@@ -26,44 +46,49 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   } = useAppStore();
 
   const menuItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { name: 'Organization', path: '/organization', icon: Building2 },
-    { name: 'Employees', path: '/employees', icon: Users },
-    { name: 'Attendance & OT', path: '/attendance', icon: Clock },
-    { name: 'Leaves', path: '/leaves', icon: Calendar },
-    { name: 'Contracts', path: '/contracts', icon: FileText },
-    { name: 'Reports', path: '/reports', icon: BarChart3 },
-    { name: 'Settings', path: '/settings', icon: Settings },
+    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "Organization", path: "/organization", icon: Building2 },
+    { name: "Employees", path: "/employees", icon: Users },
+    { name: "Attendance & OT", path: "/attendance", icon: Clock },
+    { name: "Leaves", path: "/leaves", icon: Calendar },
+    { name: "Contracts", path: "/contracts", icon: FileText },
+    { name: "Payroll", path: "/payroll", icon: Wallet },
+    { name: "Reports", path: "/reports", icon: BarChart3 },
+    { name: "User & Permissions", path: "/settings", icon: Shield },
+    { name: "Self-Service", path: "/self-service", icon: UserCircle },
   ];
 
-  if (pathname === '/login') return <>{children}</>;
+  if (pathname === "/login") return <>{children}</>;
 
   const handleLogout = async () => {
     try {
       await authAPI.logout();
     } catch (err) {
-      console.error('Logout error:', err);
+      console.error("Logout error:", err);
     }
-    localStorage.removeItem('hr_token');
+    localStorage.removeItem("hr_token");
     logout();
-    router.push('/login');
+    router.push("/login");
   };
 
-  const showCompanySwitcher = user?.is_super_admin || availableCompanies.length > 1;
+  const showCompanySwitcher =
+    user?.is_super_admin || availableCompanies.length > 1;
 
   const getPageTitle = () => {
-    const path = pathname.split('/')[1];
+    const path = pathname.split("/")[1];
     const titleMap: Record<string, string> = {
-      dashboard: 'Dashboard',
-      organization: 'Organization Structure',
-      employees: 'Employee Management',
-      attendance: 'Attendance & OT',
-      leaves: 'Leave Management',
-      contracts: 'Contract Management',
-      reports: 'Reports Center',
-      settings: 'System Settings',
+      dashboard: "Dashboard",
+      organization: "Organization Structure",
+      employees: "Employee Management",
+      attendance: "Attendance & OT",
+      leaves: "Leave Management",
+      contracts: "Contract Management",
+      payroll: "Payroll System",
+      reports: "Reports Center",
+      settings: "System Settings",
+      self_service: "Employee Self-Service",
     };
-    return titleMap[path] || 'HR System';
+    return titleMap[path] || "HR System";
   };
 
   return (
@@ -71,7 +96,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       {/* Sidebar */}
       <aside
         className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
+          sidebarOpen ? "w-64" : "w-20"
         } bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col transition-all duration-300 shadow-2xl border-r border-slate-700 overflow-hidden`}
       >
         {/* Logo */}
@@ -82,7 +107,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           {sidebarOpen && (
             <div className="flex flex-col">
               <span className="text-lg font-bold tracking-wider">GROUP</span>
-              <span className="text-xs text-slate-400 font-medium">HR System</span>
+              <span className="text-xs text-slate-400 font-medium">
+                HR System
+              </span>
             </div>
           )}
         </div>
@@ -98,15 +125,20 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 href={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative ${
                   isActive
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                 }`}
                 title={!sidebarOpen ? item.name : undefined}
               >
-                <Icon size={20} className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-300'}`} />
+                <Icon
+                  size={20}
+                  className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
+                />
                 {sidebarOpen && (
                   <>
-                    <span className="text-sm font-medium flex-1 text-white">{item.name}</span>
+                    <span className="text-sm font-medium flex-1 text-white">
+                      {item.name}
+                    </span>
                   </>
                 )}
               </Link>
@@ -116,7 +148,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
         {/* Divider */}
         <div className="px-4 py-4 border-t border-slate-700/50">
-          <p className="text-xs text-slate-400 font-semibold px-2 mb-3">Connected Systems</p>
+          <p className="text-xs text-slate-400 font-semibold px-2 mb-3">
+            Connected Systems
+          </p>
           <div className="text-xs text-slate-400 space-y-2">
             <div className="flex items-center gap-2 px-2 py-1">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -150,9 +184,13 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
             <div className="flex flex-col">
-              <h2 className="text-2xl font-bold text-slate-900">{getPageTitle()}</h2>
+              <h2 className="text-2xl font-bold text-slate-900">
+                {getPageTitle()}
+              </h2>
               <p className="text-xs text-slate-500">
-                {currentCompanyId === null ? '🌐 All Companies (Consolidated)' : '🏢 Company View'}
+                {currentCompanyId === null
+                  ? "🌐 All Companies (Consolidated)"
+                  : "🏢 Company View"}
               </p>
             </div>
           </div>
@@ -161,15 +199,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             {/* Company Switcher */}
             {showCompanySwitcher && (
               <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">
-                <span className="text-sm text-slate-700 font-medium">Company:</span>
+                <span className="text-sm text-slate-700 font-medium">
+                  Company:
+                </span>
                 <select
-                  value={currentCompanyId ?? 'all'}
+                  value={currentCompanyId ?? "all"}
                   onChange={(e) =>
-                    setCurrentCompanyId(e.target.value === 'all' ? null : parseInt(e.target.value))
+                    setCurrentCompanyId(
+                      e.target.value === "all"
+                        ? null
+                        : parseInt(e.target.value),
+                    )
                   }
                   className="border-0 bg-transparent px-2 py-1 rounded outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm font-semibold text-slate-900"
                 >
-                  {user?.is_super_admin && <option value="all">🌐 All Companies</option>}
+                  {user?.is_super_admin && (
+                    <option value="all">🌐 All Companies</option>
+                  )}
                   {availableCompanies.map((c) => (
                     <option key={c.company_id} value={c.company_id}>
                       🏢 {c.name_th}
@@ -209,14 +255,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                   {user?.lastName?.charAt(0)}
                 </div>
                 <div className="hidden md:block">
-                  <p className="text-sm font-semibold text-slate-900 ">{user?.username}</p>
+                  <p className="text-sm font-semibold text-slate-900 ">
+                    {user?.username}
+                  </p>
                   <p className="text-xs text-slate-500">
-                    {user?.is_super_admin ? '👑 Super Admin' : '👤 User'}
+                    {user?.is_super_admin ? "👑 Super Admin" : "👤 User"}
                   </p>
                 </div>
                 <ChevronDown
                   size={16}
-                  className={`transition-transform duration-300 text-slate-600 ${userMenuOpen ? 'rotate-180' : ''}`}
+                  className={`transition-transform duration-300 text-slate-600 ${userMenuOpen ? "rotate-180" : ""}`}
                 />
               </button>
 
@@ -239,7 +287,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <div className="flex items-center gap-2">
                       <Sparkles size={14} className="text-blue-600" />
                       <span className="text-xs font-bold text-blue-600">
-                        {user?.is_super_admin ? 'SUPER ADMIN' : 'REGULAR USER'}
+                        {user?.is_super_admin ? "SUPER ADMIN" : "REGULAR USER"}
                       </span>
                     </div>
                   </div>

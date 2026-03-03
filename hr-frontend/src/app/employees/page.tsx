@@ -43,20 +43,29 @@ export default function EmployeesPage() {
         organizationAPI.getCompanies(),
       ]);
 
-      const mappedEmployees = empRes.data.map((emp: any) => ({
-        id: emp.id,
-        employee_code: emp.employee_code,
-        firstname_th: emp.firstname_th,
-        lastname_th: emp.lastname_th,
-        nickname: emp.nickname,
-        id_card_number: emp.id_card_number,
-        current_company_id: emp.current_company_id,
-        status: emp.STATUS?.toLowerCase(),
-        avatar_url: emp.avatar_url,
-      }));
+      const companiesData = coRes.data;
+
+      const mappedEmployees = empRes.data.map((emp: any) => {
+        const company = companiesData.find(
+          (c: any) => c.id === emp.current_company_id
+        );
+
+        return {
+          id: emp.id,
+          employee_code: emp.employee_code,
+          firstname_th: emp.firstname_th,
+          lastname_th: emp.lastname_th,
+          nickname: emp.nickname,
+          id_card_number: emp.id_card_number,
+          current_company_id: emp.current_company_id,
+          company_name: company?.name_th ?? '-',
+          status: emp.STATUS?.toLowerCase(),
+          avatar_url: emp.avatar_url,
+        };
+      });
 
       setEmployees(mappedEmployees);
-      setCompanies(coRes.data);
+      setCompanies(companiesData);
     } catch (err) {
       console.error('Error loading employees:', err);
     } finally {
@@ -219,7 +228,7 @@ export default function EmployeesPage() {
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
                         <MapPin size={14} />
-                        {emp.current_company_id}
+                        {emp.company_name}
                       </span>
                     </td>
 
