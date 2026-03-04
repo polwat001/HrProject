@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { dashboardAPI } from '@/services/api';
 import {
   Users,
   TrendingUp,
@@ -13,60 +12,85 @@ import {
   ArrowDownRight,
 } from 'lucide-react';
 
-interface DashboardData {
-  stats: any;
-  headcountByCompany: any[];
-  headcountByDepartment: any[];
-  contractExpiring: any[];
-  attendanceStats: any;
-  otCostSummary: any[];
-}
+// ✅ Import mockdata จาก @/data
+import {
+  employees,
+  headcountByCompany,
+  headcountByDepartment,
+  contractExpiring,
+  attendanceData,
+  otCostData,
+} from '@/data/mockData'; // ปรับ path ให้ตรงกับโปรเจกต์
 
 export default function DashboardPage() {
   const { currentCompanyId, user } = useAppStore();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<DashboardData | null>(null);
+
+  // ✅ คำนวณ stats จาก mockdata
+  const filteredEmployees =
+    currentCompanyId === null
+      ? employees
+      : employees.filter((e) => e.companyId === currentCompanyId);
+
+  const stats = {
+    totalHeadcount: filteredEmployees.length,
+    activeEmployees: filteredEmployees.filter((e) => e.status === 'active').length,
+    newJoiners: filteredEmployees.filter((e) => {
+      const hireDate = new Date(e.hireDate);
+      const now = new Date();
+      return (
+        hireDate.getMonth() === now.getMonth() &&
+        hireDate.getFullYear() === now.getFullYear()
+      );
+    }).length,
+    resignedThisMonth: 0,
+  };
+
+  // ✅ attendance จาก attendanceData (mock)
+  const attendanceStats = {
+    present: attendanceData.find((a) => a.name === 'มาทำงาน')?.value ?? 0,
+    absent: attendanceData.find((a) => a.name === 'ขาด')?.value ?? 0,
+    late: attendanceData.find((a) => a.name === 'สาย')?.value ?? 0,
+    onLeave: attendanceData.find((a) => a.name === 'ลา')?.value ?? 0,
+  };
+
+  // ✅ headcount by company
+  const headcountByCompanyData = headcountByCompany.map((item) => ({
+    companyId: item.companyId,
+    companyName: item.company,
+    count: item.count,
+  }));
+
+  // ✅ headcount by department — กรองตาม currentCompanyId
+  const headcountByDepartmentData =
+    currentCompanyId && headcountByDepartment[currentCompanyId as keyof typeof headcountByDepartment]
+      ? headcountByDepartment[currentCompanyId as keyof typeof headcountByDepartment].map((item) => ({
+          departmentId: item.department,
+          departmentName: item.department,
+          count: item.count,
+        }))
+      : [];
+
+  // ✅ OT cost summary จาก otCostData
+  const otCostSummary = otCostData.map((item) => ({
+    month: item.month,
+    totalCost: item.amount,
+    totalHours: Math.round(item.amount / 150), // สมมติค่าแรง OT 150/ชม
+  }));
+
+  // ✅ Contract expiring — map field ให้ตรง
+  const contractExpiringData = contractExpiring.map((c) => ({
+    employeeName: c.name,
+    companyName: c.company,
+    endDate: c.expireDate,
+    daysRemaining: c.daysLeft,
+  }));
 
   useEffect(() => {
-    loadDashboardData();
+    // simulate loading
+    const timer = setTimeout(() => setLoading(false), 300);
+    return () => clearTimeout(timer);
   }, [currentCompanyId]);
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      const [
-        statsRes,
-        headcountCoRes,
-        attendanceRes,
-        contractRes,
-        otRes,
-      ] = await Promise.all([
-        dashboardAPI.getStats(currentCompanyId ?? undefined),
-        dashboardAPI.getHeadcountByCompany(),
-        dashboardAPI.getAttendanceStats(),
-        dashboardAPI.getContractExpiring(),
-        dashboardAPI.getOTCostSummary(),
-      ]);
-
-      const headcountDepRes =
-        currentCompanyId
-          ? await dashboardAPI.getHeadcountByDepartment(currentCompanyId)
-          : Promise.resolve({ data: [] });
-
-      setData({
-        stats: statsRes.data,
-        headcountByCompany: headcountCoRes.data,
-        headcountByDepartment: (await headcountDepRes).data || [],
-        contractExpiring: contractRes.data,
-        attendanceStats: attendanceRes.data,
-        otCostSummary: otRes.data,
-      });
-    } catch (err) {
-      console.error('Error loading dashboard data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -84,7 +108,9 @@ export default function DashboardPage() {
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Welcome back, {user?.firstName}! 👋</h1>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Welcome back, {user?.firstName}! 👋
+          </h1>
           <p className="text-slate-600">Here's your HR performance overview for today</p>
         </div>
         <div className="text-right">
@@ -96,7 +122,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Headcount"
-          value={data?.stats?.totalHeadcount || 0}
+          value={stats.totalHeadcount}
           prevValue={145}
           icon={Users}
           trend="up"
@@ -104,7 +130,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Active Employees"
-          value={data?.stats?.activeEmployees || 0}
+          value={stats.activeEmployees}
           prevValue={120}
           icon={Briefcase}
           trend="up"
@@ -112,7 +138,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Present Today"
-          value={data?.attendanceStats?.present || 0}
+          value={attendanceStats.present}
           prevValue={125}
           icon={Users}
           trend="down"
@@ -120,7 +146,7 @@ export default function DashboardPage() {
         />
         <StatCard
           title="On Leave"
-          value={data?.attendanceStats?.onLeave || 0}
+          value={attendanceStats.onLeave}
           prevValue={8}
           icon={AlertTriangle}
           trend="up"
@@ -130,7 +156,7 @@ export default function DashboardPage() {
 
       {/* Main Grid - Charts and Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - 2 Charts */}
+        {/* Left Column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Headcount Chart */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
@@ -149,18 +175,16 @@ export default function DashboardPage() {
 
             {currentCompanyId === null ? (
               <div className="space-y-4">
-                {data?.headcountByCompany?.map((item) => (
-                  <div key={item.companyId || item.id} className="group">
+                {headcountByCompanyData.map((item) => (
+                  <div key={item.companyId} className="group">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-slate-700">{item.companyName}</span>
                       <span className="text-sm font-bold text-slate-900">{item.count} employees</span>
                     </div>
                     <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 group-hover:shadow-lg"
-                        style={{
-                          width: `${Math.min((item.count / 150) * 100, 100)}%`,
-                        }}
+                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
+                        style={{ width: `${Math.min((item.count / 150) * 100, 100)}%` }}
                       />
                     </div>
                   </div>
@@ -168,22 +192,26 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {data?.headcountByDepartment?.map((item) => (
-                  <div key={item.departmentId || item.id} className="group">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-700">{item.departmentName}</span>
-                      <span className="text-sm font-bold text-slate-900">{item.count} employees</span>
+                {headcountByDepartmentData.length === 0 ? (
+                  <p className="text-slate-500 text-sm text-center py-6">
+                    No department data for this company
+                  </p>
+                ) : (
+                  headcountByDepartmentData.map((item) => (
+                    <div key={item.departmentId} className="group">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-slate-700">{item.departmentName}</span>
+                        <span className="text-sm font-bold text-slate-900">{item.count} employees</span>
+                      </div>
+                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
+                          style={{ width: `${Math.min((item.count / 20) * 100, 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500 group-hover:shadow-lg"
-                        style={{
-                          width: `${Math.min((item.count / 100) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -200,20 +228,20 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="space-y-3">
-              {data?.otCostSummary?.map((item) => (
+              {otCostSummary.map((item) => (
                 <div key={item.month} className="group">
                   <div className="flex items-end gap-4 mb-2">
                     <span className="w-16 text-sm font-medium text-slate-700">{item.month}</span>
                     <div className="flex-1 bg-slate-100 rounded-lg h-8 relative overflow-hidden">
                       <div
                         className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
-                        style={{
-                          width: `${Math.min((item.totalCost / 50000) * 100, 100)}%`,
-                        }}
+                        style={{ width: `${Math.min((item.totalCost / 250000) * 100, 100)}%` }}
                       />
                     </div>
                     <div className="text-right w-32">
-                      <p className="text-sm font-bold text-slate-900">฿{item.totalCost.toLocaleString()}</p>
+                      <p className="text-sm font-bold text-slate-900">
+                        ฿{item.totalCost.toLocaleString()}
+                      </p>
                       <p className="text-xs text-slate-500">{item.totalHours}h</p>
                     </div>
                   </div>
@@ -223,7 +251,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right Column - Attendance & Other Info */}
+        {/* Right Column */}
         <div className="space-y-6">
           {/* Attendance Status */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
@@ -231,40 +259,23 @@ export default function DashboardPage() {
               <h3 className="text-lg font-bold text-slate-900">Today's Attendance</h3>
               <p className="text-sm text-slate-500 mt-1">Live status</p>
             </div>
-
             <div className="space-y-3">
-              <AttendanceTag
-                label="Present"
-                count={data?.attendanceStats?.present || 0}
-                color="green"
-              />
-              <AttendanceTag
-                label="Absent"
-                count={data?.attendanceStats?.absent || 0}
-                color="red"
-              />
-              <AttendanceTag
-                label="Late"
-                count={data?.attendanceStats?.late || 0}
-                color="amber"
-              />
-              <AttendanceTag
-                label="On Leave"
-                count={data?.attendanceStats?.onLeave || 0}
-                color="blue"
-              />
+              <AttendanceTag label="Present" count={attendanceStats.present} color="green" />
+              <AttendanceTag label="Absent" count={attendanceStats.absent} color="red" />
+              <AttendanceTag label="Late" count={attendanceStats.late} color="amber" />
+              <AttendanceTag label="On Leave" count={attendanceStats.onLeave} color="blue" />
             </div>
-
             <div className="mt-6 pt-6 border-t border-slate-200">
               <div className="text-center">
                 <p className="text-sm text-slate-600">Attendance Rate</p>
                 <p className="text-3xl font-bold text-slate-900 mt-2">
-                  {Math.round(
-                    ((data?.attendanceStats?.present || 0) /
-                      ((data?.attendanceStats?.present || 0) +
-                        (data?.attendanceStats?.absent || 0))) *
-                      100
-                  )}
+                  {attendanceStats.present + attendanceStats.absent > 0
+                    ? Math.round(
+                        (attendanceStats.present /
+                          (attendanceStats.present + attendanceStats.absent)) *
+                          100,
+                      )
+                    : 0}
                   %
                 </p>
               </div>
@@ -277,15 +288,11 @@ export default function DashboardPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-800">New Joiners</span>
-                <span className="text-lg font-bold text-blue-900">
-                  {data?.stats?.newJoiners || 0}
-                </span>
+                <span className="text-lg font-bold text-blue-900">{stats.newJoiners}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-blue-800">Resigned</span>
-                <span className="text-lg font-bold text-blue-900">
-                  {data?.stats?.resignedThisMonth || 0}
-                </span>
+                <span className="text-lg font-bold text-blue-900">{stats.resignedThisMonth}</span>
               </div>
             </div>
           </div>
@@ -304,10 +311,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {data?.contractExpiring?.length === 0 ? (
+        {contractExpiringData.length === 0 ? (
           <div className="p-12 text-center">
             <Briefcase className="mx-auto text-slate-300 mb-3" size={48} />
-            <p className="text-slate-500 font-medium">No contracts expiring in the next 30 days</p>
+            <p className="text-slate-500 font-medium">
+              No contracts expiring in the next 30 days
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -321,14 +330,14 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
-                {data?.contractExpiring?.map((contract, idx) => (
+                {contractExpiringData.map((contract, idx) => (
                   <tr key={idx} className="hover:bg-slate-50 transition-colors">
                     <td className="py-4 px-6">
                       <p className="font-semibold text-slate-900">{contract.employeeName}</p>
                     </td>
                     <td className="py-4 px-6 text-slate-600">{contract.companyName}</td>
                     <td className="py-4 px-6 text-slate-600">
-                      {new Date(contract.endDate).toLocaleDateString()}
+                      {new Date(contract.endDate).toLocaleDateString('th-TH')}
                     </td>
                     <td className="py-4 px-6 text-center">
                       <span
@@ -370,7 +379,10 @@ function StatCard({
   trend: 'up' | 'down';
   color: 'blue' | 'green' | 'purple' | 'amber';
 }) {
-  const change = Math.abs(((value - prevValue) / prevValue) * 100).toFixed(1);
+  const change = prevValue > 0
+    ? Math.abs(((value - prevValue) / prevValue) * 100).toFixed(1)
+    : '0.0';
+
   const colorMap = {
     blue: 'from-blue-50 to-blue-100 text-blue-600',
     green: 'from-green-50 to-green-100 text-green-600',
@@ -389,7 +401,6 @@ function StatCard({
           <Icon size={24} />
         </div>
       </div>
-
       <div className="flex items-center gap-2 text-xs">
         <div className={`flex items-center gap-1 ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
           {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
@@ -418,7 +429,7 @@ function AttendanceTag({
   };
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 group hover:bg-slate-100 transition-colors">
+    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
       <span className="text-sm font-medium text-slate-700">{label}</span>
       <span className={`px-3 py-1 rounded-full text-sm font-bold ${colorMap[color]}`}>{count}</span>
     </div>

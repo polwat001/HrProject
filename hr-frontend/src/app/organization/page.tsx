@@ -6,6 +6,14 @@ import { useAppStore } from "@/store/useAppStore";
 import { Plus, Edit2, Trash2, Loader, Briefcase, Users, X } from "lucide-react";
 import type { Department, Position } from "@/types";
 
+interface DepartmentAPI {
+  id: number;
+  NAME: string;
+  company_id: number;
+  parent_dept_id?: number;
+  cost_center?: string;
+}
+
 export default function OrganizationPage() {
   const { currentCompanyId } = useAppStore();
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -19,23 +27,12 @@ export default function OrganizationPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  const mockLevel = [
-    {
-      id: 1,
-      level: "s1",
-      level_title: "staff",
-    },
-    {
-      id: 2,
-      level: "h1",
-      level_title: "HR",
-    },
-    {
-      id: 3,
-      level: "m1",
-      level_title: "Manager",
-    },
-  ];
+  // ✅ เปลี่ยน mockLevel เป็น useState เพื่อให้ add/edit/delete ได้
+  const [mockLevel, setMockLevel] = useState([
+    { id: 1, level: "s1", level_title: "staff" },
+    { id: 2, level: "h1", level_title: "HR" },
+    { id: 3, level: "m1", level_title: "Manager" },
+  ]);
 
   // Department form
   const [deptForm, setDeptForm] = useState({
@@ -51,9 +48,12 @@ export default function OrganizationPage() {
     companyId: 1,
   });
 
-  const [companyForm, setCompanyForm] = useState({
-    name_th: "",
-  });
+  // Company form
+  const [companyForm, setCompanyForm] = useState({ name_th: "" });
+
+  // ✅ Level form (เพิ่มใหม่)
+  const [levelForm, setLevelForm] = useState({ level: "", level_title: "" });
+
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
@@ -68,10 +68,10 @@ export default function OrganizationPage() {
       const [depRes, posRes, companyRes] = await Promise.all([
         organizationAPI.getDepartments(),
         organizationAPI.getPositions(),
-        organizationAPI.getCompanies(), // 👈 เพิ่มตรงนี้
+        organizationAPI.getCompanies(),
       ]);
 
-      setCompanies(companyRes.data); // 👈 เก็บ companies จริงจาก DB
+      setCompanies(companyRes.data);
 
       const mappedDepartments: Department[] = depRes.data.map(
         (dept: DepartmentAPI) => ({
@@ -80,7 +80,7 @@ export default function OrganizationPage() {
           companyId: dept.company_id,
           parentId: dept.parent_dept_id ?? undefined,
           costCenterCode: dept.cost_center ?? undefined,
-          headCount: 0, // ถ้ายังไม่มีจาก API
+          headCount: 0,
         }),
       );
 
@@ -90,8 +90,7 @@ export default function OrganizationPage() {
         code: p.LEVEL ?? "-",
         companyId: p.company_id,
         companyName:
-          companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ??
-          "-",
+          companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ?? "-",
         isActive: true,
       }));
 
@@ -103,13 +102,13 @@ export default function OrganizationPage() {
       setLoading(false);
     }
   };
+
   const handleEditCompany = (company: any) => {
-    setCompanyForm({
-      name_th: company.name_th,
-    });
+    setCompanyForm({ name_th: company.name_th });
     setSelectedTab("companies");
     setIsEditMode(true);
     setEditingId(company.id);
+    setFormError("");
     setShowModal(true);
   };
 
@@ -132,66 +131,45 @@ export default function OrganizationPage() {
 
   const currentTab = tabConfig[selectedTab];
 
+  // ✅ แก้ handleOpenModal — ใช้ state ที่มีอยู่จริงทุกตัว
   const handleOpenModal = () => {
-  setIsEditMode(false);
+    setIsEditMode(false);
+    setEditingId(null);
+    setFormError("");
 
-  if (selectedTab === "companies") {
-    setCompanyForm({ name_th: "" });
-  }
+    if (selectedTab === "companies") {
+      setCompanyForm({ name_th: "" });
+    } else if (selectedTab === "departments") {
+      setDeptForm({ name: "", costCenter: "", companyId: companies[0]?.id ?? 1 });
+    } else if (selectedTab === "positions") {
+      setPosForm({ title_th: "", level: "", companyId: companies[0]?.id ?? 1 });
+    } else if (selectedTab === "levels") {
+      setLevelForm({ level: "", level_title: "" });
+    }
 
-  if (selectedTab === "departments") {
-    setDepartmentForm({
-      name: "",
-      companyId: 0,
-      parentId: undefined,
-      costCenterCode: "",
-    });
-  }
+    setShowModal(true);
+  };
 
-  if (selectedTab === "positions") {
-    setPositionForm({
-      name: "",
-      code: "",
-      companyId: 0,
-      isActive: true,
-    });
-  }
-
-  if (selectedTab === "levels") {
-    setLevelForm({
-      level: "",
-      level_title: "",
-    });
-  }
-
-  setShowModal(true);
-};
-
+  // ✅ แก้ handleSave — แยก if/else if แต่ละ tab ไม่ปนกัน
   const handleSave = async () => {
     setFormError("");
     setSaving(true);
+
     try {
       if (selectedTab === "companies") {
         if (!companyForm.name_th.trim()) {
           setFormError("กรุณากรอกชื่อบริษัท");
-          setSaving(false);
           return;
         }
-
         if (isEditMode && editingId) {
-          await organizationAPI.updateCompany(editingId, {
-            name_th: companyForm.name_th,
-          });
+          await organizationAPI.updateCompany(editingId, { name_th: companyForm.name_th });
         } else {
-          await organizationAPI.createCompany({
-            name_th: companyForm.name_th,
-          });
+          await organizationAPI.createCompany({ name_th: companyForm.name_th });
         }
-      }
-      if (selectedTab === "departments") {
+
+      } else if (selectedTab === "departments") {
         if (!deptForm.name.trim()) {
           setFormError("กรุณากรอกชื่อแผนก");
-          setSaving(false);
           return;
         }
         if (isEditMode && editingId) {
@@ -207,52 +185,73 @@ export default function OrganizationPage() {
             company_id: deptForm.companyId,
           });
         }
-      } else {
+
+      } else if (selectedTab === "positions") {
         if (!posForm.title_th.trim()) {
           setFormError("กรุณากรอกชื่อตำแหน่ง");
-          setSaving(false);
           return;
         }
-
         if (isEditMode && editingId) {
-          // ✅ UPDATE
           await organizationAPI.updatePosition(editingId, {
             title_th: posForm.title_th,
             LEVEL: posForm.level,
             company_id: posForm.companyId,
           });
         } else {
-          // ✅ CREATE
           await organizationAPI.createPosition({
             title_th: posForm.title_th,
             LEVEL: posForm.level,
             company_id: posForm.companyId,
           });
         }
+
+      } else if (selectedTab === "levels") {
+        // ✅ Level save (mock state — เปลี่ยนเป็น API จริงได้ภายหลัง)
+        if (!levelForm.level.trim() || !levelForm.level_title.trim()) {
+          setFormError("กรุณากรอกข้อมูล Level ให้ครบ");
+          return;
+        }
+        if (isEditMode && editingId) {
+          setMockLevel((prev) =>
+            prev.map((l) => (l.id === editingId ? { ...l, ...levelForm } : l)),
+          );
+        } else {
+          const newId = Math.max(...mockLevel.map((l) => l.id), 0) + 1;
+          setMockLevel((prev) => [...prev, { id: newId, ...levelForm }]);
+        }
       }
 
+      setShowModal(false);
       setIsEditMode(false);
       setEditingId(null);
 
-      setShowModal(false);
-      await loadData(); // reload ข้อมูลใหม่
+      if (selectedTab !== "levels") {
+        await loadData();
+      }
     } catch (err: any) {
-      setFormError(
-        err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
-      );
+      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving(false);
     }
+  };
+
+  // ✅ Modal title ตาม tab และ mode
+  const getModalTitle = () => {
+    const action = isEditMode ? "แก้ไข" : "เพิ่ม";
+    const tabLabel: Record<string, string> = {
+      companies: "บริษัท",
+      departments: "แผนก",
+      positions: "ตำแหน่ง",
+      levels: "Level",
+    };
+    return `${action}${tabLabel[selectedTab]}`;
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader
-            className="animate-spin text-blue-600 mx-auto mb-4"
-            size={40}
-          />
+          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
           <p className="text-slate-600 font-medium">
             Loading organization structure...
           </p>
@@ -260,6 +259,7 @@ export default function OrganizationPage() {
       </div>
     );
   }
+
   const handleDeleteDepartment = async (id: number) => {
     if (!confirm("ยืนยันการลบแผนกนี้ ?")) return;
     try {
@@ -270,6 +270,7 @@ export default function OrganizationPage() {
     }
   };
 
+  // ✅ แก้ handleEditDepartment — เพิ่ม isEditMode + editingId ที่หายไป
   const handleEditDepartment = (dept: Department) => {
     setDeptForm({
       name: dept.name,
@@ -277,6 +278,9 @@ export default function OrganizationPage() {
       companyId: dept.companyId,
     });
     setSelectedTab("departments");
+    setIsEditMode(true);
+    setEditingId(dept.id);
+    setFormError("");
     setShowModal(true);
   };
 
@@ -297,8 +301,9 @@ export default function OrganizationPage() {
       companyId: pos.companyId,
     });
     setSelectedTab("positions");
-    setIsEditMode(true); // ✅ ควรใส่
+    setIsEditMode(true);
     setEditingId(pos.id);
+    setFormError("");
     setShowModal(true);
   };
 
@@ -450,69 +455,59 @@ export default function OrganizationPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Department Name
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Cost Center
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Company
-                      </th>
-                      <th className="text-center py-4 px-6 font-semibold text-slate-700">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                {departments.map((dept) => (
+                  <div
+                    key={dept.id}
+                    className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all"
+                  >
+                    <div className="p-5">
+                      {/* Header */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">
+                            {dept.name}
+                          </h3>
+                          <p className="text-sm text-slate-500 mt-1">
+                            Company:{" "}
+                            {companies.find((c) => c.id === dept.companyId)?.name_th || "-"}
+                          </p>
+                        </div>
+                        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                          ID: {dept.id}
+                        </span>
+                      </div>
 
-                  <tbody className="divide-y divide-slate-200">
-                    {departments.map((dept) => (
-                      <tr
-                        key={dept.id}
-                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
-                      >
-                        <td className="py-4 px-6 font-semibold text-slate-900">
-                          {dept.name}
-                        </td>
+                      {/* Details */}
+                      <div className="mt-4 space-y-2 text-sm text-slate-600">
+                        {dept.costCenterCode && (
+                          <p>
+                            <span className="font-medium text-slate-700">
+                              Cost Center:
+                            </span>{" "}
+                            {dept.costCenterCode}
+                          </p>
+                        )}
+                      </div>
 
-                        <td className="py-4 px-6">
-                          <span className="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
-                            {dept.costCenterCode || "-"}
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-6">
-                          <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                            {companies.find((c) => c.id === dept.companyId)
-                              ?.name_th || "-"}
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-6 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button
-                              onClick={() => handleEditDepartment(dept)}
-                              className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-
-                            <button
-                              onClick={() => handleDeleteDepartment(dept.id)}
-                              className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      {/* Actions */}
+                      <div className="flex justify-end gap-2 mt-5">
+                        <button
+                          onClick={() => handleEditDepartment(dept)}
+                          className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDepartment(dept.id)}
+                          className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -608,7 +603,7 @@ export default function OrganizationPage() {
           </div>
         )}
 
-        {/* LEVEL TAB */}
+        {/* ✅ LEVEL TAB — เพิ่ม Actions column + edit/delete */}
         {selectedTab === "levels" && (
           <div className="p-6">
             {mockLevel.length === 0 ? (
@@ -630,9 +625,11 @@ export default function OrganizationPage() {
                       <th className="text-left py-4 px-6 font-semibold text-slate-700">
                         Level Title
                       </th>
+                      <th className="text-center py-4 px-6 font-semibold text-slate-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
-
                   <tbody className="divide-y divide-slate-200">
                     {mockLevel.map((level) => (
                       <tr
@@ -642,14 +639,43 @@ export default function OrganizationPage() {
                         <td className="py-4 px-6 font-semibold text-slate-900">
                           {level.id}
                         </td>
-
                         <td className="py-4 px-6">
                           <span className="font-mono text-sm text-slate-600 bg-slate-100 px-2 py-1 rounded">
                             {level.level}
                           </span>
                         </td>
-
                         <td className="py-4 px-6">{level.level_title}</td>
+                        <td className="py-4 px-6 text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => {
+                                setLevelForm({
+                                  level: level.level,
+                                  level_title: level.level_title,
+                                });
+                                setIsEditMode(true);
+                                setEditingId(level.id);
+                                setFormError("");
+                                setShowModal(true);
+                              }}
+                              className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm("ยืนยันการลบ Level นี้ ?")) {
+                                  setMockLevel((prev) =>
+                                    prev.filter((l) => l.id !== level.id),
+                                  );
+                                }
+                              }}
+                              className="p-2 hover:bg-red-100 rounded transition-colors text-red-600"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -704,10 +730,9 @@ export default function OrganizationPage() {
                 ) : (
                   <Users size={20} className="text-blue-600" />
                 )}
+                {/* ✅ ใช้ getModalTitle() แทนข้อความ hardcode */}
                 <h3 className="text-lg font-bold text-slate-900">
-                  {selectedTab === "departments"
-                    ? "เพิ่มแผนกใหม่"
-                    : "เพิ่มตำแหน่งใหม่"}
+                  {getModalTitle()}
                 </h3>
               </div>
               <button
@@ -725,7 +750,9 @@ export default function OrganizationPage() {
                   {formError}
                 </div>
               )}
-              {selectedTab === "companies" ? (
+
+              {/* Companies Form */}
+              {selectedTab === "companies" && (
                 <div>
                   <label className="block text-sm font-semibold mb-1">
                     ชื่อบริษัท <span className="text-red-500">*</span>
@@ -736,10 +763,14 @@ export default function OrganizationPage() {
                     onChange={(e) =>
                       setCompanyForm({ name_th: e.target.value })
                     }
-                    className="w-full border rounded-lg px-4 py-2"
+                    placeholder="เช่น บริษัท ABC จำกัด"
+                    className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                   />
                 </div>
-              ) : selectedTab === "departments" ? (
+              )}
+
+              {/* Departments Form */}
+              {selectedTab === "departments" && (
                 <>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -784,14 +815,17 @@ export default function OrganizationPage() {
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       {companies.map((c) => (
-                        <option key={c.company_id} value={c.company_id}>
+                        <option key={c.id} value={c.id}>
                           {c.name_th}
                         </option>
                       ))}
                     </select>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {/* Positions Form */}
+              {selectedTab === "positions" && (
                 <>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-1">
@@ -812,12 +846,12 @@ export default function OrganizationPage() {
                       Level
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       value={posForm.level}
                       onChange={(e) =>
                         setPosForm({ ...posForm, level: e.target.value })
                       }
-                      placeholder="เช่น 1, 2, 3"
+                      placeholder="เช่น m1, s1"
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     />
                   </div>
@@ -836,11 +870,48 @@ export default function OrganizationPage() {
                       className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                     >
                       {companies.map((c) => (
-                        <option key={c.company_id} value={c.company_id}>
+                        <option key={c.id} value={c.id}>
                           {c.name_th}
                         </option>
                       ))}
                     </select>
+                  </div>
+                </>
+              )}
+
+              {/* ✅ Levels Form (เพิ่มใหม่) */}
+              {selectedTab === "levels" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      Level Code <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={levelForm.level}
+                      onChange={(e) =>
+                        setLevelForm({ ...levelForm, level: e.target.value })
+                      }
+                      placeholder="เช่น m1, s1, h1"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 mb-1">
+                      Level Title <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={levelForm.level_title}
+                      onChange={(e) =>
+                        setLevelForm({
+                          ...levelForm,
+                          level_title: e.target.value,
+                        })
+                      }
+                      placeholder="เช่น Manager, Staff"
+                      className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                    />
                   </div>
                 </>
               )}
