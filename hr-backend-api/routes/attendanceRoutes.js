@@ -3,9 +3,13 @@ const router = express.Router();
 const attendanceController = require('../controllers/attendanceController');
 const auth = require('../middleware/authMiddleware'); // ดึงยามมาเฝ้าประตูเหมือนเดิม!
 
-// ... โค้ดส่วนบน ...
-router.get('/', auth, attendanceController.getAttendanceLogs); // สำหรับดึงข้อมูล
-router.post('/record', auth, attendanceController.recordAttendance); // สำหรับบันทึกเข้างาน
-router.put('/check-out', auth, attendanceController.checkOut); // สำหรับบันทึกออกงาน
+// ... โค้ดส่วนบน ... 
+// router.get('/', auth, attendanceController.getAttendanceLogs); // สำหรับดึงข้อมูล
+// router.post('/record', auth, attendanceController.recordAttendance); // สำหรับบันทึกเข้างาน
+// router.put('/check-out', auth, attendanceController.checkOut); // สำหรับบันทึกออกงาน
 
+//ใช้ API เส้นเดียว /attendance สำหรับทั้งดึงข้อมูลและบันทึกเข้างาน/ออกงาน
+router.get('/', auth, attendanceController.getAttendanceLogs); // สำหรับดึงข้อมูล
+router.post('/', auth, attendanceController.recordAttendance); // สำหรับบันทึกเข้างาน
+router.put('/', auth, attendanceController.checkOut); // สำหรับบันทึกออกงาน
 module.exports = router;

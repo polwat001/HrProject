@@ -48,7 +48,7 @@ api.interceptors.request.use(
 
     // 🔥 ใส่ token ตายตัวตรงนี้เลย
     config.headers.Authorization =
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjU5MDYwOSwiZXhwIjoxNzcyNjc3MDA5fQ.WBJHczUqe95KY9svOs6jH3seWOXiwyTMQbd_CBhwUy0";
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjYxNjI3MCwiZXhwIjoxNzcyNzAyNjcwfQ.Yc7-_jT4mMUFYVP2Xgkciu7LydJl_dQ4_5T6iZD1mGE";
 
     return config;
   },
@@ -156,6 +156,7 @@ export const employeeAPI = {
 };
 
 // ============ TIME & ATTENDANCE ============
+
 export const attendanceAPI = {
   // Shifts
   getShifts: (companyId?: number) =>
@@ -170,6 +171,7 @@ export const attendanceAPI = {
     api.post(`/attendance/assignments`, { employeeId, shiftId, ...data }),
 
   // Attendance Logs
+
   getAttendanceLogs: (filters?: {
     employeeId?: number;
     startDate?: string;
@@ -198,6 +200,7 @@ export const attendanceAPI = {
   rejectOT: (otId: number, reason?: string) =>
     api.post(`/attendance/ot/${otId}/reject`, { reason }),
 };
+
 
 // ============ LEAVE ============
 export const leaveAPI = {
@@ -257,22 +260,38 @@ export const leaveAPI = {
 };
 
 // ============ CONTRACTS ============
+
 export const contractAPI = {
-  getContracts: (filters?: {
+  // GET ทั้งหมด / Filter / หรือดึงตัวเดียว
+  getContracts: (params?: {
+    id?: number;
     employeeId?: number;
     status?: string;
     companyId?: number;
-  }) => api.get<Contract[]>('/contracts', { params: filters }),
-  
-  getContractById: (id: number) => api.get<Contract>(`/contracts/${id}`),
-  
-  createContract: (data: Partial<Contract>) => api.post('/contracts', data),
-  
-  updateContract: (id: number, data: Partial<Contract>) =>
-    api.put(`/contracts/${id}`, data),
-  
-  renewContract: (contractId: number, newEndDate: string) =>
-    api.post(`/contracts/${contractId}/renew`, { newEndDate }),
+  }) => api.get<Contract[]>('/contracts', { params }),
+
+  // CREATE
+  createContract: (data: Partial<Contract>) =>
+    api.post('/contracts', data),
+
+  // UPDATE
+  updateContract: (data: {
+    id: number;
+    action?: 'update' | 'renew';
+    newEndDate?: string;
+  } & Partial<Contract>) =>
+    api.put('/contracts', data),
+
+  // Template / generate ถ้าจำเป็นจริง ๆ
+  templateAction: (data: {
+    action: 'getTemplates' | 'createTemplate' | 'generate';
+    templateId?: number;
+    employeeId?: number;
+    variables?: Record<string, string>;
+  }) => api.post('/contracts', data),
+
+
+
 
   // Contract Templates
   getTemplates: () => api.get<ContractTemplate[]>('/contracts/templates'),

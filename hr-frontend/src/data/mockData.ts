@@ -246,3 +246,147 @@ export const positions = [
   { id: "p1", title: "HR Director", department: "Human Resources" },
   { id: "p2", title: "Senior Developer", department: "IT" },
 ];
+
+
+export interface PayrollRecord {
+  id: string;
+  employeeCode: string;
+  employeeName: string;
+  department: string;
+  company: string;
+  month: number;
+  year: number;
+  baseSalary: number;
+  positionAllowance: number;
+  housingAllowance: number;
+  transportAllowance: number;
+  mealAllowance: number;
+  otHours: number;
+  otAmount: number;
+  bonus: number;
+  socialSecurity: number;
+  providentFund: number;
+  tax: number;
+  late: number;
+  absent: number;
+  totalIncome: number;
+  totalDeduction: number;
+  netPay: number;
+  status: 'draft' | 'calculated' | 'approved' | 'paid';
+  paidDate?: string;
+}
+
+export interface PayrollSummary {
+  month: number;
+  year: number;
+  totalEmployees: number;
+  totalIncome: number;
+  totalDeduction: number;
+  totalNetPay: number;
+  status: 'draft' | 'calculated' | 'approved' | 'paid';
+}
+
+export const payrollRecords: PayrollRecord[] = [
+  {
+    id: "pr-001",
+    employeeCode: "A-0001",
+    employeeName: "สมชาย วงศ์สวัสดิ์",
+    department: "Human Resources",
+    company: "ABC Holdings",
+    month: 2,
+    year: 2026,
+    baseSalary: 85000,
+    positionAllowance: 10000,
+    housingAllowance: 5000,
+    transportAllowance: 2000,
+    mealAllowance: 2000,
+    otHours: 0,
+    otAmount: 0,
+    bonus: 0,
+    socialSecurity: 750,
+    providentFund: 2550,
+    tax: 8200,
+    late: 0,
+    absent: 0,
+    totalIncome: 104000,
+    totalDeduction: 11500,
+    netPay: 92500,
+    status: "paid",
+    paidDate: "2026-02-28"
+  },
+  {
+    id: "pr-002",
+    employeeCode: "A-0002",
+    employeeName: "สมหญิง ใจดี",
+    department: "IT",
+    company: "ABC Holdings",
+    month: 2,
+    year: 2026,
+    baseSalary: 45000,
+    positionAllowance: 3000,
+    housingAllowance: 0,
+    transportAllowance: 1500,
+    mealAllowance: 2000,
+    otHours: 12,
+    otAmount: 4500,
+    bonus: 0,
+    socialSecurity: 750,
+    providentFund: 1350,
+    tax: 2100,
+    late: 200,
+    absent: 0,
+    totalIncome: 56000,
+    totalDeduction: 4400,
+    netPay: 51600,
+    status: "paid",
+    paidDate: "2026-02-28"
+  },
+  {
+    id: "pr-003",
+    employeeCode: "B-0001",
+    employeeName: "วิชัย พงษ์ทอง",
+    department: "Finance",
+    company: "XYZ Services",
+    month: 2,
+    year: 2026,
+    baseSalary: 55000,
+    positionAllowance: 5000,
+    housingAllowance: 3000,
+    transportAllowance: 1500,
+    mealAllowance: 2000,
+    otHours: 5,
+    otAmount: 2200,
+    bonus: 15000,
+    socialSecurity: 750,
+    providentFund: 1650,
+    tax: 4800,
+    late: 0,
+    absent: 0,
+    totalIncome: 81700,
+    totalDeduction: 7200,
+    netPay: 74500,
+    status: "paid",
+    paidDate: "2026-02-28"
+  }
+];
+
+export const payrollSummaries: PayrollSummary[] = [
+  {
+    month: 2,
+    year: 2026,
+    totalEmployees: 45,
+    totalIncome: 2450000,
+    totalDeduction: 185000,
+    totalNetPay: 2265000,
+    status: "paid"
+  },
+  {
+    month: 1,
+    year: 2026,
+    totalEmployees: 44,
+    totalIncome: 2380000,
+    totalDeduction: 178000,
+    totalNetPay: 2202000,
+    status: "paid"
+  }
+];

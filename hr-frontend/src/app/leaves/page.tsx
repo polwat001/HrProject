@@ -1,53 +1,68 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { leaveAPI } from '@/services/api';
-import { useAppStore } from '@/store/useAppStore';
-import { CalendarHeart, Palmtree, Clock, CheckCircle, XCircle, AlertCircle, Loader, Plus, Calendar } from 'lucide-react';
-import type { LeaveRequest } from '@/types';
+import { CalendarHeart, Palmtree, Clock, CheckCircle, XCircle, Loader, Plus, Calendar } from 'lucide-react';
+// นำเข้าข้อมูลจำลองจากไฟล์ data (สมมติว่าไฟล์ที่คุณส่งมาชื่อ @/data/mock)
+import { employees } from '@/data/mockData';
+
+// --- Mock Data เพิ่มเติมสำหรับส่วน Leave ---
+const mockLeaveRequests = [
+  {
+    id: 'lv-001',
+    employeeId: 'emp-001',
+    leaveTypeId: 'Business Leave',
+    startDate: '2026-03-10',
+    endDate: '2026-03-12',
+    days: 3,
+    status: 'pending',
+    reason: 'ติดต่อทำธุระเรื่องบ้าน'
+  },
+  {
+    id: 'lv-002',
+    employeeId: 'emp-002',
+    leaveTypeId: 'Sick Leave',
+    startDate: '2026-03-05',
+    endDate: '2026-03-05',
+    days: 1,
+    status: 'approved',
+    reason: 'มีไข้ ปวดหัว'
+  }
+];
+
+const mockHolidays = [
+  { id: 'h-1', name: 'วันมาฆบูชา', date: '2026-03-03', type: 'national' },
+  { id: 'h-2', name: 'Company Outing', date: '2026-03-25', type: 'company' },
+  { id: 'h-3', name: 'วันจักรี', date: '2026-04-06', type: 'national' },
+];
 
 export default function LeavesPage() {
-  const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'requests' | 'holidays'>('requests');
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [holidays, setHolidays] = useState<any[]>([]);
 
   useEffect(() => {
-    loadData();
-  }, [currentCompanyId]);
-
-  const loadData = async () => {
-    try {
+    // จำลองการโหลดข้อมูลจาก Mock
+    const loadMockData = () => {
       setLoading(true);
-      const [requestsRes, holidaysRes] = await Promise.all([
-        leaveAPI.getLeaveRequests(),
-        leaveAPI.getHolidays(currentCompanyId ?? undefined),
-      ]);
-      setLeaveRequests(requestsRes.data);
-      setHolidays(holidaysRes.data);
-    } catch (err) {
-      console.error('Error loading leave data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+      setTimeout(() => {
+        setLeaveRequests(mockLeaveRequests);
+        setHolidays(mockHolidays);
+        setLoading(false);
+      }, 800); // หน่วงเวลาเพื่อให้เห็น Loading State
+    };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Approved':
-        return <CheckCircle size={18} className="text-green-500" />;
-      case 'Rejected':
-        return <XCircle size={18} className="text-red-500" />;
-      case 'Pending':
-        return <Clock size={18} className="text-yellow-500" />;
-      default:
-        return null;
-    }
+    loadMockData();
+  }, []);
+
+  // ฟังก์ชันหาชื่อพนักงานจาก ID
+  const getEmployeeName = (id: string) => {
+    const emp = employees.find(e => e.id === id);
+    return emp ? `${emp.firstName} ${emp.lastName}` : `Unknown (${id})`;
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    switch (status.toLowerCase()) {
       case 'approved':
         return (
           <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold border border-green-300">
@@ -76,7 +91,7 @@ export default function LeavesPage() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
-          <p className="text-slate-600 font-medium">Loading leave data...</p>
+          <p className="text-slate-600 font-medium">Loading leave data from mock...</p>
         </div>
       </div>
     );
@@ -87,10 +102,10 @@ export default function LeavesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">🏖️ Leave & Holidays Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">🏖️ Leave & Holidays</h1>
           <p className="text-slate-600 mt-1">Manage leave requests and company holidays</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium">
+        <button className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all font-medium">
           <Plus size={20} />
           New Request
         </button>
@@ -102,189 +117,82 @@ export default function LeavesPage() {
           <button
             onClick={() => setActiveTab('requests')}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'requests'
-                ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              activeTab === 'requests' ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50' : 'text-slate-600'
             }`}
           >
             <CalendarHeart size={20} />
-            Leave Requests
-            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
-              {leaveRequests.length}
-            </span>
+            Leave Requests ({leaveRequests.length})
           </button>
           <button
             onClick={() => setActiveTab('holidays')}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'holidays'
-                ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              activeTab === 'holidays' ? 'border-b-2 border-blue-600 text-blue-600 bg-blue-50' : 'text-slate-600'
             }`}
           >
             <Palmtree size={20} />
-            Holidays
-            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
-              {holidays.length}
-            </span>
+            Holidays ({holidays.length})
           </button>
         </div>
 
-        {/* Leave Requests Tab */}
-        {activeTab === 'requests' && (
-          <div className="p-6 space-y-4">
-            {leaveRequests.length === 0 ? (
-              <div className="text-center py-12">
-                <CalendarHeart className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-600 font-medium">No leave requests found</p>
-                <p className="text-slate-500 text-sm mt-1">All leave requests will appear here</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {leaveRequests.map((request) => (
-                  <div
-                    key={request.id}
-                    className="border border-slate-200 rounded-lg p-5 hover:shadow-md transition-all hover:border-blue-300 bg-gradient-to-r from-white to-slate-50"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                            {String(request.employeeId).charAt(0)}
-                          </div>
-                          <div>
-                            <h3 className="font-bold text-slate-900">Employee {request.employeeId}</h3>
-                            <p className="text-xs text-slate-500">Leave Type ID: {request.leaveTypeId}</p>
-                          </div>
-                        </div>
+        {/* Content */}
+        <div className="p-6">
+          {activeTab === 'requests' ? (
+            <div className="space-y-4">
+              {leaveRequests.map((request) => (
+                <div key={request.id} className="border border-slate-200 rounded-lg p-5 hover:border-blue-300 transition-all">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                        {getEmployeeName(request.employeeId).charAt(0)}
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(request.status)}
-                        {getStatusBadge(request.status)}
+                      <div>
+                        <h3 className="font-bold text-slate-900">{getEmployeeName(request.employeeId)}</h3>
+                        <p className="text-xs text-slate-500">{request.leaveTypeId}</p>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-3 gap-4 mb-4 pb-4 border-b border-slate-200">
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium mb-1">From Date</p>
-                        <p className="font-mono text-sm font-bold text-slate-700">{request.startDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium mb-1">To Date</p>
-                        <p className="font-mono text-sm font-bold text-slate-700">{request.endDate}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-500 font-medium mb-1">Duration</p>
-                        <p className="font-bold text-lg text-purple-600">
-                          {request.days} days
-                        </p>
-                      </div>
-                    </div>
-
-                    {request.reason && (
-                      <div className="mb-4">
-                        <p className="text-xs text-slate-500 font-medium mb-1">Remarks</p>
-                        <p className="text-sm text-slate-700 bg-blue-50 p-2 rounded border border-blue-100">{request.reason}</p>
-                      </div>
-                    )}
-
-                    {request.status === 'pending' && (
-                      <div className="flex items-center gap-2 pt-2">
-                        <button className="flex-1 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2">
-                          <CheckCircle size={16} /> Approve
-                        </button>
-                        <button className="flex-1 px-3 py-2 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg font-semibold text-sm transition-colors flex items-center justify-center gap-2">
-                          <XCircle size={16} /> Reject
-                        </button>
-                      </div>
-                    )}
+                    {getStatusBadge(request.status)}
                   </div>
-                ))}
-              </div>
-            )}
 
-            {/* Leave Type Summary */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-6 border-t border-slate-200">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 p-4">
-                <p className="text-sm text-blue-700 font-medium">Pending</p>
-                <p className="text-2xl font-bold text-blue-900">
-                  {leaveRequests.filter((r) => r.status === 'pending').length}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 p-4">
-                <p className="text-sm text-green-700 font-medium">Approved</p>
-                <p className="text-2xl font-bold text-green-900">
-                  {leaveRequests.filter((r) => r.status === 'approved').length}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 p-4">
-                <p className="text-sm text-red-700 font-medium">Rejected</p>
-                <p className="text-2xl font-bold text-red-900">
-                  {leaveRequests.filter((r) => r.status === 'rejected').length}
-                </p>
-              </div>
-              <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg border border-purple-200 p-4">
-                <p className="text-sm text-purple-700 font-medium">Total</p>
-                <p className="text-2xl font-bold text-purple-900">{leaveRequests.length}</p>
-              </div>
+                  <div className="grid grid-cols-3 gap-4 border-y border-slate-100 py-4 my-4">
+                    <div>
+                      <p className="text-xs text-slate-500">From</p>
+                      <p className="font-bold text-slate-700">{request.startDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">To</p>
+                      <p className="font-bold text-slate-700">{request.endDate}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Total</p>
+                      <p className="font-bold text-blue-600">{request.days} days</p>
+                    </div>
+                  </div>
+
+                  {request.reason && (
+                    <p className="text-sm text-slate-600 bg-slate-50 p-2 rounded">📝 {request.reason}</p>
+                  )}
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-
-        {/* Holidays Tab */}
-        {activeTab === 'holidays' && (
-          <div className="p-6 space-y-4">
-            {holidays.length === 0 ? (
-              <div className="text-center py-12">
-                <Palmtree className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-600 font-medium">No holidays configured</p>
-                <p className="text-slate-500 text-sm mt-1">Add company holidays to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {holidays.map((holiday) => (
-                  <div
-                    key={holiday.id}
-                    className={`border rounded-lg p-4 flex items-start justify-between hover:shadow-md transition-all ${
-                      holiday.type === 'national'
-                        ? 'border-purple-300 bg-gradient-to-r from-purple-50 to-purple-100'
-                        : 'border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold text-lg ${
-                          holiday.type === 'national'
-                            ? 'bg-gradient-to-br from-purple-400 to-purple-600'
-                            : 'bg-gradient-to-br from-blue-400 to-blue-600'
-                        }`}
-                      >
-                        {holiday.date.split('-')[2]}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-slate-900 mb-1">{holiday.name}</h3>
-                        <div className="flex items-center gap-3 text-sm">
-                          <div className="flex items-center gap-1 text-slate-600">
-                            <Calendar size={16} />
-                            <span className="font-mono">{holiday.date}</span>
-                          </div>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                              holiday.type === 'national'
-                                ? 'bg-purple-200 text-purple-800'
-                                : 'bg-blue-200 text-blue-800'
-                            }`}
-                          >
-                            {holiday.type === 'national' ? '🌍 National' : '🏢 Company'}
-                          </span>
-                        </div>
-                      </div>
+          ) : (
+            <div className="grid gap-3">
+              {holidays.map((holiday) => (
+                <div key={holiday.id} className={`p-4 rounded-lg border flex items-center justify-between ${holiday.type === 'national' ? 'border-purple-200 bg-purple-50' : 'border-blue-200 bg-blue-50'}`}>
+                  <div className="flex items-center gap-4">
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold ${holiday.type === 'national' ? 'bg-purple-500' : 'bg-blue-500'}`}>
+                      {holiday.date.split('-')[2]}
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900">{holiday.name}</h4>
+                      <p className="text-sm text-slate-500">{holiday.date}</p>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{holiday.type}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

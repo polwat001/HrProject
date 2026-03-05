@@ -1,18 +1,15 @@
 // "use client";
 // import { useState } from "react";
-// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-// import { Badge } from "@/components/ui/badge";
-// import { Button } from "@/components/ui/button";
-// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-// import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-// import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-// import { Separator } from "@/components/ui/separator";
+
 // import {
 //   DollarSign, Users, TrendingUp, Calculator, FileText, Download,
 //   CheckCircle, Clock, ArrowUpDown,
 // } from "lucide-react";
-// import { payrollRecords, payrollSummaries, PayrollRecord } from "@/data/payrollData";
-// import { useCompany } from "@/contexts/CompanyContext";
+
+// // นำเข้า Mock Data
+// import { payrollRecords, payrollSummaries, PayrollRecord, companies } from "@/data/mockData";
+// // นำเข้า Company Context (ตรวจสอบ Path ให้ตรงกับโปรเจกต์คุณ)
+
 
 // const fmt = (n: number) => n.toLocaleString("th-TH", { minimumFractionDigits: 0 });
 
@@ -29,8 +26,8 @@
 //   { value: "12-2025", label: "ธันวาคม 2025" },
 // ];
 
-// const Payroll = () => {
-//   const { selectedCompany } = useCompany();
+// const PayrollPage = () => {
+//   const { selectedCompany } = companies();
 //   const [selectedMonth, setSelectedMonth] = useState("2-2026");
 //   const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
 //   const [sortField, setSortField] = useState<"employeeCode" | "netPay">("employeeCode");
@@ -38,11 +35,19 @@
 
 //   const [month, year] = selectedMonth.split("-").map(Number);
 
+//   // Filter ข้อมูลตามเดือน/ปี และ บริษัทที่เลือก
 //   const filtered = payrollRecords
 //     .filter((r) => r.month === month && r.year === year)
-//     .filter((r) => selectedCompany.id === "all" || r.company.toLowerCase().includes(
-//       selectedCompany.id === "company-a" ? "abc" : selectedCompany.id === "company-b" ? "xyz" : "def"
-//     ))
+//     .filter((r) => {
+//       if (!selectedCompany || selectedCompany.id === "all") return true;
+//       // Map ID บริษัทกับชื่อใน Data
+//       const companyMap: Record<string, string> = {
+//         "company-a": "abc",
+//         "company-b": "xyz",
+//         "company-c": "def",
+//       };
+//       return r.company.toLowerCase().includes(companyMap[selectedCompany.id]);
+//     })
 //     .sort((a, b) => {
 //       const v = sortAsc ? 1 : -1;
 //       if (sortField === "netPay") return (a.netPay - b.netPay) * v;
@@ -57,16 +62,16 @@
 //   };
 
 //   return (
-//     <div className="space-y-6">
+//     <div className="space-y-6 p-6">
 //       {/* Header */}
 //       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 //         <div>
-//           <h2 className="text-2xl font-bold text-foreground">Payroll — เงินเดือน</h2>
-//           <p className="text-muted-foreground text-sm">คำนวณเงินเดือน, รายได้, หัก, ภาษี และออกสลิป</p>
+//           <h2 className="text-3xl font-bold text-foreground tracking-tight">💰 Payroll Management</h2>
+//           <p className="text-muted-foreground text-sm">จัดการคำนวณเงินเดือนและออกสลิปพนักงาน</p>
 //         </div>
 //         <div className="flex items-center gap-3">
 //           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-//             <SelectTrigger className="w-[200px]">
+//             <SelectTrigger className="w-[200px] bg-white">
 //               <SelectValue />
 //             </SelectTrigger>
 //             <SelectContent>
@@ -75,226 +80,158 @@
 //               ))}
 //             </SelectContent>
 //           </Select>
-//           <Button variant="outline" size="sm">
-//             <Download className="h-4 w-4 mr-1" /> Export
+//           <Button variant="outline" className="shadow-sm">
+//             <Download className="h-4 w-4 mr-2" /> Export PDF
 //           </Button>
 //         </div>
 //       </div>
 
-//       {/* Summary cards */}
+//       {/* สรุปยอดรวม (Summary Cards) */}
 //       {summary && (
-//         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-//           <Card className="shadow-card">
-//             <CardContent className="p-4">
-//               <div className="flex items-center gap-3">
-//                 <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-//                   <Users className="h-5 w-5 text-primary" />
-//                 </div>
-//                 <div>
-//                   <p className="text-xs text-muted-foreground">พนักงาน</p>
-//                   <p className="text-xl font-bold text-foreground">{summary.totalEmployees} คน</p>
-//                 </div>
-//               </div>
-//             </CardContent>
-//           </Card>
-//           <Card className="shadow-card">
-//             <CardContent className="p-4">
-//               <div className="flex items-center gap-3">
-//                 <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-//                   <TrendingUp className="h-5 w-5 text-accent" />
-//                 </div>
-//                 <div>
-//                   <p className="text-xs text-muted-foreground">รายได้รวม</p>
-//                   <p className="text-xl font-bold text-foreground">฿{fmt(summary.totalIncome)}</p>
-//                 </div>
-//               </div>
-//             </CardContent>
-//           </Card>
-//           <Card className="shadow-card">
-//             <CardContent className="p-4">
-//               <div className="flex items-center gap-3">
-//                 <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-//                   <Calculator className="h-5 w-5 text-destructive" />
-//                 </div>
-//                 <div>
-//                   <p className="text-xs text-muted-foreground">หักรวม</p>
-//                   <p className="text-xl font-bold text-foreground">฿{fmt(summary.totalDeduction)}</p>
-//                 </div>
-//               </div>
-//             </CardContent>
-//           </Card>
-//           <Card className="shadow-card">
-//             <CardContent className="p-4">
-//               <div className="flex items-center gap-3">
-//                 <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
-//                   <DollarSign className="h-5 w-5 text-success" />
-//                 </div>
-//                 <div>
-//                   <p className="text-xs text-muted-foreground">จ่ายสุทธิ</p>
-//                   <p className="text-xl font-bold text-foreground">฿{fmt(summary.totalNetPay)}</p>
-//                 </div>
-//               </div>
-//             </CardContent>
-//           </Card>
+//         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+//           <StatCard icon={<Users className="text-blue-600" />} label="พนักงานทั้งหมด" value={`${summary.totalEmployees} คน`} />
+//           <StatCard icon={<TrendingUp className="text-emerald-600" />} label="รายได้รวม (Gross)" value={`฿${fmt(summary.totalIncome)}`} />
+//           <StatCard icon={<Calculator className="text-rose-600" />} label="รายการหักรวม" value={`฿${fmt(summary.totalDeduction)}`} />
+//           <StatCard icon={<DollarSign className="text-amber-600" />} label="ยอดจ่ายสุทธิ" value={`฿${fmt(summary.totalNetPay)}`} color="bg-amber-50" />
 //         </div>
 //       )}
 
-//       {/* Payroll table */}
-//       <Card className="shadow-card">
-//         <CardHeader className="pb-3">
-//           <div className="flex items-center justify-between">
-//             <CardTitle className="text-base">รายละเอียดเงินเดือนรายบุคคล</CardTitle>
-//             <Badge variant={statusConfig[summary?.status || "draft"].variant}>
-//               {statusConfig[summary?.status || "draft"].label}
-//             </Badge>
-//           </div>
+//       {/* ตารางรายละเอียด */}
+//       <Card className="border-slate-200 shadow-sm">
+//         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b">
+//           <CardTitle className="text-lg font-bold">รายละเอียดงวดเดือน {months.find(m => m.value === selectedMonth)?.label}</CardTitle>
+//           <Badge variant={statusConfig[summary?.status || "draft"].variant} className="px-3 py-1">
+//             {statusConfig[summary?.status || "draft"].label}
+//           </Badge>
 //         </CardHeader>
 //         <CardContent className="p-0">
 //           <Table>
-//             <TableHeader>
+//             <TableHeader className="bg-slate-50/50">
 //               <TableRow>
-//                 <TableHead className="cursor-pointer" onClick={() => toggleSort("employeeCode")}>
-//                   <span className="flex items-center gap-1">รหัส <ArrowUpDown className="h-3 w-3" /></span>
+//                 <TableHead className="w-[100px] cursor-pointer" onClick={() => toggleSort("employeeCode")}>
+//                   <div className="flex items-center gap-1">รหัส <ArrowUpDown size={12} /></div>
 //                 </TableHead>
-//                 <TableHead>ชื่อ-นามสกุล</TableHead>
+//                 <TableHead>พนักงาน</TableHead>
 //                 <TableHead>แผนก</TableHead>
 //                 <TableHead className="text-right">เงินเดือน</TableHead>
-//                 <TableHead className="text-right">ค่าตำแหน่ง</TableHead>
 //                 <TableHead className="text-right">OT</TableHead>
-//                 <TableHead className="text-right">รายได้รวม</TableHead>
 //                 <TableHead className="text-right">หักรวม</TableHead>
 //                 <TableHead className="text-right cursor-pointer" onClick={() => toggleSort("netPay")}>
-//                   <span className="flex items-center justify-end gap-1">สุทธิ <ArrowUpDown className="h-3 w-3" /></span>
+//                   <div className="flex items-center justify-end gap-1">ยอดสุทธิ <ArrowUpDown size={12} /></div>
 //                 </TableHead>
-//                 <TableHead className="text-center">สลิป</TableHead>
+//                 <TableHead className="text-center w-[80px]">สลิป</TableHead>
 //               </TableRow>
 //             </TableHeader>
 //             <TableBody>
-//               {filtered.map((r) => (
-//                 <TableRow key={r.id}>
-//                   <TableCell className="font-mono text-xs">{r.employeeCode}</TableCell>
-//                   <TableCell className="font-medium">{r.employeeName}</TableCell>
-//                   <TableCell className="text-muted-foreground text-sm">{r.department}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm">{fmt(r.baseSalary)}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm">{fmt(r.positionAllowance)}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm">{fmt(r.otAmount)}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm font-medium">{fmt(r.totalIncome)}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm text-destructive">{fmt(r.totalDeduction)}</TableCell>
-//                   <TableCell className="text-right font-mono text-sm font-bold">{fmt(r.netPay)}</TableCell>
-//                   <TableCell className="text-center">
-//                     <Button variant="ghost" size="sm" onClick={() => setSelectedPayslip(r)}>
-//                       <FileText className="h-4 w-4" />
-//                     </Button>
+//               {filtered.length > 0 ? (
+//                 filtered.map((r) => (
+//                   <TableRow key={r.id} className="hover:bg-slate-50/80 transition-colors">
+//                     <TableCell className="font-mono text-xs font-bold text-slate-500">{r.employeeCode}</TableCell>
+//                     <TableCell className="font-semibold">{r.employeeName}</TableCell>
+//                     <TableCell className="text-slate-500">{r.department}</TableCell>
+//                     <TableCell className="text-right font-mono">{fmt(r.baseSalary)}</TableCell>
+//                     <TableCell className="text-right font-mono text-emerald-600">+{fmt(r.otAmount)}</TableCell>
+//                     <TableCell className="text-right font-mono text-rose-500">-{fmt(r.totalDeduction)}</TableCell>
+//                     <TableCell className="text-right font-mono font-bold text-slate-900">{fmt(r.netPay)}</TableCell>
+//                     <TableCell className="text-center">
+//                       <Button variant="ghost" size="icon" onClick={() => setSelectedPayslip(r)} className="hover:text-blue-600">
+//                         <FileText size={18} />
+//                       </Button>
+//                     </TableCell>
+//                   </TableRow>
+//                 ))
+//               ) : (
+//                 <TableRow>
+//                   <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
+//                     ไม่พบข้อมูลสำหรับเงื่อนไขที่เลือก
 //                   </TableCell>
 //                 </TableRow>
-//               ))}
+//               )}
 //             </TableBody>
 //           </Table>
 //         </CardContent>
 //       </Card>
 
-//       {/* Payslip Dialog */}
+//       {/* Dialog สลิปเงินเดือน */}
 //       <Dialog open={!!selectedPayslip} onOpenChange={() => setSelectedPayslip(null)}>
-//         <DialogContent className="max-w-lg">
-//           <DialogHeader>
-//             <DialogTitle className="flex items-center gap-2">
-//               <FileText className="h-5 w-5" />
-//               สลิปเงินเดือน
+//         <DialogContent className="max-w-md rounded-2xl">
+//           <DialogHeader className="border-b pb-4">
+//             <DialogTitle className="flex items-center gap-2 text-xl">
+//               <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><FileText size={20} /></div>
+//               Salary Payslip
 //             </DialogTitle>
 //           </DialogHeader>
 //           {selectedPayslip && <PayslipContent record={selectedPayslip} />}
+//           <div className="flex gap-2 pt-4 border-t">
+//             <Button className="flex-1" onClick={() => window.print()}>
+//               <Download className="mr-2 h-4 w-4" /> Download PDF
+//             </Button>
+//             <Button variant="outline" onClick={() => setSelectedPayslip(null)}>ปิด</Button>
+//           </div>
 //         </DialogContent>
 //       </Dialog>
 //     </div>
 //   );
 // };
 
+// // Component ย่อยสำหรับ Card สรุป
+// const StatCard = ({ icon, label, value, color = "bg-white" }: any) => (
+//   <Card className={`${color} border-slate-200 shadow-sm`}>
+//     <CardContent className="p-5">
+//       <div className="flex items-center gap-4">
+//         <div className="h-12 w-12 rounded-xl bg-white border shadow-sm flex items-center justify-center">
+//           {icon}
+//         </div>
+//         <div>
+//           <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</p>
+//           <p className="text-2xl font-black text-slate-900">{value}</p>
+//         </div>
+//       </div>
+//     </CardContent>
+//   </Card>
+// );
+
+// // (PayslipContent เหมือนเดิมที่คุณเขียนไว้ แต่แต่ง CSS เพิ่มเล็กน้อย)
 // const PayslipContent = ({ record: r }: { record: PayrollRecord }) => (
-//   <div className="space-y-4 text-sm">
-//     {/* Employee info */}
-//     <div className="bg-muted rounded-lg p-4 space-y-1">
-//       <div className="flex justify-between">
-//         <span className="text-muted-foreground">พนักงาน</span>
-//         <span className="font-medium">{r.employeeName} ({r.employeeCode})</span>
+//   <div className="space-y-4 py-2">
+//     <div className="flex justify-between items-start bg-slate-50 p-4 rounded-xl border">
+//       <div>
+//         <p className="font-black text-lg text-slate-900">{r.employeeName}</p>
+//         <p className="text-sm text-slate-500 font-mono">{r.employeeCode}</p>
 //       </div>
-//       <div className="flex justify-between">
-//         <span className="text-muted-foreground">แผนก / บริษัท</span>
-//         <span>{r.department} — {r.company}</span>
-//       </div>
-//       <div className="flex justify-between">
-//         <span className="text-muted-foreground">งวด</span>
-//         <span>{r.month}/{r.year}</span>
+//       <div className="text-right text-xs text-slate-400">
+//         <p>{r.company}</p>
+//         <p>งวด: {r.month}/{r.year}</p>
 //       </div>
 //     </div>
-
-//     {/* Income */}
-//     <div>
-//       <p className="font-semibold text-foreground mb-2 flex items-center gap-1">
-//         <TrendingUp className="h-4 w-4 text-accent" /> รายได้
-//       </p>
-//       <div className="space-y-1">
-//         {[
-//           ["เงินเดือน", r.baseSalary],
-//           ["ค่าตำแหน่ง", r.positionAllowance],
-//           ["ค่าที่พัก", r.housingAllowance],
-//           ["ค่าเดินทาง", r.transportAllowance],
-//           ["ค่าอาหาร", r.mealAllowance],
-//           ["ค่าล่วงเวลา (OT " + r.otHours + " ชม.)", r.otAmount],
-//           ...(r.bonus > 0 ? [["โบนัส", r.bonus]] : []),
-//         ].map(([label, val]) => (
-//           <div key={label as string} className="flex justify-between">
-//             <span className="text-muted-foreground">{label as string}</span>
-//             <span className="font-mono">{fmt(val as number)}</span>
-//           </div>
-//         ))}
-//         <Separator />
-//         <div className="flex justify-between font-semibold">
-//           <span>รายได้รวม</span>
-//           <span className="font-mono">{fmt(r.totalIncome)}</span>
+    
+//     {/* รายได้/รายหัก (ย่อส่วน) */}
+//     <div className="grid grid-cols-2 gap-6">
+//       <div className="space-y-2">
+//         <p className="text-[10px] font-bold text-emerald-600 uppercase">Earnings (รายได้)</p>
+//         <div className="text-xs space-y-1">
+//           <div className="flex justify-between"><span>Base Salary</span><span>{fmt(r.baseSalary)}</span></div>
+//           <div className="flex justify-between"><span>OT</span><span>{fmt(r.otAmount)}</span></div>
+//           <Separator />
+//           <div className="flex justify-between font-bold"><span>Total</span><span>{fmt(r.totalIncome)}</span></div>
+//         </div>
+//       </div>
+//       <div className="space-y-2">
+//         <p className="text-[10px] font-bold text-rose-600 uppercase">Deductions (รายหัก)</p>
+//         <div className="text-xs space-y-1">
+//           <div className="flex justify-between"><span>SSO (ประกันสังคม)</span><span>{fmt(r.socialSecurity)}</span></div>
+//           <div className="flex justify-between"><span>Tax (ภาษี)</span><span>{fmt(r.tax)}</span></div>
+//           <Separator />
+//           <div className="flex justify-between font-bold text-rose-600"><span>Total</span><span>{fmt(r.totalDeduction)}</span></div>
 //         </div>
 //       </div>
 //     </div>
 
-//     {/* Deduction */}
-//     <div>
-//       <p className="font-semibold text-foreground mb-2 flex items-center gap-1">
-//         <Calculator className="h-4 w-4 text-destructive" /> รายการหัก
-//       </p>
-//       <div className="space-y-1">
-//         {[
-//           ["ประกันสังคม", r.socialSecurity],
-//           ["กองทุนสำรองเลี้ยงชีพ (3%)", r.providentFund],
-//           ["ภาษีหัก ณ ที่จ่าย", r.tax],
-//           ...(r.late > 0 ? [["หักสาย", r.late]] : []),
-//           ...(r.absent > 0 ? [["หักขาด", r.absent]] : []),
-//         ].map(([label, val]) => (
-//           <div key={label as string} className="flex justify-between">
-//             <span className="text-muted-foreground">{label as string}</span>
-//             <span className="font-mono text-destructive">{fmt(val as number)}</span>
-//           </div>
-//         ))}
-//         <Separator />
-//         <div className="flex justify-between font-semibold">
-//           <span>หักรวม</span>
-//           <span className="font-mono text-destructive">{fmt(r.totalDeduction)}</span>
-//         </div>
-//       </div>
+//     <div className="bg-blue-600 p-4 rounded-xl text-white flex justify-between items-center shadow-lg">
+//       <span className="font-bold">Net Salary (รับสุทธิ)</span>
+//       <span className="text-2xl font-black">฿{fmt(r.netPay)}</span>
 //     </div>
-
-//     {/* Net */}
-//     <div className="bg-primary/5 rounded-lg p-4 flex justify-between items-center">
-//       <span className="font-bold text-base text-foreground flex items-center gap-2">
-//         <CheckCircle className="h-5 w-5 text-success" /> เงินเดือนสุทธิ
-//       </span>
-//       <span className="text-xl font-bold text-foreground">฿{fmt(r.netPay)}</span>
-//     </div>
-
-//     {r.paidDate && (
-//       <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-//         <Clock className="h-3 w-3" /> จ่ายเมื่อ {r.paidDate}
-//       </div>
-//     )}
 //   </div>
 // );
 
-// export default Payroll;
+// export default PayrollPage;

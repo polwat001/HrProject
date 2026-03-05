@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
-import { employeeAPI, organizationAPI } from "@/services/api";
+import { contractAPI, employeeAPI, organizationAPI } from "@/services/api";
 import {
   Plus,
   Search,
