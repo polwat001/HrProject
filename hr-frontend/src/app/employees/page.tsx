@@ -211,16 +211,24 @@ export default function EmployeesPage() {
   // FILTER
   // ===========================
   const filteredEmployees = employees.filter((emp) => {
-    const firstName = emp.firstname_th ?? "";
-    const lastName = emp.lastname_th ?? "";
-    const code = emp.employee_code ?? "";
-    const matchSearch =
-      firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      code.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchCompany = !filterCompanyId || emp.current_company_id === filterCompanyId;
-    return matchSearch && matchCompany;
-  });
+  const firstName = emp.firstname_th ?? "";
+  const lastName = emp.lastname_th ?? "";
+  const code = emp.employee_code ?? "";
+  const companyName = emp.company_name ?? "";
+
+  const keyword = searchTerm.toLowerCase();
+
+  const matchSearch =
+    firstName.toLowerCase().includes(keyword) ||
+    lastName.toLowerCase().includes(keyword) ||
+    code.toLowerCase().includes(keyword) ||
+    companyName.toLowerCase().includes(keyword);
+
+  const matchCompany =
+    !filterCompanyId || emp.current_company_id === filterCompanyId;
+
+  return matchSearch && matchCompany;
+});
 
   if (loading) {
     return (
