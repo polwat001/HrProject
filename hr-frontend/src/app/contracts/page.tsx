@@ -10,6 +10,7 @@ import {
   Loader,
   AlertTriangle,
   CheckCircle,
+  Recycle,
 } from "lucide-react";
 
 import type { Contract } from "@/types";
@@ -85,21 +86,30 @@ export default function ContractsPage() {
 
   // ================= STATUS LOGIC =================
   const getContractStatus = (contract: Contract) => {
-    if (contract.status === "expired") {
+    if (contract.STATUS === "terminated") {
       return {
-        type: "expired",
-        label: "Expired",
+        type: "terminated",
+        label: "Terminated",
         icon: AlertTriangle,
         color: "bg-red-100 text-red-700 border-red-300",
       };
     }
 
-    if (contract.status === "expiring_soon") {
+    if (contract.STATUS === "expired") {
       return {
         type: "expiring",
         label: "Expiring Soon",
         icon: AlertTriangle,
-        color: "bg-orange-100 text-orange-700 border-orange-300",
+        color: "bg-orange-100 text-[#F5A10A] border-orange-300",
+      };
+    }
+
+if (contract.STATUS === "renewed") {
+      return {
+        type: "renewed",
+        label: "Renewed",
+        icon: Recycle,
+        color: "bg-blue-100 text-blue-700 border-blue-300",
       };
     }
 
@@ -113,21 +123,26 @@ export default function ContractsPage() {
 
   const filteredContracts = contracts.filter((contract) => {
     if (selectedStatus === "all") return true;
-    return getContractStatus(contract).type === selectedStatus;
+    return contract.STATUS === selectedStatus;
   });
 
-  const activeCount = contracts.filter(
-    (c) => getContractStatus(c).type === "active",
-  ).length;
+  const statusCount = useMemo(() => {
+    const count = {
+      active: 0,
+      expiring_soon: 0,
+      expired: 0,
+      renewed: 0,
+      terminated: 0,
+    };
 
-  const expiringCount = contracts.filter(
-    (c) => getContractStatus(c).type === "expiring",
-  ).length;
+    contracts.forEach((c) => {
+      if (count.hasOwnProperty(c.STATUS)) {
+        count[c.STATUS as keyof typeof count]++;
+      }
+    });
 
-  const expiredCount = contracts.filter(
-    (c) => getContractStatus(c).type === "expired",
-  ).length;
-
+    return count;
+  }, [contracts]);
   // ================= DELETE =================
   const handleDelete = async (id: number) => {
     if (!confirm("ยืนยันการลบสัญญา?")) return;
@@ -183,12 +198,17 @@ export default function ContractsPage() {
       </div>
 
       {/* Status Filter */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {[
           { id: "all", label: "All", count: contracts.length },
-          { id: "active", label: "Active", count: activeCount },
-          { id: "expiring", label: "Expiring", count: expiringCount },
-          { id: "expired", label: "Expired", count: expiredCount },
+          { id: "active", label: "Active", count: statusCount.active },
+          { id: "expired", label: "Expired", count: statusCount.expired },
+          { id: "renewed", label: "Renewed", count: statusCount.renewed },
+          {
+            id: "terminated",
+            label: "Terminated",
+            count: statusCount.terminated,
+          },
         ].map((s) => (
           <button
             key={s.id}
@@ -250,12 +270,10 @@ export default function ContractsPage() {
                     </td>
 
                     <td className="py-4 px-6 font-medium">
-                     {contract.employee_name}
+                      {contract.employee_name}
                     </td>
 
-                    <td className="py-4 px-6">
-                      {contract.company_name}
-                    </td>
+                    <td className="py-4 px-6">{contract.company_name}</td>
 
                     <td className="py-4 px-6 uppercase ">
                       {contract.contract_number}
@@ -275,7 +293,7 @@ export default function ContractsPage() {
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}
                       >
-                        <StatusIcon size={14} /> {status.label}
+                        <StatusIcon size={14} /> {contract.STATUS}
                       </span>
                     </td>
 

@@ -6,7 +6,7 @@ import type {
   EmployeeTransferRequest, LeavePolicy, Holiday, Role,
   UserAssignment, DashboardStats, HeadcountByCompany, HeadcountByDepartment,
   ContractExpiringWidget, AttendanceStats, OTCostSummary,
-  EmploymentHistory, LeaveQuota, Section
+  EmploymentHistory, LeaveQuota, Section, Payroll
 } from '@/types';
 
 const api = axios.create({
@@ -129,9 +129,8 @@ export const employeeAPI = {
     status?: string;
   }) => api.get<Employee[]>('/employees', { params: filters }),
   
-  getEmployeeById: (id: number) => api.get<Employee>(`/employees/${id}`),
-  
-  createEmployee: (data: Partial<Employee>) => api.post('/employees', data),
+   getEmployees: () => api.get("/employees"),
+  createEmployee: (data) => api.post("/employees", data),
   
   updateEmployee: (id: number, data: Partial<Employee>) =>
     api.put(`/employees/${id}`, data),
@@ -291,8 +290,6 @@ export const contractAPI = {
   }) => api.post('/contracts', data),
 
 
-
-
   // Contract Templates
   getTemplates: () => api.get<ContractTemplate[]>('/contracts/templates'),
   
@@ -307,7 +304,29 @@ export const contractAPI = {
   generateFromTemplate: (templateId: number, employeeId: number, variables: Record<string, string>) =>
     api.post(`/contracts/templates/${templateId}/generate`, { employeeId, variables }),
 };
+// ============ PAYROLL ============
+export const payrollAPI = {
+  getPayrolls: (filters?: { employee_id?: number }) =>
+    api.get("/payroll", { params: filters }),
 
+  getPayrollById: (id: number) =>
+    api.get(`/payroll/${id}`),
+
+  createPayroll: (data: {
+    employee_id: number
+    salary: number
+    bonus?: number
+    deduction?: number
+    pay_date: string
+  }) =>
+    api.post("/payroll", data),
+
+  updatePayroll: (id: number, data: any) =>
+    api.put(`/payroll/${id}`, data),
+
+  deletePayroll: (id: number) =>
+    api.delete(`/payroll/${id}`),
+};
 // ============ REPORTS ============
 export const reportsAPI = {
   generateReport: (request: ReportRequest) =>

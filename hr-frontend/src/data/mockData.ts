@@ -370,23 +370,16 @@ export const payrollRecords: PayrollRecord[] = [
   }
 ];
 
-export const payrollSummaries: PayrollSummary[] = [
+
+
+export const payrollSummaries = [
   {
     month: 2,
     year: 2026,
-    totalEmployees: 45,
-    totalIncome: 2450000,
-    totalDeduction: 185000,
-    totalNetPay: 2265000,
-    status: "paid"
+    totalEmployees: 4,
+    totalIncome: 140800,
+    totalDeduction: 8600,
+    totalNetPay: 132200,
+    status: "approved",
   },
-  {
-    month: 1,
-    year: 2026,
-    totalEmployees: 44,
-    totalIncome: 2380000,
-    totalDeduction: 178000,
-    totalNetPay: 2202000,
-    status: "paid"
-  }
 ];

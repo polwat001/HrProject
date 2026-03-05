@@ -313,3 +313,36 @@ export interface ReportResult {
   generatedAt: string;
   fileName: string;
 }
+
+// ============ PAYROLL ============
+export interface Payroll {
+
+  id: number
+
+  employee_id: number
+
+  base_salary: number
+
+  position_allowance: number
+
+  ot_amount: number
+
+  total_income: number
+
+  total_deduction: number
+
+  net_pay: number
+
+  payroll_month: number
+
+  payroll_year: number
+
+  status: 'draft' | 'approved' | 'paid'
+
+  created_at: string
+
+  employee_code?: string
+  first_name?: string
+  last_name?: string
+
+}

@@ -39,7 +39,9 @@ export default function EmployeesPage() {
   const [positions, setPositions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(currentCompanyId);
+  const [filterCompanyId, setFilterCompanyId] = useState<number | null>(
+    currentCompanyId,
+  );
   const [showFilters, setShowFilters] = useState(false);
 
   // ✅ Delete modal
@@ -77,9 +79,15 @@ export default function EmployeesPage() {
       setPositions(positionsData);
 
       const mappedEmployees = empRes.data.map((emp: any) => {
-        const company = companiesData.find((c: any) => c.id === emp.current_company_id);
-        const department = departmentsData.find((d: any) => d.id === emp.department_id);
-        const position = positionsData.find((p: any) => p.id === emp.position_id);
+        const company = companiesData.find(
+          (c: any) => c.id === emp.current_company_id,
+        );
+        const department = departmentsData.find(
+          (d: any) => d.id === emp.department_id,
+        );
+        const position = positionsData.find(
+          (p: any) => p.id === emp.position_id,
+        );
         return {
           id: emp.id,
           employee_code: emp.employee_code,
@@ -178,7 +186,9 @@ export default function EmployeesPage() {
       setShowFormModal(false);
       await loadData();
     } catch (err: any) {
-      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setFormError(
+        err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      );
     } finally {
       setSaving(false);
     }
@@ -211,30 +221,33 @@ export default function EmployeesPage() {
   // FILTER
   // ===========================
   const filteredEmployees = employees.filter((emp) => {
-  const firstName = emp.firstname_th ?? "";
-  const lastName = emp.lastname_th ?? "";
-  const code = emp.employee_code ?? "";
-  const companyName = emp.company_name ?? "";
+    const firstName = emp.firstname_th ?? "";
+    const lastName = emp.lastname_th ?? "";
+    const code = emp.employee_code ?? "";
+    const companyName = emp.company_name ?? "";
 
-  const keyword = searchTerm.toLowerCase();
+    const keyword = searchTerm.toLowerCase();
 
-  const matchSearch =
-    firstName.toLowerCase().includes(keyword) ||
-    lastName.toLowerCase().includes(keyword) ||
-    code.toLowerCase().includes(keyword) ||
-    companyName.toLowerCase().includes(keyword);
+    const matchSearch =
+      firstName.toLowerCase().includes(keyword) ||
+      lastName.toLowerCase().includes(keyword) ||
+      code.toLowerCase().includes(keyword) ||
+      companyName.toLowerCase().includes(keyword);
 
-  const matchCompany =
-    !filterCompanyId || emp.current_company_id === filterCompanyId;
+    const matchCompany =
+      !filterCompanyId || emp.current_company_id === filterCompanyId;
 
-  return matchSearch && matchCompany;
-});
+    return matchSearch && matchCompany;
+  });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
+          <Loader
+            className="animate-spin text-blue-600 mx-auto mb-4"
+            size={40}
+          />
           <p className="text-slate-600 font-medium">Loading employees...</p>
         </div>
       </div>
@@ -246,7 +259,9 @@ export default function EmployeesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">👥 Employee Directory</h1>
+          <h1 className="text-3xl font-bold text-slate-900">
+            👥 Employee Directory
+          </h1>
           <p className="text-slate-600 mt-1">Manage and view all employees</p>
         </div>
         <div className="flex gap-3">
@@ -265,11 +280,34 @@ export default function EmployeesPage() {
         </div>
       </div>
 
+      {/* Footer Summary */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <p className="text-sm text-blue-700 font-medium">Total Employees</p>
+          <p className="text-3xl font-bold text-blue-900">{employees.length}</p>
+        </div>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <p className="text-sm text-green-700 font-medium">Showing</p>
+          <p className="text-3xl font-bold text-green-900">
+            {filteredEmployees.length}
+          </p>
+        </div>
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+          <p className="text-sm text-purple-700 font-medium">Active</p>
+          <p className="text-3xl font-bold text-purple-900">
+            {employees.filter((e) => e.status === "active").length}
+          </p>
+        </div>
+      </div>
+      
       {/* Search & Filter */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
         <div className="flex gap-4 mb-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 text-slate-400" size={20} />
+            <Search
+              className="absolute left-3 top-3 text-slate-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Search by name or employee code..."
@@ -289,15 +327,23 @@ export default function EmployeesPage() {
 
         {showFilters && (
           <div className="pt-4 border-t border-slate-200">
-            <label className="block text-sm font-semibold text-slate-700 mb-2">Company</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-2">
+              Company
+            </label>
             <select
               value={filterCompanyId ?? ""}
-              onChange={(e) => setFilterCompanyId(e.target.value ? parseInt(e.target.value) : null)}
+              onChange={(e) =>
+                setFilterCompanyId(
+                  e.target.value ? parseInt(e.target.value) : null,
+                )
+              }
               className="w-full px-3 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             >
               <option value="">All Companies</option>
               {companies.map((c) => (
-                <option key={c.id} value={c.id}>{c.name_th}</option>
+                <option key={c.id} value={c.id}>
+                  {c.name_th}
+                </option>
               ))}
             </select>
           </div>
@@ -316,21 +362,37 @@ export default function EmployeesPage() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Name</th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Company</th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Department</th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Position</th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Status</th>
-                  <th className="text-center py-4 px-6 font-semibold text-slate-700">Actions</th>
+                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                    Name
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                    Company
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                    Department
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                    Position
+                  </th>
+                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
+                    Status
+                  </th>
+                  <th className="text-center py-4 px-6 font-semibold text-slate-700">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200">
                 {filteredEmployees.map((emp) => (
-                  <tr key={emp.id} className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors">
+                  <tr
+                    key={emp.id}
+                    className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
+                  >
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
-                          {emp.firstname_th?.charAt(0)}{emp.lastname_th?.charAt(0)}
+                          {emp.firstname_th?.charAt(0)}
+                          {emp.lastname_th?.charAt(0)}
                         </div>
                         <div>
                           <p className="font-semibold text-slate-900">
@@ -341,7 +403,9 @@ export default function EmployeesPage() {
                               </span>
                             )}
                           </p>
-                          <p className="text-xs text-slate-500">{emp.employee_code}</p>
+                          <p className="text-xs text-slate-500">
+                            {emp.employee_code}
+                          </p>
                         </div>
                       </div>
                     </td>
@@ -358,7 +422,9 @@ export default function EmployeesPage() {
                       </span>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="text-sm text-slate-700 font-medium">{emp.position_name}</span>
+                      <span className="text-sm text-slate-700 font-medium">
+                        {emp.position_name}
+                      </span>
                     </td>
                     <td className="py-4 px-6">
                       <StatusBadge status={emp.status} />
@@ -387,24 +453,6 @@ export default function EmployeesPage() {
             </table>
           </div>
         )}
-      </div>
-
-      {/* Footer Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700 font-medium">Total Employees</p>
-          <p className="text-3xl font-bold text-blue-900">{employees.length}</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <p className="text-sm text-green-700 font-medium">Showing</p>
-          <p className="text-3xl font-bold text-green-900">{filteredEmployees.length}</p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-          <p className="text-sm text-purple-700 font-medium">Active</p>
-          <p className="text-3xl font-bold text-purple-900">
-            {employees.filter((e) => e.status === "active").length}
-          </p>
-        </div>
       </div>
 
       {/* ✅ Add / Edit Modal */}
@@ -449,7 +497,9 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     value={formData.firstname_th}
-                    onChange={(e) => setFormData({ ...formData, firstname_th: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, firstname_th: e.target.value })
+                    }
                     placeholder="เช่น สมชาย"
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
@@ -461,7 +511,9 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     value={formData.lastname_th}
-                    onChange={(e) => setFormData({ ...formData, lastname_th: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, lastname_th: e.target.value })
+                    }
                     placeholder="เช่น ใจดี"
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
@@ -477,7 +529,9 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     value={formData.nickname}
-                    onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, nickname: e.target.value })
+                    }
                     placeholder="เช่น โอ๊ต"
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
@@ -489,7 +543,12 @@ export default function EmployeesPage() {
                   <input
                     type="text"
                     value={formData.employee_code}
-                    onChange={(e) => setFormData({ ...formData, employee_code: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        employee_code: e.target.value,
+                      })
+                    }
                     placeholder="เช่น EMP001"
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   />
@@ -504,7 +563,9 @@ export default function EmployeesPage() {
                 <input
                   type="text"
                   value={formData.id_card_number}
-                  onChange={(e) => setFormData({ ...formData, id_card_number: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, id_card_number: e.target.value })
+                  }
                   placeholder="เช่น 1234567890123"
                   maxLength={13}
                   className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -519,11 +580,18 @@ export default function EmployeesPage() {
                   </label>
                   <select
                     value={formData.current_company_id}
-                    onChange={(e) => setFormData({ ...formData, current_company_id: Number(e.target.value) })}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        current_company_id: Number(e.target.value),
+                      })
+                    }
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   >
                     {companies.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name_th}</option>
+                      <option key={c.id} value={c.id}>
+                        {c.name_th}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -533,7 +601,9 @@ export default function EmployeesPage() {
                   </label>
                   <select
                     value={formData.STATUS}
-                    onChange={(e) => setFormData({ ...formData, STATUS: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, STATUS: e.target.value })
+                    }
                     className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
                   >
                     <option value="active">Active</option>
@@ -583,7 +653,9 @@ export default function EmployeesPage() {
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-red-50 to-slate-50">
               <div className="flex items-center gap-3">
                 <AlertTriangle size={20} className="text-red-600" />
-                <h3 className="text-lg font-bold text-slate-900">ยืนยันการลบ</h3>
+                <h3 className="text-lg font-bold text-slate-900">
+                  ยืนยันการลบ
+                </h3>
               </div>
               <button
                 onClick={() => setShowDeleteModal(false)}
@@ -606,12 +678,17 @@ export default function EmployeesPage() {
                 </div>
                 <div>
                   <p className="font-semibold text-slate-900">
-                    {deletingEmployee.firstname_th} {deletingEmployee.lastname_th}
+                    {deletingEmployee.firstname_th}{" "}
+                    {deletingEmployee.lastname_th}
                   </p>
-                  <p className="text-xs text-slate-500">{deletingEmployee.employee_code}</p>
+                  <p className="text-xs text-slate-500">
+                    {deletingEmployee.employee_code}
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-red-600 mt-3">⚠️ การลบนี้ไม่สามารถย้อนกลับได้</p>
+              <p className="text-xs text-red-600 mt-3">
+                ⚠️ การลบนี้ไม่สามารถย้อนกลับได้
+              </p>
             </div>
 
             {/* Footer */}
@@ -647,11 +724,17 @@ export default function EmployeesPage() {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
     active: { label: "✓ Active", className: "bg-green-100 text-green-700" },
-    probation: { label: "⏳ Probation", className: "bg-yellow-100 text-yellow-700" },
+    probation: {
+      label: "⏳ Probation",
+      className: "bg-yellow-100 text-yellow-700",
+    },
     resigned: { label: "✕ Resigned", className: "bg-red-100 text-red-700" },
     retired: { label: "🎓 Retired", className: "bg-slate-100 text-slate-600" },
   };
-  const s = map[status] ?? { label: status, className: "bg-slate-100 text-slate-600" };
+  const s = map[status] ?? {
+    label: status,
+    className: "bg-slate-100 text-slate-600",
+  };
   return (
     <span className={`px-3 py-1 rounded-full text-xs font-bold ${s.className}`}>
       {s.label}
