@@ -9,10 +9,11 @@ exports.getPayrolls = async (req, res) => {
         p.*,
         e.employee_code,
         e.firstname_th,
-        e.lastname_th
+        e.lastname_th,
+        d.NAME -- ดึงชื่อแผนกจากตาราง departments
       FROM payrolls p
-      LEFT JOIN employees e
-      ON p.employee_id = e.id
+      LEFT JOIN employees e ON p.employee_id = e.id
+      LEFT JOIN departments d ON e.department_id = d.id -- เชื่อมไปที่แผนกผ่าน employee
       ORDER BY p.id DESC
     `);
 

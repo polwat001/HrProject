@@ -22,19 +22,19 @@ export default function LoginPage() {
 
     try {
       const response = await authAPI.login(username, password);
-      
-      const { token, user, availableCompanies } = response.data;
+      const { token, userData, availableCompanies } = response.data;
 
       // Store token
       localStorage.setItem('hr_token', token);
 
-      // Update store
-      setUser(user);
+      //  อัปเดต store โดยใช้ userData
+      setUser(userData); 
       setAvailableCompanies(availableCompanies || []);
       setToken(token);
       
-      // Set default company
-      if (user.is_super_admin) {
+      // เช็กสิทธิ์โดยใช้ userData
+      // ใส่เครื่องหมาย ? (Optional Chaining) กันเหนียวไว้ด้วย
+      if (userData?.is_super_admin) {
         setCurrentCompanyId(null); // null means "All Companies" for super admin
       } else if (availableCompanies?.length > 0) {
         setCurrentCompanyId(availableCompanies[0].company_id);

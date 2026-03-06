@@ -328,6 +328,38 @@ export default function OrganizationPage() {
         </button>
       </div>
 
+      {/* Info Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+          <h3 className="font-bold text-blue-900 mb-3"> Organization</h3>
+          <p className="text-4xl font-bold text-blue-900">{companies.length}</p>
+          <p className="text-sm text-blue-700 mt-2">
+            Total organizational units
+          </p>
+        </div>
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+          <h3 className="font-bold text-blue-900 mb-3"> Departments</h3>
+          <p className="text-4xl font-bold text-blue-900">
+            {departments.length}
+          </p>
+          <p className="text-sm text-blue-700 mt-2">Total Department units</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+          <h3 className="font-bold text-purple-900 mb-3"> Positions</h3>
+          <p className="text-4xl font-bold text-purple-900">
+            {positions.length}
+          </p>
+          <p className="text-sm text-purple-700 mt-2">Total positions</p>
+        </div>
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
+          <h3 className="font-bold text-purple-900 mb-3">Level</h3>
+          <p className="text-4xl font-bold text-purple-900">
+            {positions.length}
+          </p>
+          <p className="text-sm text-purple-700 mt-2">Total positions</p>
+        </div>
+      </div>
+
       {/* Tabs */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex border-b border-slate-200">
@@ -686,31 +718,7 @@ export default function OrganizationPage() {
         )}
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
-          <h3 className="font-bold text-blue-900 mb-3">📊 Organization</h3>
-          <p className="text-4xl font-bold text-blue-900">{companies.length}</p>
-          <p className="text-sm text-blue-700 mt-2">
-            Total organizational units
-          </p>
-        </div>
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
-          <h3 className="font-bold text-blue-900 mb-3">📊 Departments</h3>
-          <p className="text-4xl font-bold text-blue-900">
-            {departments.length}
-          </p>
-          <p className="text-sm text-blue-700 mt-2">Total Department units</p>
-        </div>
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
-          <h3 className="font-bold text-purple-900 mb-3">👔 Positions</h3>
-          <p className="text-4xl font-bold text-purple-900">
-            {positions.length}
-          </p>
-          <p className="text-sm text-purple-700 mt-2">Total positions</p>
-        </div>
-      </div>
-
+      
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

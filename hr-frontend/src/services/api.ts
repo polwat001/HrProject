@@ -48,7 +48,7 @@ api.interceptors.request.use(
 
     // 🔥 ใส่ token ตายตัวตรงนี้เลย
     config.headers.Authorization =
-      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3MjYxNjI3MCwiZXhwIjoxNzcyNzAyNjcwfQ.Yc7-_jT4mMUFYVP2Xgkciu7LydJl_dQ4_5T6iZD1mGE";
+      "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjp7ImlkIjoxLCJpc19zdXBlcl9hZG1pbiI6MX0sImlhdCI6MTc3Mjc2NjM2NCwiZXhwIjoxNzcyODUyNzY0fQ.Zgc31pgsJl-2qNv4GkD9fpWNHusbXlOgs4S4ofv8Me8";
 
     return config;
   },
@@ -339,7 +339,8 @@ export const reportsAPI = {
 // ============ USERS & PERMISSIONS ============
 export const userAPI = {
   // Users
-  getUsers: () => api.get<User[]>('/users'),
+  getUsers: (companyId?: number | null) => 
+    api.get('/users', { params: { companyId } }),
   
   getUserById: (id: number) => api.get<User>(`/users/${id}`),
   
@@ -347,13 +348,14 @@ export const userAPI = {
     api.put(`/users/${id}`, data),
 
   // Roles
-  getRoles: () => api.get<Role[]>('/users/roles'),
+  getRoles: (companyId?: number | null) => 
+    api.get('/users/roles', { params: { companyId } }),
   
   createRole: (data: Partial<Role>) => api.post('/users/roles', data),
   
-  updateRole: (id: number, data: Partial<Role>) =>
+ updateRole: (id: number, data: Partial<Role>) =>
     api.put(`/users/roles/${id}`, data),
-
+ 
   // User Assignments (Permissions)
   getUserAssignments: (userId: number) =>
     api.get<UserAssignment[]>(`/users/${userId}/assignments`),

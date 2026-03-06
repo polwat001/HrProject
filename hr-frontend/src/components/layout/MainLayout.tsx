@@ -74,30 +74,13 @@ export default function MainLayout({
   const showCompanySwitcher =
     user?.is_super_admin || availableCompanies.length > 1;
 
-  const getPageTitle = () => {
-    const path = pathname.split("/")[1];
-    const titleMap: Record<string, string> = {
-      dashboard: "Dashboard",
-      organization: "Organization Structure",
-      employees: "Employee Management",
-      attendance: "Attendance & OT",
-      leaves: "Leave Management",
-      contracts: "Contract Management",
-      payroll: "Payroll System",
-      reports: "Reports Center",
-      settings: "System Settings",
-      self_service: "Employee Self-Service",
-    };
-    return titleMap[path] || "HR System";
-  };
-
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100">
       {/* Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-20"
-        } bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col transition-all duration-300 shadow-2xl border-r border-slate-700 overflow-hidden`}
+        } bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white flex flex-col transition-all duration-300 shadow-2xl border-r border-slate-700 overflow-hidden z-20`}
       >
         {/* Logo */}
         <div className="p-6 border-b border-slate-700/50 flex items-center gap-3">
@@ -135,11 +118,9 @@ export default function MainLayout({
                   className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
                 />
                 {sidebarOpen && (
-                  <>
-                    <span className="text-sm font-medium flex-1 text-white">
-                      {item.name}
-                    </span>
-                  </>
+                  <span className="text-sm font-medium flex-1 text-white">
+                    {item.name}
+                  </span>
                 )}
               </Link>
             );
@@ -148,34 +129,20 @@ export default function MainLayout({
 
         {/* Divider */}
         <div className="px-4 py-4 border-t border-slate-700/50">
-          <p className="text-xs text-slate-400 font-semibold px-2 mb-3">
-            Connected Systems
-          </p>
           <div className="text-xs text-slate-400 space-y-2">
-            <div className="flex items-center gap-2 px-2 py-1">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span>API Server: Online</span>
-            </div>
+            <span>
+              Copyright @ 2025 Webpark. <br></br> All right reserved.
+            </span>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-slate-700/50 space-y-2">
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 text-slate-300 hover:text-white hover:bg-slate-700/70 w-full px-4 py-3 rounded-lg transition-all duration-200"
-            title="Logout"
-          >
-            <LogOut size={20} />
-            {sidebarOpen && <span className="text-sm font-medium">Logout</span>}
-          </button>
-        </div>
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm">
+      {/* Main Content Area Wrapper */}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        {/* Header (เหลือแค่ปุ่ม Sidebar Menu ฝั่งซ้าย และเมนูต่างๆ ฝั่งขวา) */}
+        <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4 flex-1">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -183,16 +150,6 @@ export default function MainLayout({
             >
               {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
-            <div className="flex flex-col">
-              <h2 className="text-2xl font-bold text-slate-900">
-                {getPageTitle()}
-              </h2>
-              <p className="text-xs text-slate-500">
-                {currentCompanyId === null
-                  ? "🌐 All Companies (Consolidated)"
-                  : "🏢 Company View"}
-              </p>
-            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -251,10 +208,9 @@ export default function MainLayout({
                 className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg transition-colors group"
               >
                 <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                  {user?.firstName?.charAt(0)}
-                  {user?.lastName?.charAt(0)}
+                  {user?.firstName?.charAt(0) || user?.username?.charAt(0)}
                 </div>
-                <div className="hidden md:block">
+                <div className="hidden md:block text-left">
                   <p className="text-sm font-semibold text-slate-900 ">
                     {user?.username}
                   </p>
@@ -274,12 +230,12 @@ export default function MainLayout({
                   <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-200">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg">
-                        {user?.firstName?.charAt(0)}
-                        {user?.lastName?.charAt(0)}
+                        {user?.firstName?.charAt(0) ||
+                          user?.username?.charAt(0)}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-slate-900">
-                          {user?.firstName} {user?.lastName}
+                          {user?.firstName || user?.username} {user?.lastName}
                         </p>
                         <p className="text-xs text-slate-600">{user?.email}</p>
                       </div>
@@ -324,7 +280,7 @@ export default function MainLayout({
         </header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex-1 overflow-auto bg-slate-50/50">{children}</main>
       </div>
     </div>
   );

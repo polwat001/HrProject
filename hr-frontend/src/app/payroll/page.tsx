@@ -50,7 +50,7 @@ type PayrollRecord = {
 
   employee_code: string;
   employee_name: string;
-  department: string;
+  NAME: string;
 
   base_salary: number;
   position_allowance: number;
@@ -66,8 +66,8 @@ type PayrollRecord = {
   status: string;
 };
 
-const fmt = (n: number) =>
-  n.toLocaleString("th-TH", { minimumFractionDigits: 0 });
+const fmt = (n: number | string) =>
+  Number(n).toLocaleString("th-TH");
 
 const statusConfig: Record<
   string,
