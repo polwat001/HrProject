@@ -66,8 +66,7 @@ type PayrollRecord = {
   status: string;
 };
 
-const fmt = (n: number | string) =>
-  Number(n).toLocaleString("th-TH");
+const fmt = (n: number | string) => Number(n).toLocaleString("th-TH");
 
 const statusConfig: Record<
   string,
@@ -91,11 +90,11 @@ export default function PayrollPage() {
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [selectedMonth, setSelectedMonth] = useState("2-2026");
   const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(
-    null
+    null,
   );
 
   const [sortField, setSortField] = useState<"employee_code" | "net_pay">(
-    "employee_code"
+    "employee_code",
   );
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -173,15 +172,12 @@ export default function PayrollPage() {
       </div>
 
       {/* TABLE */}
-
+      <CardHeader>
+        <CardTitle>
+          Payroll เดือน {months.find((m) => m.value === selectedMonth)?.label}
+        </CardTitle>
+      </CardHeader>
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Payroll เดือน{" "}
-            {months.find((m) => m.value === selectedMonth)?.label}
-          </CardTitle>
-        </CardHeader>
-
         <CardContent className="p-0">
           <Table>
             <TableHeader>
@@ -218,7 +214,9 @@ export default function PayrollPage() {
               {filtered.map((r) => (
                 <TableRow key={r.id}>
                   <TableCell>{r.employee_code}</TableCell>
-                  <TableCell>{r.firstname_th} {r.lastname_th}</TableCell>
+                  <TableCell>
+                    {r.firstname_th} {r.lastname_th}
+                  </TableCell>
                   <TableCell>{r.NAME}</TableCell>
 
                   <TableCell className="text-right">
@@ -272,9 +270,7 @@ export default function PayrollPage() {
             <DialogTitle>Payslip</DialogTitle>
           </DialogHeader>
 
-          {selectedPayslip && (
-            <PayslipContent record={selectedPayslip} />
-          )}
+          {selectedPayslip && <PayslipContent record={selectedPayslip} />}
         </DialogContent>
       </Dialog>
     </div>
