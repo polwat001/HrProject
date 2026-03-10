@@ -27,11 +27,62 @@ export default function OrganizationPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // ✅ เปลี่ยน mockLevel เป็น useState เพื่อให้ add/edit/delete ได้
   const [mockLevel, setMockLevel] = useState([
-    { id: 1, level: "s1", level_title: "staff" },
-    { id: 2, level: "h1", level_title: "HR" },
-    { id: 3, level: "m1", level_title: "Manager" },
+    {
+      id: 1,
+      level: "s1",
+      level_title: "Staff",
+      thai_title: "พนักงาน / เจ้าหน้าที่",
+    },
+    {
+      id: 2,
+      level: "s2",
+      level_title: "Senior Staff",
+      thai_title: "พนักงานอาวุโส / เจ้าหน้าที่อาวุโส",
+    },
+    {
+      id: 3,
+      level: "S3",
+      level_title: "Supervisor",
+      thai_title: "หัวหน้างาน / หัวหน้าหน่วย",
+    },
+    {
+      id: 4,
+      level: "M1",
+      level_title: "Assistant Manager",
+      thai_title: "ผู้ช่วยผู้จัดการแผนก",
+    }, 
+    {
+      id: 5,
+      level: "M2",
+      level_title: "Section Manager",
+      thai_title: "ผู้จัดการแผนก",
+    },
+    {
+      id: 6,
+      level: "M3",
+      level_title: "Division Manager",
+      thai_title: "ผู้จัดการส่วน",
+    },
+    {
+      id: 7,
+      level: "M4",
+      level_title: "Department Manager",
+      thai_title: "ผู้จัดการฝ่าย",
+    },
+    { id: 8, level: "E1", level_title: "Director", thai_title: "ผู้อำนวยการ" },
+    {
+      id: 9,
+      level: "E2",
+      level_title: "General Manager (GM)",
+      thai_title: "ผู้จัดการทั่วไป",
+    },
+    {
+      id: 10,
+      level: "c1",
+      level_title: "Chief Executive Officer (CEO)",
+      thai_title: "ประธานเจ้าหน้าที่บริหาร",
+    },
   ]);
 
   // Department form
@@ -51,7 +102,7 @@ export default function OrganizationPage() {
   // Company form
   const [companyForm, setCompanyForm] = useState({ name_th: "" });
 
-  // ✅ Level form (เพิ่มใหม่)
+  // Level form 
   const [levelForm, setLevelForm] = useState({ level: "", level_title: "" });
 
   const [saving, setSaving] = useState(false);
@@ -90,7 +141,9 @@ export default function OrganizationPage() {
         code: p.LEVEL ?? "-",
         companyId: p.company_id,
         companyName:
-          companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ?? "-",
+          companyRes.data.find((c: any) => c.id === p.company_id)?.name_th ??
+          "-",
+          departmentName: mappedDepartments.find((d) => d.id === p.department_id)?.name ?? "ไม่ระบุแผนก",
         isActive: true,
       }));
 
@@ -131,7 +184,7 @@ export default function OrganizationPage() {
 
   const currentTab = tabConfig[selectedTab];
 
-  // ✅ แก้ handleOpenModal — ใช้ state ที่มีอยู่จริงทุกตัว
+  // แก้ handleOpenModal 
   const handleOpenModal = () => {
     setIsEditMode(false);
     setEditingId(null);
@@ -140,7 +193,11 @@ export default function OrganizationPage() {
     if (selectedTab === "companies") {
       setCompanyForm({ name_th: "" });
     } else if (selectedTab === "departments") {
-      setDeptForm({ name: "", costCenter: "", companyId: companies[0]?.id ?? 1 });
+      setDeptForm({
+        name: "",
+        costCenter: "",
+        companyId: companies[0]?.id ?? 1,
+      });
     } else if (selectedTab === "positions") {
       setPosForm({ title_th: "", level: "", companyId: companies[0]?.id ?? 1 });
     } else if (selectedTab === "levels") {
@@ -150,7 +207,7 @@ export default function OrganizationPage() {
     setShowModal(true);
   };
 
-  // ✅ แก้ handleSave — แยก if/else if แต่ละ tab ไม่ปนกัน
+  // แก้ handleSave 
   const handleSave = async () => {
     setFormError("");
     setSaving(true);
@@ -162,11 +219,12 @@ export default function OrganizationPage() {
           return;
         }
         if (isEditMode && editingId) {
-          await organizationAPI.updateCompany(editingId, { name_th: companyForm.name_th });
+          await organizationAPI.updateCompany(editingId, {
+            name_th: companyForm.name_th,
+          });
         } else {
           await organizationAPI.createCompany({ name_th: companyForm.name_th });
         }
-
       } else if (selectedTab === "departments") {
         if (!deptForm.name.trim()) {
           setFormError("กรุณากรอกชื่อแผนก");
@@ -185,7 +243,6 @@ export default function OrganizationPage() {
             company_id: deptForm.companyId,
           });
         }
-
       } else if (selectedTab === "positions") {
         if (!posForm.title_th.trim()) {
           setFormError("กรุณากรอกชื่อตำแหน่ง");
@@ -204,9 +261,8 @@ export default function OrganizationPage() {
             company_id: posForm.companyId,
           });
         }
-
       } else if (selectedTab === "levels") {
-        // ✅ Level save (mock state — เปลี่ยนเป็น API จริงได้ภายหลัง)
+        //  Level save 
         if (!levelForm.level.trim() || !levelForm.level_title.trim()) {
           setFormError("กรุณากรอกข้อมูล Level ให้ครบ");
           return;
@@ -229,7 +285,9 @@ export default function OrganizationPage() {
         await loadData();
       }
     } catch (err: any) {
-      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setFormError(
+        err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      );
     } finally {
       setSaving(false);
     }
@@ -251,7 +309,10 @@ export default function OrganizationPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
+          <Loader
+            className="animate-spin text-blue-600 mx-auto mb-4"
+            size={40}
+          />
           <p className="text-slate-600 font-medium">
             Loading organization structure...
           </p>
@@ -270,7 +331,7 @@ export default function OrganizationPage() {
     }
   };
 
-  // ✅ แก้ handleEditDepartment — เพิ่ม isEditMode + editingId ที่หายไป
+  // ✅ แก้ handleEditDepartment 
   const handleEditDepartment = (dept: Department) => {
     setDeptForm({
       name: dept.name,
@@ -313,11 +374,8 @@ export default function OrganizationPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            🏢 Organization Structure
+            Thai Summit Automotive Co., Ltd. (Headquarter)
           </h1>
-          <p className="text-slate-600 mt-1">
-            Manage departments and positions
-          </p>
         </div>
         <button
           onClick={handleOpenModal}
@@ -329,14 +387,14 @@ export default function OrganizationPage() {
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
           <h3 className="font-bold text-blue-900 mb-3"> Organization</h3>
           <p className="text-4xl font-bold text-blue-900">{companies.length}</p>
           <p className="text-sm text-blue-700 mt-2">
             Total organizational units
           </p>
-        </div>
+        </div> */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
           <h3 className="font-bold text-blue-900 mb-3"> Departments</h3>
           <p className="text-4xl font-bold text-blue-900">
@@ -354,9 +412,9 @@ export default function OrganizationPage() {
         <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
           <h3 className="font-bold text-purple-900 mb-3">Level</h3>
           <p className="text-4xl font-bold text-purple-900">
-            {positions.length}
+            {mockLevel.length}
           </p>
-          <p className="text-sm text-purple-700 mt-2">Total positions</p>
+          <p className="text-sm text-purple-700 mt-2">Total levels</p>
         </div>
       </div>
 
@@ -364,7 +422,7 @@ export default function OrganizationPage() {
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex border-b border-slate-200">
           {/* companies */}
-          <button
+          {/* <button
             onClick={() => setSelectedTab("companies")}
             className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
               selectedTab === "companies"
@@ -377,7 +435,7 @@ export default function OrganizationPage() {
             <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
               {companies.length}
             </span>
-          </button>
+          </button> */}
           {/* departments */}
           <button
             onClick={() => setSelectedTab("departments")}
@@ -502,7 +560,8 @@ export default function OrganizationPage() {
                           </h3>
                           <p className="text-sm text-slate-500 mt-1">
                             Company:{" "}
-                            {companies.find((c) => c.id === dept.companyId)?.name_th || "-"}
+                            {companies.find((c) => c.id === dept.companyId)
+                              ?.name_th || "-"}
                           </p>
                         </div>
                         <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -568,7 +627,7 @@ export default function OrganizationPage() {
                         Level
                       </th>
                       <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Company
+                        company
                       </th>
                       <th className="text-left py-4 px-6 font-semibold text-slate-700">
                         Status
@@ -718,7 +777,6 @@ export default function OrganizationPage() {
         )}
       </div>
 
-      
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">

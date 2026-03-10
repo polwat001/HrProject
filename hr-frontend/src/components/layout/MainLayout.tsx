@@ -154,7 +154,7 @@ export default function MainLayout({
 
           <div className="flex items-center gap-4">
             {/* Company Switcher */}
-            {showCompanySwitcher && (
+            {/* {showCompanySwitcher && (
               <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">
                 <span className="text-sm text-slate-700 font-medium">
                   Company:
@@ -180,7 +180,7 @@ export default function MainLayout({
                   ))}
                 </select>
               </div>
-            )}
+            )} */}
 
             {/* Quick Actions */}
             <div className="flex items-center gap-1">
@@ -215,7 +215,7 @@ export default function MainLayout({
                     {user?.username}
                   </p>
                   <p className="text-xs text-slate-500">
-                    {user?.is_super_admin ? "👑 Super Admin" : "👤 User"}
+                    {user?.is_super_admin ? " Super Admin" : " User"}
                   </p>
                 </div>
                 <ChevronDown
