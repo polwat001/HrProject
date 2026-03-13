@@ -86,7 +86,7 @@ export default function ContractsPage() {
 
   // ================= STATUS LOGIC =================
   const getContractStatus = (contract: Contract) => {
-    if (contract.STATUS === "terminated") {
+    if (contract.status === "terminated") {
       return {
         type: "terminated",
         label: "Terminated",
@@ -95,7 +95,7 @@ export default function ContractsPage() {
       };
     }
 
-    if (contract.STATUS === "expired") {
+    if (contract.status === "expired") {
       return {
         type: "expiring",
         label: "Expiring Soon",
@@ -104,7 +104,7 @@ export default function ContractsPage() {
       };
     }
 
-if (contract.STATUS === "renewed") {
+if (contract.status === "renewed") {
       return {
         type: "renewed",
         label: "Renewed",
@@ -280,20 +280,20 @@ if (contract.STATUS === "renewed") {
                     </td>
 
                     <td className="py-4 px-6 text-center font-mono text-sm">
-                      {new Date(contract.start_date).toLocaleDateString(
+                      {new Date(contract.startDate).toLocaleDateString(
                         "th-TH",
                       )}
                     </td>
 
                     <td className="py-4 px-6 text-center font-mono text-sm">
-                      {new Date(contract.end_date).toLocaleDateString("th-TH")}
+                      {new Date(contract.endDate).toLocaleDateString("th-TH")}
                     </td>
 
                     <td className="py-4 px-6 text-center">
                       <span
                         className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${status.color}`}
                       >
-                        <StatusIcon size={14} /> {contract.STATUS}
+                        <StatusIcon size={14} /> {contract.status}
                       </span>
                     </td>
 

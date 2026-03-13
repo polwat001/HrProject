@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
@@ -24,6 +24,7 @@ import {
   Wallet,
   UserCircle,
   Shield,
+  Circle
 } from "lucide-react";
 import { authAPI } from "@/services/api";
 
@@ -36,6 +37,7 @@ export default function MainLayout({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
 
   const {
     currentCompanyId,
@@ -47,8 +49,23 @@ export default function MainLayout({
 
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { name: "Organization", path: "/organization", icon: Building2 },
-    { name: "Employees", path: "/employees", icon: Users },
+    { 
+      name: "Organization", 
+      path: "/organization", 
+      icon: Building2,
+      subItems: [
+        { name: "Division", path: "/organization/division" },
+        { name: "Section", path: "/organization/section" },
+        { name: "Department", path: "/organization/department" },
+        { name: "Position", path: "/organization/position" },
+        { name: "Level", path: "/organization/level" },
+      ]
+    },
+    { 
+      name: "Employees", 
+      path: "/employees", 
+      icon: Users,
+    },
     { name: "Attendance & OT", path: "/attendance", icon: Clock },
     { name: "Leaves", path: "/leaves", icon: Calendar },
     { name: "Contracts", path: "/contracts", icon: FileText },
@@ -57,6 +74,23 @@ export default function MainLayout({
     { name: "User & Permissions", path: "/settings", icon: Shield },
     { name: "Self-Service", path: "/self-service", icon: UserCircle },
   ];
+
+  const toggleSubmenu = (path: string) => {
+    setOpenSubmenus((prev) => ({
+      ...prev,
+      [path]: !prev[path],
+    }));
+  };
+
+  useEffect(() => {
+    if (!pathname) return; // ป้องกันจอขาวกรณี pathname เป็น null
+    
+    menuItems.forEach(item => {
+      if (item.subItems && pathname.startsWith(item.path)) {
+        setOpenSubmenus(prev => ({ ...prev, [item.path]: true }));
+      }
+    });
+  }, [pathname]);
 
   if (pathname === "/login") return <>{children}</>;
 
@@ -71,8 +105,7 @@ export default function MainLayout({
     router.push("/login");
   };
 
-  const showCompanySwitcher =
-    user?.is_super_admin || availableCompanies.length > 1;
+  const showCompanySwitcher = user?.is_super_admin || availableCompanies.length > 1;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100">
@@ -98,31 +131,81 @@ export default function MainLayout({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname.startsWith(item.path);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            // ป้องกัน Error โดยใช้ Optional Chaining (?.)
+            const isActive = pathname === item.path || (hasSubItems && pathname?.startsWith(item.path));
+            const isSubOpen = openSubmenus[item.path];
+
             return (
-              <Link
-                key={item.path}
-                href={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative ${
-                  isActive
-                    ? "bg-blue-600 text-white shadow-lg"
-                    : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                }`}
-                title={!sidebarOpen ? item.name : undefined}
-              >
-                <Icon
-                  size={20}
-                  className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
-                />
-                {sidebarOpen && (
-                  <span className="text-sm font-medium flex-1 text-white">
-                    {item.name}
-                  </span>
+              <div key={item.path} className="flex flex-col">
+                {hasSubItems ? (
+                  <button
+                    onClick={() => toggleSubmenu(item.path)}
+                    className={`flex items-center gap-3 px-4 py-3 w-full rounded-lg transition-all duration-200 group relative ${
+                      isActive
+                        ? "bg-blue-600/10 text-blue-400"
+                        : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                    }`}
+                    title={!sidebarOpen ? item.name : undefined}
+                  >
+                    <Icon size={20} className={`flex-shrink-0 ${isActive ? "text-blue-400" : "text-slate-300"}`} />
+                    {sidebarOpen && (
+                      <>
+                        <span className="text-sm font-medium flex-1 text-left text-white">
+                          {item.name}
+                        </span>
+                        <ChevronDown 
+                          size={16} 
+                          className={`transition-transform duration-300 text-slate-400 ${isSubOpen ? 'rotate-180' : ''}`} 
+                        />
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.path}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative ${
+                      isActive
+                        ? "bg-blue-600 text-white shadow-lg"
+                        : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                    }`}
+                    title={!sidebarOpen ? item.name : undefined}
+                  >
+                    <Icon size={20} className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`} />
+                    {sidebarOpen && (
+                      <span className="text-sm font-medium flex-1 text-white">
+                        {item.name}
+                      </span>
+                    )}
+                  </Link>
                 )}
-              </Link>
+
+                {/* Submenu */}
+                {hasSubItems && isSubOpen && sidebarOpen && (
+                  <div className="mt-1 space-y-1 pl-11 pr-2">
+                    {item.subItems?.map((subItem) => {
+                      const isSubActive = pathname === subItem.path;
+                      return (
+                        <Link
+                          key={subItem.path}
+                          href={subItem.path}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                            isSubActive
+                              ? "bg-white/5 font-medium"
+                              : " hover:text-white hover:bg-slate-700/30"
+                          }`}
+                        >
+                          <Circle size={8} className={isSubActive ? "text-blue-400 fill-blue-400" : "text-slate-500"} />
+                          <span>{subItem.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
@@ -131,17 +214,15 @@ export default function MainLayout({
         <div className="px-4 py-4 border-t border-slate-700/50">
           <div className="text-xs text-slate-400 space-y-2">
             <span>
-              Copyright @ 2025 Webpark. <br></br> All right reserved.
+              Copyright @ 2025 Webpark. <br></br> All rights reserved.
             </span>
           </div>
         </div>
-
-        {/* Footer */}
       </aside>
 
       {/* Main Content Area Wrapper */}
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Header (เหลือแค่ปุ่ม Sidebar Menu ฝั่งซ้าย และเมนูต่างๆ ฝั่งขวา) */}
+        {/* Header */}
         <header className="bg-white border-b border-slate-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
           <div className="flex items-center gap-4 flex-1">
             <button
@@ -153,35 +234,6 @@ export default function MainLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Company Switcher */}
-            {/* {showCompanySwitcher && (
-              <div className="hidden md:flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-colors">
-                <span className="text-sm text-slate-700 font-medium">
-                  Company:
-                </span>
-                <select
-                  value={currentCompanyId ?? "all"}
-                  onChange={(e) =>
-                    setCurrentCompanyId(
-                      e.target.value === "all"
-                        ? null
-                        : parseInt(e.target.value),
-                    )
-                  }
-                  className="border-0 bg-transparent px-2 py-1 rounded outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer text-sm font-semibold text-slate-900"
-                >
-                  {user?.is_super_admin && (
-                    <option value="all">🌐 All Companies</option>
-                  )}
-                  {availableCompanies.map((c) => (
-                    <option key={c.company_id} value={c.company_id}>
-                      🏢 {c.name_th}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )} */}
-
             {/* Quick Actions */}
             <div className="flex items-center gap-1">
               <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900 relative group">
@@ -198,7 +250,6 @@ export default function MainLayout({
               </button>
             </div>
 
-            {/* Divider */}
             <div className="h-8 w-px bg-slate-200"></div>
 
             {/* User Menu */}
@@ -208,11 +259,11 @@ export default function MainLayout({
                 className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg transition-colors group"
               >
                 <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                  {user?.firstName?.charAt(0) || user?.username?.charAt(0)}
+                  {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-semibold text-slate-900 ">
-                    {user?.username}
+                    {user?.username || "Guest"}
                   </p>
                   <p className="text-xs text-slate-500">
                     {user?.is_super_admin ? " Super Admin" : " User"}
@@ -226,12 +277,10 @@ export default function MainLayout({
 
               {userMenuOpen && (
                 <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden">
-                  {/* Profile Header */}
                   <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-200">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg">
-                        {user?.firstName?.charAt(0) ||
-                          user?.username?.charAt(0)}
+                        {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-slate-900">
@@ -248,19 +297,15 @@ export default function MainLayout({
                     </div>
                   </div>
 
-                  {/* Menu Items */}
                   <div className="py-2">
                     <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2">
-                      <User size={16} />
-                      Edit Profile
+                      <User size={16} /> Edit Profile
                     </button>
                     <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-2">
-                      <Settings size={16} />
-                      Preferences
+                      <Settings size={16} /> Preferences
                     </button>
                   </div>
 
-                  {/* Logout */}
                   <div className="border-t border-slate-200">
                     <button
                       onClick={() => {
@@ -269,8 +314,7 @@ export default function MainLayout({
                       }}
                       className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2 font-medium"
                     >
-                      <LogOut size={16} />
-                      Logout
+                      <LogOut size={16} /> Logout
                     </button>
                   </div>
                 </div>
@@ -279,8 +323,10 @@ export default function MainLayout({
           </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-slate-50/50">{children}</main>
+        {/* จุดสำคัญที่หายไปในครั้งที่แล้วอยู่ตรงนี้ครับ! */}
+        <main className="flex-1 overflow-auto bg-slate-50/50">
+          {children}
+        </main>
       </div>
     </div>
   );

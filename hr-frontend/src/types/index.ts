@@ -79,6 +79,23 @@ export interface Position {
   isActive: boolean;
 }
 
+export interface Level {
+  id: number;
+  level_code: string;
+  level_title: string;
+}
+
+export interface Division {
+  id: number;
+  name: string;
+  company_id: number;
+}
+
+export interface Section {
+  id: number;
+  name: string;
+  division_id: number;
+}
 export interface Section {
   id: number;
   name: string;

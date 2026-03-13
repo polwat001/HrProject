@@ -6,7 +6,7 @@ import type {
   EmployeeTransferRequest, LeavePolicy, Holiday, Role,
   UserAssignment, DashboardStats, HeadcountByCompany, HeadcountByDepartment,
   ContractExpiringWidget, AttendanceStats, OTCostSummary,
-  EmploymentHistory, LeaveQuota, Section, Payroll
+  EmploymentHistory, LeaveQuota, Section, Payroll, Level, Division
 } from '@/types';
 
 const api = axios.create({
@@ -114,10 +114,29 @@ export const organizationAPI = {
     api.put(`/organization/positions/${id}`, data),
   deletePosition: (id: number) => api.delete(`/organization/positions/${id}`),
 
-  // Sections
-  getSections: (departmentId?: number) =>
-    api.get<Section[]>('/organization/sections', { params: { departmentId } }),
+  //Levels
+getLevels: () => api.get<Level[]>('/organization/levels'),
+  getLevelById: (id: number) => api.get<Level>(`/organization/levels/${id}`),
+  createLevel: (data: Partial<Level>) => api.post('/organization/levels', data),
+  updateLevel: (id: number, data: Partial<Level>) => api.put(`/organization/levels/${id}`, data),
+  deleteLevel: (id: number) => api.delete(`/organization/levels/${id}`),
+
+ // division
+  
+  getDivisions: (companyId?: number) => 
+    api.get<Division[]>('/organization/divisions', { params: { companyId } }),
+  getDivisionById: (id: number) => api.get<Division>(`/organization/divisions/${id}`),
+  createDivision: (data: Partial<Division>) => api.post('/organization/divisions', data),
+  updateDivision: (id: number, data: Partial<Division>) => api.put(`/organization/divisions/${id}`, data),
+  deleteDivision: (id: number) => api.delete(`/organization/divisions/${id}`),
+
+  // section
+  getSections: (divisionId?: number) => 
+    api.get<Section[]>('/organization/sections', { params: { divisionId } }),
+  getSectionById: (id: number) => api.get<Section>(`/organization/sections/${id}`),
   createSection: (data: Partial<Section>) => api.post('/organization/sections', data),
+  updateSection: (id: number, data: Partial<Section>) => api.put(`/organization/sections/${id}`, data),
+  deleteSection: (id: number) => api.delete(`/organization/sections/${id}`),
 };
 
 // ============ EMPLOYEES ============
@@ -228,14 +247,23 @@ export const leaveAPI = {
     endDate?: string;
   }) => api.get<LeaveRequest[]>('/leaves/requests', { params: filters }),
   
-  createLeaveRequest: (data: Partial<LeaveRequest>) =>
-    api.post('/leaves/requests', data),
-  
+  ccreateLeaveRequest: (data: FormData) =>
+    api.post('/leaves/requests', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+
+  updateLeaveStatus: (id: number, status: string, reject_reason?: string) => 
+    api.put(`/leaves/${id}/status`, { STATUS: status, reject_reason }),
+
+  // หมายเหตุ: ถ้ายังอยากเก็บปุ่มแยกตามเดิม ให้แก้ข้างในมาเรียกใช้ updateLeaveStatus แทน
   approveLeaveRequest: (requestId: number) =>
-    api.post(`/leaves/requests/${requestId}/approve`),
+    api.put(`/leaves/${requestId}/status`, { STATUS: 'approved' }),
   
   rejectLeaveRequest: (requestId: number, reason?: string) =>
-    api.post(`/leaves/requests/${requestId}/reject`, { reason }),
+    api.put(`/leaves/${requestId}/status`, { STATUS: 'rejected' }),
+
 
   // Leave Quota
   getLeaveQuota: (employeeId: number, year?: number) =>
