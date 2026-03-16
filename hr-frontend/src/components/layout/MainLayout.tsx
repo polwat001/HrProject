@@ -24,7 +24,8 @@ import {
   Wallet,
   UserCircle,
   Shield,
-  Circle
+  Circle,
+  ClockPlus
 } from "lucide-react";
 import { authAPI } from "@/services/api";
 
@@ -66,10 +67,11 @@ export default function MainLayout({
       path: "/employees", 
       icon: Users,
     },
-    { name: "Attendance & OT", path: "/attendance", icon: Clock },
-    { name: "Leaves", path: "/leaves", icon: Calendar },
-    { name: "Contracts", path: "/contracts", icon: FileText },
-    { name: "Payroll", path: "/payroll", icon: Wallet },
+    { name: "Attendance Logs", path: "/attendance", icon: Clock },
+    { name: "OT Management", path: "/overtime", icon: ClockPlus },
+    { name: "Leaves Management", path: "/leaves", icon: Calendar },
+    { name: "Contracts Management", path: "/contracts", icon: FileText },
+    { name: "Payroll Management", path: "/payroll", icon: Wallet },
     { name: "Reports", path: "/reports", icon: BarChart3 },
     { name: "User & Permissions", path: "/settings", icon: Shield },
     { name: "Self-Service", path: "/self-service", icon: UserCircle },

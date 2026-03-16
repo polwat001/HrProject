@@ -2,27 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
-// 1. เปิดการใช้งาน API จริง
 import { userAPI } from "@/services/api";
-import {
-  ShieldCheck,
-  UserCog,
-  Plus,
-  Edit2,
-  Trash2,
-  Loader,
-  Lock,
-  Users,
-  Briefcase,
+import { 
+  Card, CardContent, CardHeader, CardTitle 
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { 
+  Shield, Plus, Users, History, Loader, 
+  Edit2, Trash2, Lock, Briefcase 
 } from "lucide-react";
 import type { Role, User } from "@/types";
 
-export default function SettingsPage() {
+const modules = ["dashboard", "organization", "employee", "attendance", "leave", "contract", "reports", "permissions"];
+
+const UserPermissions = () => {
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"roles" | "users">("roles");
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [selectedRoleIndex, setSelectedRoleIndex] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -30,327 +31,192 @@ export default function SettingsPage() {
 
   const loadData = async () => {
     setLoading(true);
-
     try {
-      // โหลดข้อมูล Users
-      try {
-        const usersRes = await userAPI.getUsers(currentCompanyId);
-        console.log("Users Data:", usersRes.data);
-        setUsers(usersRes.data);
-      } catch (userErr) {
-        console.error("โหลด Users ไม่สำเร็จ:", userErr);
-      }
-
-      // โหลดข้อมูล Roles (ถ้า backend ยังไม่เสร็จ มันจะ Error แค่ตรงนี้ แต่ Users จะยังแสดง)
-      try {
-        const rolesRes = await userAPI.getRoles(currentCompanyId);
-        console.log("Roles Data:", rolesRes.data);
-        setRoles(rolesRes.data);
-      } catch (roleErr) {
-        console.error("โหลด Roles ไม่สำเร็จ (ติด 404 หรือเปล่า?):", roleErr);
-      }
-
+      // โหลดข้อมูลพร้อมกัน
+      const [usersRes, rolesRes] = await Promise.all([
+        userAPI.getUsers(currentCompanyId),
+        userAPI.getRoles(currentCompanyId)
+      ]);
+      
+      setUsers(usersRes.data);
+      setRoles(rolesRes.data);
+    } catch (error) {
+      console.error("Error loading permission data:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getRoleColor = (roleName: string) => {
-    if (!roleName)
-      return "from-slate-50 to-slate-100 border-slate-300 text-slate-700";
-    if (roleName.includes("Admin")) {
-      return "from-red-50 to-red-100 border-red-300 text-red-700";
-    }
-    if (roleName.includes("Manager")) {
-      return "from-blue-50 to-blue-100 border-blue-300 text-blue-700";
-    }
-    if (roleName.includes("Super")) {
-      return "from-orange-50 to-orange-100 border-orange-300 text-orange-700";
-    }
-    return "from-slate-50 to-slate-100 border-slate-300 text-slate-700";
-  };
-
-  const getRoleIcon = (roleName: string) => {
-    if (!roleName) return "📋";
-    if (roleName.includes("Admin")) return "🛡️";
-    if (roleName.includes("Manager")) return "👔";
-    if (roleName.includes("Super")) return "👑";
-    return "📋";
+  // ตรวจสอบว่า Role ปัจจุบันมีสิทธิ์ใน Module นั้นๆ หรือไม่
+  const checkPermission = (role: Role, moduleName: string) => {
+    if (!role || !role.permissions) return false;
+    // ปรับตามโครงสร้าง backend ของคุณ (เช่น ['read:employee', 'write:employee'] หรือแค่ ['employee'])
+    return role.permissions.some(p => p.toLowerCase().includes(moduleName.toLowerCase()));
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader
-            className="animate-spin text-blue-600 mx-auto mb-4"
-            size={40}
-          />
-          <p className="text-slate-600 font-medium">Loading settings...</p>
+          <Loader className="animate-spin text-primary mx-auto mb-4" size={40} />
+          <p className="text-slate-600 font-medium">Loading Permissions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 animate-fade-in p-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">
-          ⚙️ System Settings & Permissions
-        </h1>
-        <p className="text-slate-600 mt-1">
-          Manage roles, users, and access controls
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">⚙️ System Permissions</h1>
+          <p className="text-slate-600 mt-1">จัดการบทบาทผู้ใช้งานและกำหนดสิทธิ์การเข้าถึงโมดูลต่างๆ</p>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="flex border-b border-slate-200">
-          <button
-            onClick={() => setActiveTab("roles")}
-            className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === "roles"
-                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <ShieldCheck size={20} />
-            Roles Management
-            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
-              {roles?.length || 0}
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`flex-1 py-4 px-6 font-semibold flex items-center justify-center gap-2 transition-all ${
-              activeTab === "users"
-                ? "border-b-2 border-blue-600 text-blue-600 bg-blue-50"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-            }`}
-          >
-            <Users size={20} />
-            Users & Assignments
-            <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold">
-              {users?.length || 0}
-            </span>
-          </button>
-        </div>
+      <Tabs defaultValue="roles">
+        <TabsList className="bg-slate-100 p-1">
+          <TabsTrigger value="roles" className="gap-2">
+            <Shield className="h-4 w-4" /> Role Management
+          </TabsTrigger>
+          <TabsTrigger value="assignments" className="gap-2">
+            <Users className="h-4 w-4" /> User Assignments
+          </TabsTrigger>
+          <TabsTrigger value="log" className="gap-2">
+            <History className="h-4 w-4" /> Transaction Log
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Roles Tab */}
-        {activeTab === "roles" && (
-          <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                Role Definitions
-              </h2>
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium">
-                <Plus size={20} />
-                New Role
-              </button>
-            </div>
-
-            {!roles || roles.length === 0 ? (
-              <div className="text-center py-12">
-                <ShieldCheck
-                  className="mx-auto text-slate-300 mb-3"
-                  size={48}
-                />
-                <p className="text-slate-600 font-medium">
-                  No roles configured
-                </p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Create your first role to get started
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {roles.map((role) => (
-                  <div
-                    key={role.id}
-                    className={`border-2 rounded-xl p-6 hover:shadow-md transition-all bg-gradient-to-br ${getRoleColor(role.name)}`}
+        {/* --- Tab 1: Roles Management --- */}
+        <TabsContent value="roles" className="mt-4">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              {roles.length === 0 ? (
+                <p className="text-center py-4 text-slate-500 text-sm">No roles found</p>
+              ) : (
+                roles.map((r, i) => (
+                  <Card
+                    key={r.id}
+                    className={`cursor-pointer transition-all border-l-4 ${
+                      i === selectedRoleIndex ? "border-l-primary ring-1 ring-primary/20 bg-primary/5" : "border-l-transparent hover:bg-slate-50"
+                    }`}
+                    onClick={() => setSelectedRoleIndex(i)}
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="text-3xl">{getRoleIcon(role.name)}</div>
-                        <div>
-                          <h3 className="font-bold text-lg">{role.name}</h3>
-                          <p className="text-sm opacity-75">
-                            Role ID: {role.id}
-                          </p>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className={`h-4 w-4 ${i === selectedRoleIndex ? "text-primary" : "text-slate-400"}`} />
+                          <span className="font-bold text-sm">{r.name}</span>
                         </div>
+                        <Badge variant="outline" className="text-[10px]">ID: {r.id}</Badge>
                       </div>
-                      <div className="flex gap-2 opacity-0 hover:opacity-100 transition-opacity">
-                        <button className="p-2 bg-white/50 hover:bg-white rounded transition-colors">
-                          <Edit2 size={16} />
-                        </button>
-                        <button className="p-2 bg-white/50 hover:bg-white rounded transition-colors">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    {role.permissions && role.permissions.length > 0 && (
-                      <div className="pt-4 border-t border-current/20">
-                        <p className="text-xs font-bold mb-2 opacity-75">
-                          PERMISSIONS:
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {role.permissions.slice(0, 3).map((perm, idx) => (
-                            <span
-                              key={idx}
-                              className="text-xs px-2 py-1 bg-white/70 rounded-full font-medium"
-                            >
-                              ✓ {perm}
-                            </span>
-                          ))}
-                          {role.permissions.length > 3 && (
-                            <span className="text-xs px-2 py-1 bg-white/70 rounded-full font-medium">
-                              +{role.permissions.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Users Tab */}
-        {activeTab === "users" && (
-          <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900">
-                User Assignments
-              </h2>
-              <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:shadow-lg transition-all font-medium">
-                <Plus size={20} />
-                New User
-              </button>
+                      <p className="text-[11px] text-slate-500 mt-1 line-clamp-1">สิทธิ์การใช้งานสำหรับบุคลากรกลุ่ม {r.name}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+              <Button variant="outline" className="w-full gap-1.5 mt-2 border-dashed">
+                <Plus className="h-4 w-4" /> New Role
+              </Button>
             </div>
 
-            {!users || users.length === 0 ? (
-              <div className="text-center py-12">
-                <Users className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-600 font-medium">No users found</p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Create user accounts and assign roles
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto border border-slate-200 rounded-lg">
-                <table className="w-full">
+            <Card className="shadow-sm lg:col-span-2 border-slate-200 p-5">
+              <CardHeader className="bg-slate-50/50 border-b">
+                <div className="flex justify-between items-center">
+                  <CardTitle className="text-base">
+                    Permission Matrix — {roles[selectedRoleIndex]?.name || "Select a role"}
+                  </CardTitle>
+                  <Button size="sm" className="gap-2"><Shield className="h-4 w-4" /> Update Permissions</Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <table className="w-full text-sm">
                   <thead>
-                    <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        User
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Email
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Role
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Scope
-                      </th>
-                      <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                        Status
-                      </th>
-                      <th className="text-center py-4 px-6 font-semibold text-slate-700">
-                        Actions
-                      </th>
+                    <tr className="border-b bg-slate-50/50">
+                      <th className="text-left px-6 py-3 font-semibold text-slate-600">Module</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">View</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Edit</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Approve</th>
+                      <th className="text-center px-4 py-3 font-semibold text-slate-600">Delete</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200">
-                    {users.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-transparent transition-colors"
-                      >
-                        {/* 1. คอลัมน์ User */}
-                        <td className="py-4 px-6">
+                  <tbody className="divide-y divide-slate-100">
+                    {modules.map((m) => {
+                      const hasAccess = roles[selectedRoleIndex] ? checkPermission(roles[selectedRoleIndex], m) : false;
+                      const isSuperAdmin = roles[selectedRoleIndex]?.name?.includes("Super");
+
+                      return (
+                        <tr key={m} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-3.5 capitalize font-bold text-slate-700">{m}</td>
+                          <td className="text-center px-4 py-3.5"><Checkbox checked={hasAccess} /></td>
+                          <td className="text-center px-4 py-3.5"><Checkbox checked={hasAccess && m !== "dashboard"} /></td>
+                          <td className="text-center px-4 py-3.5">
+                            <Checkbox checked={hasAccess && ["attendance", "leave", "contract", "payroll"].includes(m)} />
+                          </td>
+                          <td className="text-center px-4 py-3.5"><Checkbox checked={isSuperAdmin} /></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* --- Tab 2: User Assignments --- */}
+        <TabsContent value="assignments" className="mt-4">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="flex flex-row items-center justify-between border-b bg-slate-50/50">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4" /> User Accounts ({users.length})
+              </CardTitle>
+              <Button size="sm" className="gap-1.5"><Plus className="h-4 w-4" /> Add User</Button>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-slate-50/30">
+                      <th className="text-left px-6 py-4 font-semibold text-slate-600">User</th>
+                      <th className="text-left px-4 py-4 font-semibold text-slate-600">Role</th>
+                      <th className="text-left px-4 py-4 font-semibold text-slate-600">Scope/Status</th>
+                      <th className="text-center px-4 py-4 font-semibold text-slate-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {users.map((u) => (
+                      <tr key={u.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {/* ดึงตัวอักษรแรกของชื่อ หรือ username */}
-                              {user.firstname_th?.charAt(0) ||
-                                user.username?.charAt(0) ||
-                                "U"}
+                            <div className="w-9 h-9 bg-primary/10 text-primary rounded-full flex items-center justify-center font-bold">
+                              {u.firstname_th?.charAt(0) || u.username?.charAt(0)}
                             </div>
                             <div>
-                              <p className="font-semibold text-slate-900">
-                                {/* แสดงชื่อ-นามสกุล ถ้าไม่มีให้แสดง username แทน */}
-                                {user.firstname_th
-                                  ? `${user.firstname_th} ${user.lastname_th}`
-                                  : user.username}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                @{user.username}
-                              </p>
+                              <p className="font-bold text-slate-900">{u.firstname_th ? `${u.firstname_th} ${u.lastname_th}` : u.username}</p>
+                              <p className="text-[11px] text-slate-500 italic">@{u.username}</p>
                             </div>
                           </div>
                         </td>
-
-                        {/* 2. คอลัมน์ Email */}
-                        <td className="py-4 px-6">
-                          <span className="text-sm text-slate-600">
-                            {user.email || "-"}
-                          </span>
+                        <td className="px-4 py-4">
+                          <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-100 gap-1.5">
+                            <Briefcase size={12} /> {u.role_name || "Employee"}
+                          </Badge>
                         </td>
-
-                        {/* 3. คอลัมน์ Role (สิทธิ์การใช้งาน) */}
-                        <td className="py-4 px-6">
-                          <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                            <Briefcase size={14} />
-                            {/* เรียกใช้ role_name ตาม Postman */}
-                            {user.role_name || "ไม่มีสิทธิ์"}
-                          </span>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1">
+                              <span className={`w-2 h-2 rounded-full ${u.user_status === 'active' ? 'bg-green-500' : 'bg-red-500'}`} />
+                              <span className="text-[11px] font-medium capitalize">{u.user_status}</span>
+                            </div>
+                            {u.is_super_admin && <span className="text-[10px] text-blue-600 font-bold">✓ Global Access</span>}
+                          </div>
                         </td>
-
-                        {/* 4. คอลัมน์ Status (สถานะการใช้งาน) */}
-                        <td className="py-4 px-6">
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${
-                              user.user_status === "active"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-red-100 text-red-700"
-                            }`}
-                          >
-                            {user.user_status === "active"
-                              ? "Active"
-                              : "Inactive"}
-                          </span>
-                        </td>
-
-                        {/* 5. คอลัมน์ Scope (Super Admin) */}
-                        <td className="py-4 px-6">
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-bold ${
-                              user.is_super_admin === 1 ||
-                              user.is_super_admin === true
-                                ? "bg-blue-100 text-blue-700"
-                                : "bg-slate-100 text-slate-700"
-                            }`}
-                          >
-                            {user.is_super_admin === 1 ||
-                            user.is_super_admin === true
-                              ? "✓ Super Admin"
-                              : "User"}
-                          </span>
-                        </td>
-
-                        {/* 6. คอลัมน์ Actions */}
-                        <td className="py-4 px-6 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button className="p-2 hover:bg-blue-100 rounded transition-colors text-blue-600">
-                              <Edit2 size={16} />
-                            </button>
-                            <button className="p-2 hover:bg-red-100 rounded transition-colors text-red-600">
-                              <Trash2 size={16} />
-                            </button>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-blue-600"><Edit2 size={14} /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 text-slate-400 hover:text-red-600"><Trash2 size={14} /></Button>
                           </div>
                         </td>
                       </tr>
@@ -358,42 +224,42 @@ export default function SettingsPage() {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-      {/* Permission Matrix Info */}
-      <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-300 rounded-xl p-6">
-        <div className="flex items-start gap-3">
-          <Lock className="text-blue-600 flex-shrink-0 mt-1" size={24} />
+        {/* --- Tab 3: Transaction Log --- */}
+        <TabsContent value="log" className="mt-4">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="bg-slate-50/50 border-b">
+              <CardTitle className="text-base flex items-center gap-2"><History className="h-4 w-4" /> ประวัติการใช้งานระบบ</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+               {/* ส่วนนี้สามารถเพิ่ม API getLogs ภายหลังได้ */}
+              <div className="p-12 text-center text-slate-400">
+                <History className="mx-auto mb-2 opacity-20" size={48} />
+                <p>Log data will be connected in next update</p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Footer Info */}
+      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg">
+        <div className="flex items-start gap-4">
+          <div className="p-3 bg-white/10 rounded-xl"><Lock size={24} className="text-yellow-400" /></div>
           <div>
-            <h3 className="font-bold text-blue-900 mb-2">
-              🔐 Permission System
-            </h3>
-            <ul className="space-y-2 text-sm text-blue-800">
-              <li>
-                • <strong>Super Admin:</strong> Full system access across all
-                companies
-              </li>
-              <li>
-                • <strong>Admin:</strong> Administrative access to assigned
-                company
-              </li>
-              <li>
-                • <strong>Manager:</strong> Limited access to department/team
-                data
-              </li>
-              <li>
-                • <strong>Employee:</strong> Read-only access to own records
-              </li>
-              <li>
-                • Permissions are aggregated when a user has multiple roles
-              </li>
-            </ul>
+            <h3 className="font-bold text-lg mb-1">ความปลอดภัยและสิทธิ์การใช้งาน</h3>
+            <p className="text-slate-400 text-sm">
+              การแก้ไขสิทธิ์จะมีผลทันทีเมื่อผู้ใช้งานทำการ Refresh หน้าจอ หรือเข้าสู่ระบบใหม่ 
+              กรุณาตรวจสอบ Matrix อย่างละเอียดก่อนทำการบันทึก
+            </p>
           </div>
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default UserPermissions;

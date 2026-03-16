@@ -247,10 +247,12 @@ export const leaveAPI = {
     endDate?: string;
   }) => api.get<LeaveRequest[]>('/leaves/requests', { params: filters }),
   
-  ccreateLeaveRequest: (data: FormData) =>
+// ใน services/api.ts
+  createLeaveRequest: (data: FormData) =>
     api.post('/leaves/requests', data, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        // 🚨 ทริคลับ: ตั้งเป็น undefined เพื่อให้ Browser จัดการ Multipart Boundary เอง
+        'Content-Type': undefined 
       },
     }),
 
@@ -333,19 +335,28 @@ export const contractAPI = {
     api.post(`/contracts/templates/${templateId}/generate`, { employeeId, variables }),
 };
 // ============ PAYROLL ============
+
 export const payrollAPI = {
-  getPayrolls: (filters?: { employee_id?: number }) =>
-    api.get("/payroll", { params: filters }),
+  getAvailableMonths: () => 
+    api.get("/payroll/filters/months"),
+  getPayrolls: (params: { month: number; year: number; employee_id?: number }) =>
+    api.get("/payroll", { params }),
 
   getPayrollById: (id: number) =>
     api.get(`/payroll/${id}`),
 
   createPayroll: (data: {
-    employee_id: number
-    salary: number
-    bonus?: number
-    deduction?: number
-    pay_date: string
+    employee_id: number;
+    company_id: number;
+    base_salary: number;
+    position_allowance?: number;
+    ot_amount?: number;
+    other_income?: number;
+    sso_amount?: number;
+    tax_amount?: number;
+    other_deduction?: number;
+    payroll_month: number;
+    payroll_year: number;
   }) =>
     api.post("/payroll", data),
 
@@ -354,6 +365,9 @@ export const payrollAPI = {
 
   deletePayroll: (id: number) =>
     api.delete(`/payroll/${id}`),
+
+  updateStatus: (id: number, status: 'calculated' | 'approved' | 'paid') =>
+    api.put(`/payroll/${id}/status`, { status }),
 };
 // ============ REPORTS ============
 export const reportsAPI = {
