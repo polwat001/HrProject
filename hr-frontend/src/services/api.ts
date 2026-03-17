@@ -173,10 +173,47 @@ export const employeeAPI = {
   },
 };
 
-// ============ TIME & ATTENDANCE ============
-
+// ============ ⏱️ ATTENDANCE (การลงเวลา) ============
 export const attendanceAPI = {
-  // Shifts
+  // ดึงประวัติการเข้างาน
+  getAttendanceLogs: (filters?: {
+    employeeId?: number;
+    startDate?: string;
+    endDate?: string;
+    companyId?: number;
+  }) => api.get<AttendanceLog[]>('/attendance', { params: filters }),
+
+  // บันทึกเวลาเข้างาน (Check-in)
+  recordCheckIn: (data: {
+    employee_id: number;
+    company_id: number;
+    DATE: string;
+    check_in_time: string;
+    STATUS: string;
+    late_minutes?: number;
+  }) => api.post('/attendance/record', data),
+
+  // บันทึกเวลาออกงาน (Check-out)
+  recordCheckOut: (data: {
+    id?: number;
+    employee_id?: number;
+    company_id?: number;
+    DATE?: string;
+    check_out_time: string;
+    STATUS?: string;
+    ot_hours?: number;
+  }) => api.put('/attendance/check-out', data),
+
+  // นำเข้าข้อมูลจาก Excel
+  importAttendance: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/attendance/logs/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  // จัดการกะการทำงาน (Shifts)
   getShifts: (companyId?: number) =>
     api.get<Shift[]>('/attendance/shifts', { params: { companyId } }),
   
@@ -187,31 +224,24 @@ export const attendanceAPI = {
   
   assignShift: (employeeId: number, shiftId: number, data: any) =>
     api.post(`/attendance/assignments`, { employeeId, shiftId, ...data }),
+};
 
-  // Attendance Logs
-
-  getAttendanceLogs: (filters?: {
-    employeeId?: number;
-    startDate?: string;
-    endDate?: string;
-  }) => api.get<AttendanceLog[]>('/attendance/logs', { params: filters }),
-  
-  importAttendance: (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/attendance/logs/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-
-  // OT Management
+// ============ 🚀 OVERTIME (จัดการโอที) ============
+export const otAPI = {
+  // ดึงรายการขอ OT ทั้งหมด
   getOTRecords: (filters?: {
     employeeId?: number;
     startDate?: string;
     endDate?: string;
     status?: string;
+    company_id?: number;
   }) => api.get<OTRecord[]>('/attendance/ot', { params: filters }),
-  
+
+  // อัปเดตสถานะการอนุมัติ (Approve / Reject)
+  updateStatus: (id: number, status: 'approved' | 'rejected') =>
+    api.put(`/attendance/ot/${id}/status`, { status }),
+
+  // กรณี Backend แยกเส้นเฉพาะสำหรับ Approve/Reject
   approveOT: (otId: number, hours?: number) =>
     api.post(`/attendance/ot/${otId}/approve`, { hours }),
   

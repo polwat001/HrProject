@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useAppStore } from "@/store/useAppStore"; // ✅ ดึง Store มาใช้
 import { payrollAPI } from "@/services/api";
+import { translations } from "@/locales/translations"; // ✅ นำเข้าพจนานุกรม
 
 import {
   DollarSign, Clock, CheckCircle, FileText, Download, 
@@ -42,26 +44,29 @@ type PayrollRecord = {
 const fmt = (n: number | string) => Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2 });
 
 export default function PayrollPage() {
+  // ✅ ดึง language
+  const { language } = useAppStore();
+  const t = translations[language as keyof typeof translations];
+
   const [payrollRecords, setPayrollRecords] = useState<PayrollRecord[]>([]);
   const [availableMonths, setAvailableMonths] = useState<{value: string, label: string}[]>([]);
-  const [selectedMonth, setSelectedMonth] = useState(""); // เก็บค่า เช่น "2-2026"
+  const [selectedMonth, setSelectedMonth] = useState(""); 
   const [selectedPayslip, setSelectedPayslip] = useState<PayrollRecord | null>(null);
   
   const [sortField, setSortField] = useState<"employee_code" | "net_pay">("employee_code");
   const [sortAsc, setSortAsc] = useState(true);
 
-  // 1. โหลดรายการเดือน/ปี ที่มีข้อมูลอยู่จริง (Dynamic Filter)
   useEffect(() => {
     const loadFilters = async () => {
       try {
         const res = await payrollAPI.getAvailableMonths();
         const options = res.data.map((item: any) => ({
           value: `${item.payroll_month}-${item.payroll_year}`,
-          label: `เดือน ${item.payroll_month}/${item.payroll_year}`
+          // ✅ เปลี่ยนคำว่า "เดือน" เป็นสองภาษา
+          label: `${t.lblMonthPrefix} ${item.payroll_month}/${item.payroll_year}`
         }));
         setAvailableMonths(options);
         
-        // ตั้งค่าเริ่มต้นเป็นงวดล่าสุดที่มีข้อมูล
         if (options.length > 0 && !selectedMonth) {
           setSelectedMonth(options[0].value);
         }
@@ -70,9 +75,8 @@ export default function PayrollPage() {
       }
     };
     loadFilters();
-  }, []);
+  }, [t.lblMonthPrefix]); // อัปเดต label เวลาเปลี่ยนภาษาด้วย
 
-  // 2. โหลดข้อมูล Payroll เมื่อมีการเปลี่ยนเดือนที่เลือก
   useEffect(() => {
     if (!selectedMonth) return;
 
@@ -106,18 +110,16 @@ export default function PayrollPage() {
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">
-            <DollarSign className="inline-block mr-2 text-green-600" size={40} />
-            Payroll System
+            {t.titlePayroll}
           </h2>
-          <p className="text-slate-500 font-bold ml-1">จัดการและตรวจสอบรายการเงินเดือนพนักงาน</p>
+          <p className="text-slate-500 font-bold ml-1">{t.descPayroll}</p>
         </div>
 
         <div className="flex gap-3">
-          {/* Select เดือนแบบ Dynamic */}
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-[220px] bg-white border-none shadow-sm rounded-2xl font-black italic">
               <Calendar className="w-4 h-4 mr-2 text-slate-400" />
-              <SelectValue placeholder="เลือกงวดเงินเดือน" />
+              <SelectValue placeholder={t.phSelectMonth} />
             </SelectTrigger>
             <SelectContent className="rounded-2xl border-none shadow-xl">
               {availableMonths.map((m) => (
@@ -129,7 +131,7 @@ export default function PayrollPage() {
           </Select>
 
           <Button variant="outline" className="bg-white border-none shadow-sm rounded-2xl font-black px-6 hover:bg-slate-100 transition-all">
-            <Download className="h-4 w-4 mr-2" /> EXPORT
+            <Download className="h-4 w-4 mr-2" /> {t.btnExport}
           </Button>
         </div>
       </div>
@@ -138,11 +140,11 @@ export default function PayrollPage() {
       <Card className="rounded-xl border border-2 border-gray-200 shadow-sm overflow-hidden bg-white">
         <CardHeader className="border-b border-slate-300 px-8 py-6 bg-slate-50/30">
           <div className="flex justify-between items-center">
-            <CardTitle className=" text-gray-200 uppercase tracking-widest ">
-              Payroll Records: {availableMonths.find(m => m.value === selectedMonth)?.label || "..."}
+            <CardTitle className=" text-gray-400 uppercase tracking-widest ">
+              {t.payrollRecords}: {availableMonths.find(m => m.value === selectedMonth)?.label || "..."}
             </CardTitle>
             <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-none rounded-lg font-black px-3 py-1 text-[10px] uppercase tracking-tighter">
-              Active Session
+              {t.activeSession}
             </Badge>
           </div>
         </CardHeader>
@@ -151,16 +153,17 @@ export default function PayrollPage() {
             <TableHeader>
               <TableRow className="hover:bg-transparent border-none">
                 <TableHead className="py-5 px-8 cursor-pointer text-slate-400 font-black uppercase text-sm tracking-widest" onClick={() => toggleSort("employee_code")}>
-                  Code <ArrowUpDown size={12} className="inline ml-1" />
+                  {t.colCode} <ArrowUpDown size={12} className="inline ml-1" />
                 </TableHead>
-                <TableHead className="text-slate-500 font-black uppercase text-sm tracking-widest">พนักงาน</TableHead>
-                <TableHead className="text-slate-500 font-black uppercase text-sm tracking-widest">แผนก</TableHead>
-                <TableHead className="text-right text-slate-500 font-black uppercase text-sm tracking-widest">รายได้รวม</TableHead>
-                <TableHead className="text-right text-slate-500 font-black uppercase text-sm tracking-widest">หักรวม</TableHead>
+                {/* ดึง Employee จากพจนานุกรมเดิมที่เคยมี หรือใช้ colEmployee ของอันนี้ */}
+                <TableHead className="text-slate-500 font-black uppercase text-sm tracking-widest">{t.colEmployee || "Employee"}</TableHead>
+                <TableHead className="text-slate-500 font-black uppercase text-sm tracking-widest">{t.colDept}</TableHead>
+                <TableHead className="text-right text-slate-500 font-black uppercase text-sm tracking-widest">{t.colTotalInc}</TableHead>
+                <TableHead className="text-right text-slate-500 font-black uppercase text-sm tracking-widest">{t.colTotalDed}</TableHead>
                 <TableHead className="text-right cursor-pointer text-slate-900 font-black uppercase text-sm tracking-widest" onClick={() => toggleSort("net_pay")}>
-                  สุทธิ <ArrowUpDown size={12} className="inline ml-1" />
+                  {t.colNetPay} <ArrowUpDown size={12} className="inline ml-1" />
                 </TableHead>
-                <TableHead className="text-center text-slate-500 font-black uppercase text-sm tracking-widest">สลิป</TableHead>
+                <TableHead className="text-center text-slate-500 font-black uppercase text-sm tracking-widest">{t.colSlip}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -193,17 +196,18 @@ export default function PayrollPage() {
         <DialogContent className="max-w-md rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95">
           <DialogHeader className="p-8 bg-slate-900 text-white">
             <div className="flex justify-between items-start">
-              <DialogTitle className="text-2xl  uppercase tracking-tighter">E-Payslip</DialogTitle>
-              <Badge className="bg-green-500 text-white border-none rounded-lg text-[10px] font-black italic">PAID</Badge>
+              <DialogTitle className="text-2xl uppercase tracking-tighter">{t.titlePayslip}</DialogTitle>
+              <Badge className="bg-green-500 text-white border-none rounded-lg text-[10px] font-black italic">{t.badgePaid}</Badge>
             </div>
             <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">
-              งวดเดือน {selectedPayslip?.payroll_month}/{selectedPayslip?.payroll_year}
+              {t.lblPeriod} {selectedPayslip?.payroll_month}/{selectedPayslip?.payroll_year}
             </p>
           </DialogHeader>
           <div className="p-8 bg-white">
-            {selectedPayslip && <PayslipContent record={selectedPayslip} />}
+            {/* ✅ โยนตัวแปร t (คำแปล) ลงไปให้ PayslipContent ใช้งานด้วย */}
+            {selectedPayslip && <PayslipContent record={selectedPayslip} t={t} />}
             <Button className="w-full mt-8 bg-slate-900 hover:bg-slate-800 text-white font-black py-6 rounded-2xl shadow-xl shadow-slate-200 transition-all active:scale-95 uppercase text-xs tracking-widest">
-              <Download className="mr-2 h-4 w-4" /> Download PDF Receipt
+              <Download className="mr-2 h-4 w-4" /> {t.btnDownloadPDF}
             </Button>
           </div>
         </DialogContent>
@@ -212,7 +216,8 @@ export default function PayrollPage() {
   );
 }
 
-const PayslipContent = ({ record: r }: { record: PayrollRecord }) => (
+// ✅ รับ props 't' เพิ่มเติม
+const PayslipContent = ({ record: r, t }: { record: PayrollRecord, t: any }) => (
   <div className="space-y-5">
     <div className="flex items-center gap-4 border p-2 rounded-lg">
       <div className="w-12 h-12 rounded-2xl bg-slate-100 flex border items-center justify-center font-black text-slate-900">
@@ -227,27 +232,27 @@ const PayslipContent = ({ record: r }: { record: PayrollRecord }) => (
     <Separator className="bg-slate-50" />
 
     <div className="space-y-3 border-b pb-6">
-      <p className="text-sm font-black uppercase text-slate-400 tracking-widest">Earnings / รายได้</p>
+      <p className="text-sm font-black uppercase text-slate-400 tracking-widest">{t.lblEarnings}</p>
       <div className="grid grid-cols-2 gap-y-2 text-sm font-bold">
-        <span className="text-slate-500">เงินเดือนพื้นฐาน</span><span className="text-right text-slate-900">{fmt(r.base_salary)}</span>
-        <span className="text-slate-500">ค่าตำแหน่ง</span><span className="text-right text-slate-900">{fmt(r.position_allowance)}</span>
-        <span className="text-slate-500">โอที (OT)</span><span className="text-right text-slate-900">{fmt(r.ot_amount)}</span>
-        <span className="text-slate-500">รายได้อื่นๆ</span><span className="text-right text-slate-900">{fmt(r.other_income || 0)}</span>
+        <span className="text-slate-500">{t.lblBaseSalary}</span><span className="text-right text-slate-900">{fmt(r.base_salary)}</span>
+        <span className="text-slate-500">{t.lblPosAllow}</span><span className="text-right text-slate-900">{fmt(r.position_allowance)}</span>
+        <span className="text-slate-500">{t.lblOT}</span><span className="text-right text-slate-900">{fmt(r.ot_amount)}</span>
+        <span className="text-slate-500">{t.lblOtherInc}</span><span className="text-right text-slate-900">{fmt(r.other_income || 0)}</span>
         <div className="col-span-2 mt-1 py-2 px-4 bg-green-50 rounded-xl flex justify-between border border-green-500">
-          <span className="text-green-700 font-black text-xs uppercase">รวมรายได้ทั้งหมด</span>
+          <span className="text-green-700 font-black text-xs uppercase">{t.lblTotalInc}</span>
           <span className="text-green-700 font-black">{fmt(r.total_income)}</span>
         </div>
       </div>
     </div>
 
     <div className="space-y-3">
-      <p className="text-sm font-black uppercase text-slate-400 tracking-widest">Deductions / รายการหัก</p>
+      <p className="text-sm font-black uppercase text-slate-400 tracking-widest">{t.lblDeductions}</p>
       <div className="grid grid-cols-2 gap-y-2 text-sm font-bold">
-        <span className="text-slate-500">ประกันสังคม (SSO)</span><span className="text-right text-slate-900">{fmt(r.sso_amount || 0)}</span>
-        <span className="text-slate-500">ภาษีหัก ณ ที่จ่าย</span><span className="text-right text-slate-900">{fmt(r.tax_amount || 0)}</span>
-        <span className="text-slate-500">หักอื่นๆ (มาสาย/ขาดงาน)</span><span className="text-right text-slate-900">{fmt(r.other_deduction || 0)}</span>
+        <span className="text-slate-500">{t.lblSSO}</span><span className="text-right text-slate-900">{fmt(r.sso_amount || 0)}</span>
+        <span className="text-slate-500">{t.lblTax}</span><span className="text-right text-slate-900">{fmt(r.tax_amount || 0)}</span>
+        <span className="text-slate-500">{t.lblOtherDed}</span><span className="text-right text-slate-900">{fmt(r.other_deduction || 0)}</span>
         <div className="col-span-2 mt-1 py-2 px-4 bg-red-50 rounded-lg flex justify-between border border-red-500">
-          <span className="text-red-700 font-black text-xs uppercase">รวมรายการหักทั้งหมด</span>
+          <span className="text-red-700 font-black text-xs uppercase">{t.lblTotalDed}</span>
           <span className="text-red-700 font-black">-{fmt(r.total_deduction)}</span>
         </div>
       </div>
@@ -255,8 +260,8 @@ const PayslipContent = ({ record: r }: { record: PayrollRecord }) => (
 
     <div className="pt-4">
       <div className="bg-white p-6 rounded-lg flex justify-between items-center shadow-xl shadow-slate-200 border-3 border-blue">
-        <span className="font-black text-blue text-xs uppercase tracking-widest italic">Net Salary</span>
-        <span className="text-3xl font-black text-blue italic">฿{fmt(r.net_pay)}</span>
+        <span className="font-black text-blue-600 text-xs uppercase tracking-widest italic">{t.lblNetSalary}</span>
+        <span className="text-3xl font-black text-blue-600 italic">฿{fmt(r.net_pay)}</span>
       </div>
     </div>
   </div>

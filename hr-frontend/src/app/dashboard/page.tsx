@@ -1,523 +1,392 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { 
+  employeeAPI, attendanceAPI, leaveAPI, otAPI 
+} from "@/services/api";
 import {
-  Users,
-  TrendingUp,
-  AlertTriangle,
-  Briefcase,
-  Loader,
-  ArrowUpRight,
-  ArrowDownRight,
+  Users, TrendingUp, AlertTriangle, Briefcase, Loader,
+  ArrowUpRight, ArrowDownRight, Clock, CalendarDays, User, Building, Timer
 } from "lucide-react";
 
-// ✅ Import mockdata จาก @/data
-import {
-  employees,
-  headcountByCompany,
-  headcountByDepartment,
-  contractExpiring,
-  attendanceData,
-  otCostData,
-} from "@/data/mockData"; // ปรับ path ให้ตรงกับโปรเจกต์
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line 
+} from "recharts";
 
+// ==========================================
+// 🚀 MAIN WRAPPER (ตัวแยกสิทธิ์หน้าจอ)
+// ==========================================
 export default function DashboardPage() {
-  const { currentCompanyId, user } = useAppStore();
-  const [loading, setLoading] = useState(true);
+  const { user } = useAppStore();
 
-  // ✅ คำนวณ stats จาก mockdata
-  const filteredEmployees =
-    currentCompanyId === null
-      ? employees
-      : employees.filter((e) => e.companyId === currentCompanyId);
-
-  const stats = {
-    totalHeadcount: filteredEmployees.length,
-    activeEmployees: filteredEmployees.filter((e) => e.status === "active")
-      .length,
-    newJoiners: filteredEmployees.filter((e) => {
-      const hireDate = new Date(e.hireDate);
-      const now = new Date();
-      return (
-        hireDate.getMonth() === now.getMonth() &&
-        hireDate.getFullYear() === now.getFullYear()
-      );
-    }).length,
-    resignedThisMonth: 0,
-  };
-
-  // ✅ attendance จาก attendanceData (mock)
-  const attendanceStats = {
-    present: attendanceData.find((a) => a.name === "มาทำงาน")?.value ?? 0,
-    absent: attendanceData.find((a) => a.name === "ขาด")?.value ?? 0,
-    late: attendanceData.find((a) => a.name === "สาย")?.value ?? 0,
-    onLeave: attendanceData.find((a) => a.name === "ลา")?.value ?? 0,
-  };
-
-  // ✅ headcount by company
-  const headcountByCompanyData = headcountByCompany.map((item) => ({
-    companyId: item.companyId,
-    companyName: item.company,
-    count: item.count,
-  }));
-
-  // ✅ headcount by department — กรองตาม currentCompanyId
-  const headcountByDepartmentData =
-    currentCompanyId &&
-    headcountByDepartment[
-      currentCompanyId as keyof typeof headcountByDepartment
-    ]
-      ? headcountByDepartment[
-          currentCompanyId as keyof typeof headcountByDepartment
-        ].map((item) => ({
-          departmentId: item.department,
-          departmentName: item.department,
-          count: item.count,
-        }))
-      : [];
-
-  // ✅ OT cost summary จาก otCostData
-  const otCostSummary = otCostData.map((item) => ({
-    month: item.month,
-    totalCost: item.amount,
-    totalHours: Math.round(item.amount / 150), // สมมติค่าแรง OT 150/ชม
-  }));
-
-  // ✅ Contract expiring — map field ให้ตรง
-  const contractExpiringData = contractExpiring.map((c) => ({
-    employeeName: c.name,
-    companyName: c.company,
-    endDate: c.expireDate,
-    daysRemaining: c.daysLeft,
-  }));
-
-  useEffect(() => {
-    // simulate loading
-    const timer = setTimeout(() => setLoading(false), 300);
-    return () => clearTimeout(timer);
-  }, [currentCompanyId]);
-
-  if (loading) {
+  if (!user) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <Loader
-            className="animate-spin text-blue-600 mx-auto mb-4"
-            size={40}
-          />
-          <p className="text-slate-600 font-medium">Loading dashboard...</p>
-        </div>
+      <div className="flex items-center justify-center h-screen bg-slate-50">
+        <Loader className="animate-spin text-blue-600" size={40} />
       </div>
     );
   }
 
+  // 💡 Role ID 4 = Employee
+  const roleId = user.role_id || user.is_super_admin;
+  const isEmployee = Number(roleId) === 4;
+
+  return isEmployee ? <EmployeeSelfService user={user} /> : <AdminDashboard user={user} />;
+}
+
+// ==========================================
+// 🛡️ ADMIN / HR DASHBOARD
+// ==========================================
+function AdminDashboard({ user }: { user: any }) {
+  const { currentCompanyId } = useAppStore();
+  const [loading, setLoading] = useState(true);
+
+  const [stats, setStats] = useState({ totalHeadcount: 0, activeEmployees: 0 });
+  const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0, late: 0, onLeave: 0 });
+  const [attendanceData, setAttendanceData] = useState<any[]>([]);
+  const [deptHeadcount, setDeptHeadcount] = useState<any[]>([]);
+  const [pendingApprovals, setPendingApprovals] = useState({ ot: 0, leave: 0 });
+  const [otCostHistory, setOtCostHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const loadAdminData = async () => {
+      setLoading(true);
+      try {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const [empRes, attRes, leaveRes, otRes] = await Promise.all([
+          employeeAPI.getEmployees(),
+          attendanceAPI.getAttendanceLogs({ startDate: todayStr, endDate: todayStr }),
+          leaveAPI.getLeaveRequests({ companyId: currentCompanyId || undefined }),
+          otAPI.getOTRecords(),
+          
+        ]);
+
+        const emps = empRes.data || [];
+        const atts = attRes.data || [];
+        const leaves = leaveRes.data || [];
+        const ots = otRes.data || [];
+
+        const filteredEmps = currentCompanyId ? emps.filter((e: any) => e.company_id === currentCompanyId) : emps;
+
+        setStats({
+          totalHeadcount: filteredEmps.length,
+          activeEmployees: filteredEmps.filter((e: any) => e.STATUS === "active").length,
+        });
+
+        const present = atts.filter((a: any) => (a.STATUS === "present" || a.STATUS === "on_time")).length;
+        const late = atts.filter((a: any) => a.STATUS === "late").length;
+        const absent = atts.filter((a: any) => a.STATUS === "absent").length;
+        const onLeave = leaves.filter((l: any) => l.status === "approved" && new Date(todayStr) >= new Date(l.start_date) && new Date(todayStr) <= new Date(l.end_date)).length;
+
+        setAttendanceStats({ present, absent, late, onLeave });
+        setAttendanceData([
+          { name: "มาทำงาน", value: present, color: "#22c55e" },
+          { name: "สาย", value: late, color: "#f59e0b" },
+          { name: "ขาด", value: absent, color: "#ef4444" },
+          { name: "ลา", value: onLeave, color: "#3b82f6" },
+        ]);
+
+       const deptMap: Record<string, number> = {};
+
+filteredEmps.forEach((e: any) => {
+  const deptName =
+    e.department_name ||
+    e.department?.name ||
+    "No Department";
+
+  deptMap[deptName] = (deptMap[deptName] || 0) + 1;
+});
+
+const deptData = Object.entries(deptMap).map(([name, count]) => ({
+  name,
+  count,
+}));
+
+setDeptHeadcount(deptData);
+
+        setPendingApprovals({
+          ot: ots.filter((o: any) => o.log_status === "pending").length,
+          leave: leaves.filter((l: any) => l.status === "pending").length,
+        });
+
+        const months = ["ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.", "ม.ค.", "ก.พ."];
+        setOtCostHistory(months.map(m => ({ month: m, cost: 150000 + (Math.random() * 80000) })));
+
+      } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+    loadAdminData();
+  }, [currentCompanyId]);
+
+  if (loading) return <div className="flex justify-center items-center h-96"><Loader className="animate-spin text-blue-600" size={40} /></div>;
+
   return (
-    <div className="p-6 space-y-8">
-      {/* Header Section */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">
-            Welcome back, {user?.firstName}!
-          </h1>
-          <p className="text-slate-600">
-            Here's your HR performance overview for today
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-sm text-slate-500">Last updated just now</p>
-        </div>
+    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen animate-in fade-in duration-300">
+      <div>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase italic">Dashboard Overview</h1>
       </div>
 
-      {/* Key Stats - 4 Column Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="จำนวนพนักงานทั้งหมด"
-          value={stats.totalHeadcount}
-          prevValue={145}
-          icon={Users}
-          trend="up"
-          color="blue"
-        />
-        <StatCard
-          title="พนักงานที่ทำงานอยู่"
-          value={stats.activeEmployees}
-          prevValue={120}
-          icon={Briefcase}
-          trend="up"
-          color="green"
-        />
-        <StatCard
-          title="ปัจจุบันวันนี้"
-          value={attendanceStats.present}
-          prevValue={125}
-          icon={Users}
-          trend="down"
-          color="purple"
-        />
-        <StatCard
-          title="อยู่ระหว่างการลางาน"
-          value={attendanceStats.onLeave}
-          prevValue={8}
-          icon={AlertTriangle}
-          trend="up"
-          color="amber"
-        />
+        <StatCard title="จำนวนพนักงานทั้งหมด" value={stats.totalHeadcount} icon={Users} color="blue" trend="0.0%" />
+        <StatCard title="พนักงานที่ทำงานอยู่" value={stats.activeEmployees} icon={Briefcase} color="green" trend="25.0%" />
+        <StatCard title="มาทำงาน (วันนี้)" value={attendanceStats.present} icon={Users} color="purple" trend="-100.0%" />
+        <StatCard title="อยู่ระหว่างการลางาน" value={attendanceStats.onLeave} icon={AlertTriangle} color="amber" trend="0.0%" />
       </div>
 
-      {/* Main Grid - Charts and Tables */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Headcount Chart */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  Headcount Distribution
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">
-                  {currentCompanyId === null ? "By Company" : "By Department"}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                <span className="text-xs font-semibold text-blue-700">
-                  Updated
-                </span>
-              </div>
-            </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="rounded-[2rem] border-none shadow-sm">
+          <CardHeader><CardTitle className="text-lg font-black italic uppercase">Headcount</CardTitle></CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={deptHeadcount}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                <RechartsTooltip cursor={{fill: '#f8fafc'}} contentStyle={{borderRadius: '16px', border: 'none'}} />
+                <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-            {currentCompanyId === null ? (
-              <div className="space-y-4">
-                {headcountByCompanyData.map((item) => (
-                  <div key={item.companyId} className="group">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-slate-700">
-                        {item.companyName}
-                      </span>
-                      <span className="text-sm font-bold text-slate-900">
-                        {item.count} employees
-                      </span>
-                    </div>
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500"
-                        style={{
-                          width: `${Math.min((item.count / 150) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {headcountByDepartmentData.length === 0 ? (
-                  <p className="text-slate-500 text-sm text-center py-6">
-                    No department data for this company
-                  </p>
-                ) : (
-                  headcountByDepartmentData.map((item) => (
-                    <div key={item.departmentId} className="group">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-slate-700">
-                          {item.departmentName}
-                        </span>
-                        <span className="text-sm font-bold text-slate-900">
-                          {item.count} employees
-                        </span>
-                      </div>
-                      <div className="h-3 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-purple-500 to-purple-600 transition-all duration-500"
-                          style={{
-                            width: `${Math.min((item.count / 20) * 100, 100)}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* OT Cost Summary */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900">
-                  OT Cost Trend
-                </h3>
-                <p className="text-sm text-slate-500 mt-1">Last 6 months</p>
-              </div>
-              <div className="px-3 py-1 bg-green-50 rounded-lg">
-                <span className="text-xs font-semibold text-green-700">
-                  📈 Trending
-                </span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {otCostSummary.map((item) => (
-                <div key={item.month} className="group">
-                  <div className="flex items-end gap-4 mb-2">
-                    <span className="w-16 text-sm font-medium text-slate-700">
-                      {item.month}
-                    </span>
-                    <div className="flex-1 bg-slate-100 rounded-lg h-8 relative overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
-                        style={{
-                          width: `${Math.min((item.totalCost / 250000) * 100, 100)}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="text-right w-32">
-                      <p className="text-sm font-bold text-slate-900">
-                        ฿{item.totalCost.toLocaleString()}
-                      </p>
-                      <p className="text-xs text-slate-500">
-                        {item.totalHours}h
-                      </p>
-                    </div>
-                  </div>
+        <Card className="rounded-[2rem] border-none shadow-sm">
+          <CardHeader><CardTitle className="text-lg font-black italic uppercase">Daily Attendance</CardTitle></CardHeader>
+          <CardContent className="h-[300px] flex flex-col items-center">
+            <ResponsiveContainer width="100%" height="85%">
+              <PieChart>
+                <Pie data={attendanceData} innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value">
+                  {attendanceData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.color} />)}
+                </Pie>
+                <RechartsTooltip />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex gap-4 mb-2">
+              {attendanceData.map((item) => (
+                <div key={item.name} className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase">
+                  <div className="w-3 h-3 rounded-sm" style={{backgroundColor: item.color}} /> {item.name}
                 </div>
               ))}
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Attendance Status */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow">
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-slate-900">
-                Today's Attendance
-              </h3>
-              <p className="text-sm text-slate-500 mt-1">Live status</p>
-            </div>
-            <div className="space-y-3">
-              <AttendanceTag
-                label="Present"
-                count={attendanceStats.present}
-                color="green"
-              />
-              <AttendanceTag
-                label="Absent"
-                count={attendanceStats.absent}
-                color="red"
-              />
-              <AttendanceTag
-                label="Late"
-                count={attendanceStats.late}
-                color="amber"
-              />
-              <AttendanceTag
-                label="On Leave"
-                count={attendanceStats.onLeave}
-                color="blue"
-              />
-            </div>
-            <div className="mt-6 pt-6 border-t border-slate-200">
-              <div className="text-center">
-                <p className="text-sm text-slate-600">Attendance Rate</p>
-                <p className="text-3xl font-bold text-slate-900 mt-2">
-                  {attendanceStats.present + attendanceStats.absent > 0
-                    ? Math.round(
-                        (attendanceStats.present /
-                          (attendanceStats.present + attendanceStats.absent)) *
-                          100,
-                      )
-                    : 0}
-                  %
-                </p>
-              </div>
-            </div>
-          </div>
+        <Card className="rounded-[2rem] border-none shadow-sm">
+          <CardHeader><CardTitle className="text-lg font-black italic uppercase flex items-center gap-2"><AlertTriangle className="text-amber-500" size={20} /> Pending Approvals</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+             <div className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-blue-50 transition-all cursor-pointer">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl shadow-sm text-blue-600"><Clock size={20} /></div>
+                    <span className="font-bold text-slate-700 uppercase text-sm">OT Requests</span>
+                </div>
+                <Badge className="bg-slate-200 text-slate-700 font-black group-hover:bg-blue-600 group-hover:text-white transition-colors border-none">{pendingApprovals.ot} pending</Badge>
+             </div>
+             <div className="flex justify-between items-center p-5 bg-slate-50 rounded-2xl border border-slate-100 group hover:bg-purple-50 transition-all cursor-pointer">
+                <div className="flex items-center gap-3">
+                    <div className="p-2 bg-white rounded-xl shadow-sm text-purple-600"><CalendarDays size={20} /></div>
+                    <span className="font-bold text-slate-700 uppercase text-sm">Leave Requests</span>
+                </div>
+                <Badge className="bg-slate-200 text-slate-700 font-black group-hover:bg-purple-600 group-hover:text-white transition-colors border-none">{pendingApprovals.leave} pending</Badge>
+             </div>
+          </CardContent>
+        </Card>
 
-          {/* Quick Stats */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-6">
-            <h3 className="text-sm font-bold text-blue-900 mb-4">
-              Quick Stats
-            </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-800">New Joiners</span>
-                <span className="text-lg font-bold text-blue-900">
-                  {stats.newJoiners}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-blue-800">Resigned</span>
-                <span className="text-lg font-bold text-blue-900">
-                  {stats.resignedThisMonth}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Contracts Expiring */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow">
-        <div className="bg-gradient-to-r from-orange-50 to-red-50 px-6 py-4 border-b border-slate-200">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="text-orange-600" size={24} />
-            <div>
-              <h3 className="text-lg font-bold text-slate-900">
-                Contracts Expiring Soon
-              </h3>
-              <p className="text-sm text-slate-600 mt-1">Next 30 days</p>
-            </div>
-          </div>
-        </div>
-
-        {contractExpiringData.length === 0 ? (
-          <div className="p-12 text-center">
-            <Briefcase className="mx-auto text-slate-300 mb-3" size={48} />
-            <p className="text-slate-500 font-medium">
-              No contracts expiring in the next 30 days
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50">
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                    Employee
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                    Company
-                  </th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                    End Date
-                  </th>
-                  <th className="text-center py-4 px-6 font-semibold text-slate-700">
-                    Days Left
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200">
-                {contractExpiringData.map((contract, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-4 px-6">
-                      <p className="font-semibold text-slate-900">
-                        {contract.employeeName}
-                      </p>
-                    </td>
-                    <td className="py-4 px-6 text-slate-600">
-                      {contract.companyName}
-                    </td>
-                    <td className="py-4 px-6 text-slate-600">
-                      {new Date(contract.endDate).toLocaleDateString("th-TH")}
-                    </td>
-                    <td className="py-4 px-6 text-center">
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-bold ${
-                          contract.daysRemaining <= 7
-                            ? "bg-red-100 text-red-700"
-                            : contract.daysRemaining <= 14
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-orange-100 text-orange-700"
-                        }`}
-                      >
-                        {contract.daysRemaining} days
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <Card className="rounded-[2rem] border-none shadow-sm">
+          <CardHeader><CardTitle className="text-lg font-black italic uppercase">OT Cost (6 Months)</CardTitle></CardHeader>
+          <CardContent className="h-[250px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={otCostHistory}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                <YAxis axisLine={false} tickLine={false} tick={{fontSize: 10, fontWeight: 700}} />
+                <RechartsTooltip />
+                <Line type="monotone" dataKey="cost" stroke="#0ea5e9" strokeWidth={4} dot={{r: 4, fill: '#0ea5e9', strokeWidth: 2, stroke: '#fff'}} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
 
-// Helper Components
-function StatCard({
-  title,
-  value,
-  prevValue,
-  icon: Icon,
-  trend,
-  color,
-}: {
-  title: string;
-  value: number;
-  prevValue: number;
-  icon: any;
-  trend: "up" | "down";
-  color: "blue" | "green" | "purple" | "amber";
-}) {
-  const change =
-    prevValue > 0
-      ? Math.abs(((value - prevValue) / prevValue) * 100).toFixed(1)
-      : "0.0";
+// ==========================================
+// 👤 EMPLOYEE SELF-SERVICE
+// ==========================================
+function EmployeeSelfService({ user }: { user: any }) {
+  const { leaveQuotas } = useAppStore();
+  const [loading, setLoading] = useState(true);
+  const [employeeProfile, setEmployeeProfile] = useState<any>(null);
+  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
+  const [otRecords, setOtRecords] = useState<any[]>([]);
 
-  const colorMap = {
-    blue: "from-blue-50 to-blue-100 text-blue-600",
-    green: "from-green-50 to-green-100 text-green-600",
-    purple: "from-purple-50 to-purple-100 text-purple-600",
-    amber: "from-amber-50 to-amber-100 text-amber-600",
-  };
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth();
+  const monthNamesTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+  useEffect(() => {
+    const fetchSelfServiceData = async () => {
+      setLoading(true);
+      try {
+        const empRes = await employeeAPI.getEmployees();
+        const currentEmp = empRes.data.find((e: any) => Number(e.user_id) === Number(user.id));
+        setEmployeeProfile(currentEmp);
+
+        const actualEmpId = currentEmp?.id || user.id;
+        const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
+        const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+
+        const [attRes, otRes] = await Promise.all([
+          attendanceAPI.getAttendanceLogs({ employeeId: actualEmpId, startDate, endDate }),
+          otAPI.getOTRecords({ employeeId: actualEmpId })
+        ]);
+        setAttendanceRecords(attRes.data || []);
+        setOtRecords(otRes.data || []);
+      } catch (err) { console.error(err); } finally { setLoading(false); }
+    };
+    fetchSelfServiceData();
+  }, [user, currentYear, currentMonth]);
+
+  const tenure = useMemo(() => {
+    if (!employeeProfile?.hire_date) return "-";
+    const hire = new Date(employeeProfile.hire_date);
+    const totalMonths = (now.getFullYear() - hire.getFullYear()) * 12 + (now.getMonth() - hire.getMonth());
+    return `${Math.floor(totalMonths / 12)} ปี ${totalMonths % 12} เดือน`;
+  }, [employeeProfile?.hire_date]);
+
+  const calendarData = useMemo(() => {
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const attendanceMap = new Map();
+    attendanceRecords.forEach((r: any) => {
+      const dateStr = (r.DATE || r.date)?.split("T")[0];
+      if (dateStr) attendanceMap.set(dateStr, r);
+    });
+
+    const cells: { day: number; record?: any }[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push({ day: 0 });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cells.push({ day: d, record: attendanceMap.get(dateStr) });
+    }
+    return cells;
+  }, [attendanceRecords, currentYear, currentMonth]);
+
+  const otTotalHours = otRecords.filter(r => r.log_status === 'approved').reduce((sum, r) => sum + Number(r.hours || 0), 0);
+  const sortedAtt = [...attendanceRecords].sort((a, b) => new Date(b.DATE).getTime() - new Date(a.DATE).getTime());
+  const latestAtt = sortedAtt.find(r => r.check_in_time);
+  const formatTime = (t: string) => t ? t.split(':').slice(0,2).join(':') : '--:--';
+
+  if (loading) return <div className="flex justify-center items-center h-96"><Loader className="animate-spin text-blue-600" size={40} /></div>;
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 hover:shadow-lg transition-all duration-300 group">
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <p className="text-sm text-slate-600 font-medium mb-1">{title}</p>
-          <h3 className="text-3xl font-bold text-slate-900">{value}</h3>
-        </div>
-        <div className={`p-3 rounded-lg bg-gradient-to-br ${colorMap[color]}`}>
-          <Icon size={24} />
-        </div>
+    <div className="space-y-6 p-8 animate-in fade-in duration-500">
+      <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Self-Service</h2>
+
+      {/* Profile Card */}
+      <Card className="rounded-[2.5rem] border-none shadow-sm">
+        <CardContent className="flex flex-col md:flex-row items-center gap-6 p-8">
+          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-xl shadow-blue-200">
+            {employeeProfile?.firstname_th?.charAt(0) || user?.username?.charAt(0)}
+          </div>
+          <div className="flex-1 space-y-2 text-center md:text-left">
+            <h3 className="text-2xl font-black text-slate-900">{employeeProfile?.firstname_th} {employeeProfile?.lastname_th}</h3>
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm font-bold text-slate-500">
+              <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-blue-500"/> {employeeProfile?.position_name}</span>
+              <span className="flex items-center gap-1.5"><Building size={16} className="text-blue-500"/> {employeeProfile?.department_name}</span>
+              <span className="flex items-center gap-1.5"><User size={16} className="text-blue-500"/> รหัส: {employeeProfile?.employee_code}</span>
+              <span className="flex items-center gap-1.5"><CalendarDays size={16} className="text-blue-500"/> อายุงาน: {tenure}</span>
+            </div>
+          </div>
+          <Badge className="bg-green-100 text-green-700 px-4 py-1.5 font-black uppercase rounded-xl border-none">{employeeProfile?.STATUS}</Badge>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SummaryCard icon={CalendarDays} label="วันลาคงเหลือ" value="38 วัน" color="emerald" />
+        <SummaryCard icon={TrendingUp} label="OT เดือนนี้" value={`${otTotalHours} ชม.`} color="teal" />
+        <SummaryCard icon={Clock} label="ลงเวลาล่าสุด" value={latestAtt ? `${formatTime(latestAtt.check_in_time)} - ${latestAtt.check_out_time ? formatTime(latestAtt.check_out_time) : '??'}` : 'N/A'} color="blue" isMono />
       </div>
-      <div className="flex items-center gap-2 text-xs">
-        <div
-          className={`flex items-center gap-1 ${trend === "up" ? "text-green-600" : "text-red-600"}`}
-        >
-          {trend === "up" ? (
-            <ArrowUpRight size={14} />
-          ) : (
-            <ArrowDownRight size={14} />
-          )}
-          <span className="font-semibold">{change}%</span>
-        </div>
-        <span className="text-slate-500">vs. last month</span>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1 rounded-[2rem] border-none shadow-sm p-6">
+          <CardTitle className="text-lg font-black mb-6">โควต้าวันลา</CardTitle>
+          <div className="space-y-4">
+             {[{t: "ลาป่วย", u: 2, tot: 30}, {t: "ลากิจ", u: 1, tot: 6}].map(q => (
+               <div key={q.t} className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center">
+                 <span className="font-bold text-slate-600">{q.t}</span>
+                 <span className="font-black text-slate-900">{q.u}/{q.tot} วัน</span>
+               </div>
+             ))}
+          </div>
+        </Card>
+
+        <Card className="lg:col-span-2 rounded-[2rem] border-none shadow-sm p-6">
+          <CardTitle className="text-lg font-black mb-6 flex items-center gap-2"><Clock className="text-blue-500" /> ปฏิทินเข้างาน - {monthNamesTh[currentMonth]}</CardTitle>
+          <div className="grid grid-cols-7 gap-2">
+            {calendarData.map((cell, idx) => (
+              <div key={idx} className={`h-16 rounded-2xl flex flex-col items-center justify-center border border-slate-50 ${cell.day === 0 ? 'bg-transparent' : 'bg-white shadow-sm'}`}>
+                <span className="text-xs font-bold text-slate-400">{cell.day || ''}</span>
+                {cell.record && <div className={`w-2 h-2 rounded-full mt-1 ${cell.record.STATUS === 'present' ? 'bg-green-500' : 'bg-orange-500'}`} />}
+              </div>
+            ))}
+          </div>
+        </Card>
       </div>
+
+      <Card className="rounded-[2.5rem] border-none shadow-sm p-8">
+        <CardTitle className="text-lg font-black mb-6">คำขอ OT ล่าสุด</CardTitle>
+        <div className="space-y-4">
+           {otRecords.slice(0, 3).map(r => (
+             <div key={r.id} className="flex justify-between items-center border-b border-slate-50 pb-4">
+               <span className="font-bold text-slate-600">{new Date(r.date).toLocaleDateString('th-TH')} ({r.hours} ชม.)</span>
+               <Badge className="bg-blue-600 text-white border-none px-4 py-1 rounded-full uppercase text-[10px] font-black">อนุมัติ</Badge>
+             </div>
+           ))}
+        </div>
+      </Card>
     </div>
   );
 }
 
-function AttendanceTag({
-  label,
-  count,
-  color,
-}: {
-  label: string;
-  count: number;
-  color: "green" | "red" | "amber" | "blue";
-}) {
-  const colorMap = {
-    green: "bg-green-100 text-green-700",
-    red: "bg-red-100 text-red-700",
-    amber: "bg-amber-100 text-amber-700",
-    blue: "bg-blue-100 text-blue-700",
+// ==========================================
+// 🛠️ HELPER COMPONENTS
+// ==========================================
+function StatCard({ title, value, icon: Icon, color, trend }: any) {
+  const colorMap: any = { 
+    blue: "bg-blue-50 text-blue-600", 
+    green: "bg-green-50 text-green-600", 
+    purple: "bg-purple-50 text-purple-600", 
+    amber: "bg-amber-50 text-amber-600" 
   };
-
+  const isDown = trend.includes('-');
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors">
-      <span className="text-sm font-medium text-slate-700">{label}</span>
-      <span
-        className={`px-3 py-1 rounded-full text-sm font-bold ${colorMap[color]}`}
-      >
-        {count}
-      </span>
+    <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md transition-all">
+      <div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+        <h3 className="text-4xl font-black text-slate-900 mb-2">{value}</h3>
+        <div className={`flex items-center gap-1 text-[10px] font-black ${isDown ? 'text-red-500' : 'text-green-500'}`}>
+          {isDown ? <ArrowDownRight size={12}/> : <ArrowUpRight size={12}/>} {trend}
+        </div>
+      </div>
+      <div className={`p-4 rounded-3xl ${colorMap[color]} group-hover:scale-110 transition-transform`}><Icon size={32} /></div>
     </div>
+  );
+}
+
+function SummaryCard({ icon: Icon, label, value, color, isMono }: any) {
+  const colors: any = { emerald: "bg-emerald-50 text-emerald-600", teal: "bg-teal-50 text-teal-600", blue: "bg-blue-50 text-blue-600" };
+  return (
+    <Card className="rounded-3xl border border-slate-100 shadow-sm p-6 flex items-center gap-5">
+      <div className={`p-4 rounded-2xl ${colors[color]}`}><Icon size={28}/></div>
+      <div>
+        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className={`text-2xl font-black text-slate-900 mt-1 ${isMono ? 'font-mono' : ''}`}>{value}</p>
+      </div>
+    </Card>
   );
 }

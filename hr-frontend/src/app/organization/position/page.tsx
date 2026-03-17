@@ -209,9 +209,7 @@ export default function PositionPage() {
                     <th className="text-left py-4 px-6 font-semibold text-slate-700">
                       Position Name
                     </th>
-                    <th className="text-left py-4 px-6 font-semibold text-slate-700">
-                      Company
-                    </th>
+        
                     <th className="text-left py-4 px-6 font-semibold text-slate-700">
                       Status
                     </th>
@@ -237,11 +235,7 @@ export default function PositionPage() {
                         </p>
                       </td>
                       
-                      <td className="py-4 px-6">
-                        <span className="inline-block px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                          {pos.companyName}
-                        </span>
-                      </td>
+                      
                       <td className="py-4 px-6">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${

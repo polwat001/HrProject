@@ -34,6 +34,10 @@ interface AppState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 
+  // ✅ 1. เพิ่ม Type สำหรับ Language
+  language: 'th' | 'en';
+  setLanguage: (lang: 'th' | 'en') => void;
+
   // Logout
   logout: () => void;
 }
@@ -87,8 +91,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarOpen: true,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
+  // ✅ 2. กำหนดค่าเริ่มต้นเป็นภาษาไทย (หรือ 'en' ถ้าอยากให้เริ่มเป็นอังกฤษ)
+  language: 'th',
+  setLanguage: (lang) => set({ language: lang }),
+
   // Logout
-  logout: () => set({
+  logout: () => set((state) => ({
     user: null,
     token: null,
     availableCompanies: [],
@@ -96,5 +104,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     userAssignments: [],
     permissions: [],
     leaveQuotas: [],
-  }),
+    // 💡 หมายเหตุ: เราไม่รีเซ็ต language ตอน logout เพื่อให้จำภาษาที่ผู้ใช้เลือกไว้
+  })),
 }));

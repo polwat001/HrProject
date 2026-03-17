@@ -363,14 +363,7 @@ export default function EmployeesPage() {
                 </select>
               </div>
 
-              {/* Company */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Company</label>
-                <select value={filterCompanyId} onChange={(e) => { setFilterCompanyId(e.target.value ? Number(e.target.value) : ""); setFilterDivisionId(""); }} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">All Companies</option>
-                  {companies.map((c) => (<option key={c.id} value={c.id}>{c.name_th}</option>))}
-                </select>
-              </div>
+              
 
               {/* Division */}
               <div>
@@ -434,7 +427,7 @@ export default function EmployeesPage() {
               <thead>
                 <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Name</th>
-                  <th className="text-left py-4 px-6 font-semibold text-slate-700">Company</th>
+                  
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Department</th>
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Position</th>
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Status</th>
@@ -458,11 +451,7 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
-                        <MapPin size={12} /> {emp.company_name}
-                      </span>
-                    </td>
+                    
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
                         <Briefcase size={12} /> {emp.department_name}

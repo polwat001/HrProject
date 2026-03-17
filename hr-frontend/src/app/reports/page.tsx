@@ -92,7 +92,7 @@ export default function ReportsPage() {
     <div className="p-6 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">📊 Report Center</h1>
+        <h1 className="text-3xl font-bold text-slate-900"> Report Center</h1>
         <p className="text-slate-600 mt-1">Generate and export HR reports in multiple formats</p>
       </div>
 

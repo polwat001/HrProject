@@ -22,7 +22,6 @@ import {
   HelpCircle,
   Sparkles,
   Wallet,
-  UserCircle,
   Shield,
   Circle,
   ClockPlus
@@ -46,35 +45,51 @@ export default function MainLayout({
     availableCompanies,
     user,
     logout,
+    language, // ✅ ดึง language มาจาก Store
+    setLanguage // ✅ ดึง setLanguage มาจาก Store
   } = useAppStore();
 
+  // ✅ 1. เช็คสิทธิ์: ว่าผู้ใช้คนนี้เป็นพนักงาน (Role 4) หรือไม่
+  const roleId = Number(user?.role_id || user?.is_super_admin);
+  const isEmployee = roleId === 4;
+
+  // ✅ 2. จัดการเมนู: ซ่อนเมนูสำหรับ Employee และแสดงให้ครบสำหรับ Admin/HR
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    { 
-      name: "Organization", 
-      path: "/organization", 
-      icon: Building2,
-      subItems: [
-        { name: "Division", path: "/organization/division" },
-        { name: "Section", path: "/organization/section" },
-        { name: "Department", path: "/organization/department" },
-        { name: "Position", path: "/organization/position" },
-        { name: "Level", path: "/organization/level" },
-      ]
-    },
-    { 
-      name: "Employees", 
-      path: "/employees", 
-      icon: Users,
-    },
+    
+    // --- ซ่อนกลุ่ม Organization & Employees ถ้าเป็นพนักงาน ---
+    ...(isEmployee ? [] : [
+      { 
+        name: "Organization", 
+        path: "/organization", 
+        icon: Building2,
+        subItems: [
+          { name: "Division", path: "/organization/division" },
+          { name: "Section", path: "/organization/section" },
+          { name: "Department", path: "/organization/department" },
+          { name: "Position", path: "/organization/position" },
+          { name: "Level", path: "/organization/level" },
+        ]
+      },
+      { 
+        name: "Employees", 
+        path: "/employees", 
+        icon: Users,
+      },
+    ]),
+
+    // --- เมนูที่พนักงานมองเห็นได้ ---
     { name: "Attendance Logs", path: "/attendance", icon: Clock },
     { name: "OT Management", path: "/overtime", icon: ClockPlus },
-    { name: "Leaves Management", path: "/leaves", icon: Calendar },
-    { name: "Contracts Management", path: "/contracts", icon: FileText },
-    { name: "Payroll Management", path: "/payroll", icon: Wallet },
-    { name: "Reports", path: "/reports", icon: BarChart3 },
-    { name: "User & Permissions", path: "/settings", icon: Shield },
-    { name: "Self-Service", path: "/self-service", icon: UserCircle },
+
+    // --- ซ่อนเมนูระบบหลังบ้านทั้งหมดถ้าเป็นพนักงาน ---
+    ...(isEmployee ? [] : [
+      { name: "Leaves Management", path: "/leaves", icon: Calendar },
+      { name: "Contracts Management", path: "/contracts", icon: FileText },
+      { name: "Payroll Management", path: "/payroll", icon: Wallet },
+      { name: "Reports", path: "/reports", icon: BarChart3 },
+      { name: "User & Permissions", path: "/settings", icon: Shield },
+    ])
   ];
 
   const toggleSubmenu = (path: string) => {
@@ -85,7 +100,7 @@ export default function MainLayout({
   };
 
   useEffect(() => {
-    if (!pathname) return; // ป้องกันจอขาวกรณี pathname เป็น null
+    if (!pathname) return; 
     
     menuItems.forEach(item => {
       if (item.subItems && pathname.startsWith(item.path)) {
@@ -106,8 +121,6 @@ export default function MainLayout({
     logout();
     router.push("/login");
   };
-
-  const showCompanySwitcher = user?.is_super_admin || availableCompanies.length > 1;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100">
@@ -137,7 +150,6 @@ export default function MainLayout({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
-            // ป้องกัน Error โดยใช้ Optional Chaining (?.)
             const isActive = pathname === item.path || (hasSubItems && pathname?.startsWith(item.path));
             const isSubOpen = openSubmenus[item.path];
 
@@ -236,6 +248,29 @@ export default function MainLayout({
           </div>
 
           <div className="flex items-center gap-4">
+            
+            {/* ✅ Language Switcher ย้ายมาอยู่ตรงนี้ */}
+            <div className="flex bg-slate-200/60 p-1 rounded-xl shadow-inner border border-slate-200">
+              <button 
+                onClick={() => setLanguage('th')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-widest uppercase transition-all ${
+                  language === 'th' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                TH
+              </button>
+              <button 
+                onClick={() => setLanguage('en')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-widest uppercase transition-all ${
+                  language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                EN
+              </button>
+            </div>
+
+            <div className="h-8 w-px bg-slate-200"></div>
+
             {/* Quick Actions */}
             <div className="flex items-center gap-1">
               <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-600 hover:text-slate-900 relative group">
@@ -325,7 +360,6 @@ export default function MainLayout({
           </div>
         </header>
 
-        {/* จุดสำคัญที่หายไปในครั้งที่แล้วอยู่ตรงนี้ครับ! */}
         <main className="flex-1 overflow-auto bg-slate-50/50">
           {children}
         </main>

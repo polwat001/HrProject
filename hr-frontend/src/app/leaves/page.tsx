@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef } from "react";
 import {
   CalendarHeart, Clock, CheckCircle, XCircle, Loader, 
-  Plus, Search, AlertCircle, X, MessageSquare, Paperclip, FileText, Filter
+  Plus, Search, AlertCircle, X, MessageSquare, FileText, Filter
 } from "lucide-react";
 
 import { leaveAPI, employeeAPI } from "@/services/api";
 import { useAppStore } from "@/store/useAppStore";
+import { translations } from '@/locales/translations'; // ✅ นำเข้าพจนานุกรม
 
 const EMPTY_FORM = {
   employee_id: 0,
@@ -18,16 +19,18 @@ const EMPTY_FORM = {
 };
 
 export default function LeavesPage() {
-  const { currentCompanyId } = useAppStore();
+  // ✅ ดึง language ออกมาจาก Store
+  const { currentCompanyId, language } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
   const [employees, setEmployees] = useState<any[]>([]);
 
-  // Search & Filter States
+  // ✅ เรียกใช้คำแปลตามภาษาที่เลือก
+  const t = translations[language as keyof typeof translations];
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
-  // Create Form States
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ ...EMPTY_FORM });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -35,7 +38,6 @@ export default function LeavesPage() {
   const [formError, setFormError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Approve/Reject States
   const [confirmData, setConfirmData] = useState<{
     show: boolean; id: number; status: "approved" | "rejected"; reason: string;
   }>({ show: false, id: 0, status: "approved", reason: "" });
@@ -74,7 +76,6 @@ export default function LeavesPage() {
           status: (item.STATUS || item.status || "pending").toLowerCase(),
           reason: item.reason,
           rejectReason: item.reject_reason,
-          // ดึงชื่อไฟล์จากตาราง employee_documents ที่ Backend JOIN มาให้
           attachment_file: item.attachment_file 
         };
       });
@@ -90,26 +91,26 @@ export default function LeavesPage() {
 
   const processStatusUpdate = async () => {
     if (confirmData.status === "rejected" && !confirmData.reason.trim()) {
-      alert("กรุณาระบุเหตุผลที่ปฏิเสธ");
+      alert(t.errRejectReason);
       return;
     }
     try {
       setSaving(true);
       await leaveAPI.updateLeaveStatus(confirmData.id, confirmData.status, confirmData.reason);
-      showNotification("success", `ดำเนินการ ${confirmData.status} สำเร็จ`);
+      showNotification("success", `${t.msgProcessSuccess} (${confirmData.status})`);
       setConfirmData({ ...confirmData, show: false });
       await loadData();
     } catch (err) { 
-        showNotification("error", "เกิดข้อผิดพลาดในการอัปเดต"); 
+        showNotification("error", t.errUpdate); 
     } finally { 
         setSaving(false); 
     }
   };
 
- const handleSave = async () => {
+  const handleSave = async () => {
     setFormError("");
     if (!formData.employee_id || !formData.start_date || !formData.end_date || !formData.reason.trim()) {
-      setFormError("กรุณากรอกข้อมูลให้ครบถ้วน"); return;
+      setFormError(t.errFormIncomplete); return;
     }
     try {
       setSaving(true);
@@ -121,9 +122,6 @@ export default function LeavesPage() {
       data.append("end_date", formData.end_date);
       data.append("reason", formData.reason);
       
-      // ✅ เพิ่ม Console Log ตรงนี้เพื่อเช็คว่าไฟล์มีอยู่จริงก่อนยิง API
-      console.log("ไฟล์ที่ถูกเลือก:", selectedFile); 
-
       if (selectedFile) {
          data.append("attachment", selectedFile);
       }
@@ -131,20 +129,21 @@ export default function LeavesPage() {
       await leaveAPI.createLeaveRequest(data);
       setShowModal(false);
       setSelectedFile(null);
-      showNotification("success", "ยื่นคำขอลาสำเร็จ");
+      showNotification("success", t.msgLeaveSuccess);
       await loadData();
     } catch (err) { 
-        showNotification("error", "บันทึกไม่สำเร็จ ตรวจสอบการเชื่อมต่อ Backend"); 
+        showNotification("error", t.errLeaveSubmit); 
     } finally { 
         setSaving(false); 
     }
   };
 
+  // ✅ ปรับสีและแปลคำตามสถานะ
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "approved": return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black border border-green-200 uppercase">Approved</span>;
-      case "rejected": return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-black border border-red-200 uppercase">Rejected</span>;
-      default: return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-black border border-yellow-200 uppercase">Pending</span>;
+      case "approved": return <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-[10px] font-black border border-green-200 uppercase">{t.statusApproved}</span>;
+      case "rejected": return <span className="px-3 py-1 bg-red-100 text-red-700 rounded-full text-[10px] font-black border border-red-200 uppercase">{t.statusRejected}</span>;
+      default: return <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-[10px] font-black border border-yellow-200 uppercase">{t.statusPending}</span>;
     }
   };
 
@@ -169,12 +168,12 @@ export default function LeavesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3 italic uppercase tracking-tighter">
-            <CalendarHeart className="text-purple-600" size={36} /> จัดการการลา
+             {t.titleLeave}
           </h1>
-          <p className="text-slate-500 font-medium text-sm">ระบบอนุมัติใบคำขอลาพนักงาน (HR Management)</p>
+          <p className="text-slate-500 font-medium text-sm">{t.descLeave}</p>
         </div>
         <button onClick={() => { setFormError(""); setFormData({...EMPTY_FORM, employee_id: employees[0]?.id || 0}); setShowModal(true); }} className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-2xl font-black hover:bg-purple-700 transition-all shadow-xl shadow-purple-200 active:scale-95">
-          <Plus size={20} /> ยื่นใบลา
+          <Plus size={20} /> {t.btnNewLeave}
         </button>
       </div>
 
@@ -182,28 +181,28 @@ export default function LeavesPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">รออนุมัติ</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statPending}</p>
               <p className="text-3xl font-black mt-1 text-yellow-600">{leaveRequests.filter(r => r.status === 'pending').length}</p>
             </div>
             <div className="p-3 rounded-2xl bg-yellow-50"><Clock className="text-yellow-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">อนุมัติแล้ว</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statApproved}</p>
               <p className="text-3xl font-black mt-1 text-green-600">{leaveRequests.filter(r => r.status === 'approved').length}</p>
             </div>
             <div className="p-3 rounded-2xl bg-green-50"><CheckCircle className="text-green-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ไม่อนุมัติ</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statRejected}</p>
               <p className="text-3xl font-black mt-1 text-red-600">{leaveRequests.filter(r => r.status === 'rejected').length}</p>
             </div>
             <div className="p-3 rounded-2xl bg-red-50"><XCircle className="text-red-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ทั้งหมด</p>
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statAll}</p>
               <p className="text-3xl font-black mt-1 text-slate-900">{leaveRequests.length}</p>
             </div>
             <div className="p-3 rounded-2xl bg-slate-100"><CalendarHeart className="text-slate-900" size={28} /></div>
@@ -214,15 +213,15 @@ export default function LeavesPage() {
       <div className="flex flex-wrap md:flex-nowrap gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input type="text" placeholder="ค้นหาพนักงาน หรือรหัสพนักงาน..." value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium" />
+          <input type="text" placeholder={t.searchEmployee} value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium" />
         </div>
         <div className="flex items-center gap-2">
             <Filter size={18} className="text-slate-400" />
             <select value={filterStatus} onChange={(e)=>setFilterStatus(e.target.value)} className="px-6 py-3 bg-slate-50 border-none rounded-2xl font-bold text-sm outline-none text-slate-700">
-                <option value="all">สถานะ: ทั้งหมด</option>
-                <option value="pending">⏳ Waiting Approval</option>
-                <option value="approved">✅ Approved</option>
-                <option value="rejected">❌ Rejected</option>
+                <option value="all">{t.filterStatusAll}</option>
+                <option value="pending">⏳ {t.statPending}</option>
+                <option value="approved">✅ {t.statApproved}</option>
+                <option value="rejected">❌ {t.statRejected}</option>
             </select>
         </div>
       </div>
@@ -233,13 +232,13 @@ export default function LeavesPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 border-b text-slate-400 text-xs uppercase font-black tracking-widest">
-                <th className="py-5 px-8">พนักงาน</th>
-                <th className="py-5 px-6">ข้อมูลการลา</th>
-                <th className="py-5 px-6 text-center">วันที่ลา</th>
-                <th className="py-5 px-6 text-center">ไฟล์แนบ</th>
-                <th className="py-5 px-6 text-center">สถานะ</th>
-                <th className="py-5 px-6 text-red-500 font-black text-center">หมายเหตุจาก HR</th>
-                <th className="py-5 px-8 text-center">จัดการ</th>
+                <th className="py-5 px-8">{t.colEmployee}</th>
+                <th className="py-5 px-6">{t.colLeaveInfo}</th>
+                <th className="py-5 px-6 text-center">{t.colLeaveDate}</th>
+                <th className="py-5 px-6 text-center">{t.colAttachment}</th>
+                <th className="py-5 px-6 text-center">{t.colStatus}</th>
+                <th className="py-5 px-6 text-red-500 font-black text-center">{t.colHrNote}</th>
+                <th className="py-5 px-8 text-center">{t.colAction}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 text-sm">
@@ -266,7 +265,6 @@ export default function LeavesPage() {
                     </span>
                   </td>
                   <td className="py-5 px-6 text-center">
-                    {/* ดึงค่าจาก file_path ในตาราง employee_documents */}
                     {req.attachment_file ? (
                         <a 
                           href={`http://localhost:5000/uploads/documents/${req.attachment_file}`} 
@@ -274,10 +272,10 @@ export default function LeavesPage() {
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase hover:underline hover:text-blue-800 transition-colors"
                         >
-                          <FileText size={14} /> View Doc
+                          <FileText size={14} /> {t.viewDoc}
                         </a>
                     ) : (
-                        <span className="text-slate-200 text-xs italic">No file</span>
+                        <span className="text-slate-200 text-xs italic">{t.noFile}</span>
                     )}
                   </td>
                   <td className="py-5 px-6 text-center">{getStatusBadge(req.status)}</td>
@@ -292,10 +290,10 @@ export default function LeavesPage() {
                   <td className="py-5 px-8 text-center">
                     {req.status === 'pending' ? (
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => setConfirmData({ show: true, id: req.id, status: 'approved', reason: '' })} className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl border border-green-200 transition-all shadow-sm active:scale-90" title="อนุมัติ"><CheckCircle size={18}/></button>
-                        <button onClick={() => setConfirmData({ show: true, id: req.id, status: 'rejected', reason: '' })} className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all shadow-sm active:scale-90" title="ปฏิเสธ"><XCircle size={18}/></button>
+                        <button onClick={() => setConfirmData({ show: true, id: req.id, status: 'approved', reason: '' })} className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl border border-green-200 transition-all shadow-sm active:scale-90" title="Approve"><CheckCircle size={18}/></button>
+                        <button onClick={() => setConfirmData({ show: true, id: req.id, status: 'rejected', reason: '' })} className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl border border-red-200 transition-all shadow-sm active:scale-90" title="Reject"><XCircle size={18}/></button>
                       </div>
-                    ) : <div className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">Completed</div>}
+                    ) : <div className="text-[10px] font-black text-slate-300 uppercase italic tracking-widest">{t.completed}</div>}
                   </td>
                 </tr>
               ))}
@@ -314,19 +312,19 @@ export default function LeavesPage() {
                 {confirmData.status === 'approved' ? <CheckCircle size={32}/> : <XCircle size={32}/>}
               </div>
               <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Confirm {confirmData.status}</h3>
-              <p className="text-slate-500 text-sm font-medium mt-1">ยืนยันการเปลี่ยนสถานะใบลา</p>
+              <p className="text-slate-500 text-sm font-medium mt-1">{t.confirmStatusDesc}</p>
             </div>
             <div className="p-8 space-y-4">
               {confirmData.status === 'rejected' && (
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">ระบุเหตุผลที่ปฏิเสธ *</label>
-                  <textarea rows={3} value={confirmData.reason} onChange={(e) => setConfirmData({...confirmData, reason: e.target.value})} className="w-full p-4 bg-slate-50 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-red-500 resize-none transition-all" placeholder="กรุณาระบุสาเหตุที่ไม่อนุมัติ..." />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 ml-1 tracking-widest">{t.rejectReasonLabel}</label>
+                  <textarea rows={3} value={confirmData.reason} onChange={(e) => setConfirmData({...confirmData, reason: e.target.value})} className="w-full p-4 bg-slate-50 border-none rounded-2xl text-xs font-bold outline-none focus:ring-2 focus:ring-red-500 resize-none transition-all" placeholder={t.rejectReasonPlaceholder} />
                 </div>
               )}
               <div className="flex gap-3 pt-2">
-                <button onClick={() => setConfirmData({...confirmData, show: false})} className="flex-1 py-3.5 font-black text-slate-400 hover:bg-slate-100 rounded-2xl transition-all uppercase text-[10px] tracking-widest text-center">Cancel</button>
+                <button onClick={() => setConfirmData({...confirmData, show: false})} className="flex-1 py-3.5 font-black text-slate-400 hover:bg-slate-100 rounded-2xl transition-all uppercase text-[10px] tracking-widest text-center">{t.btnCancel}</button>
                 <button onClick={processStatusUpdate} disabled={saving} className={`flex-1 py-3.5 font-black text-white rounded-2xl shadow-xl transition-all uppercase text-[10px] tracking-widest ${confirmData.status === 'approved' ? 'bg-green-600 hover:bg-green-700 shadow-green-100' : 'bg-red-600 hover:bg-red-700 shadow-red-100'}`}>
-                  {saving ? <Loader className="animate-spin mx-auto" size={18}/> : 'Confirm'}
+                  {saving ? <Loader className="animate-spin mx-auto" size={18}/> : t.btnConfirm}
                 </button>
               </div>
             </div>
@@ -341,7 +339,7 @@ export default function LeavesPage() {
           <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-300">
             <div className="px-8 py-6 border-b border-slate-50 bg-slate-50/50 flex justify-between items-center tracking-tighter uppercase font-black italic">
               <h3 className="text-xl text-slate-900 flex items-center gap-2">
-                <Plus className="text-purple-600" size={24} /> New Request
+                <Plus className="text-purple-600" size={24} /> {t.btnNewLeave}
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-900 bg-white p-2 rounded-xl shadow-sm hover:shadow transition-all"><X size={20}/></button>
             </div>
@@ -350,47 +348,47 @@ export default function LeavesPage() {
               
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Employee *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.lblEmployee}</label>
                   <select value={formData.employee_id} onChange={(e)=>setFormData({...formData, employee_id: Number(e.target.value)})} className="w-full p-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all appearance-none cursor-pointer">
-                    <option value={0}>-- Select Employee --</option>
+                    <option value={0}>{t.selEmployee}</option>
                     {employees.map(e => <option key={e.id} value={e.id}>{e.employee_code} - {e.firstname_th} {e.lastname_th}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Leave Type *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.lblLeaveType}</label>
                   <select value={formData.leave_type} onChange={(e)=>setFormData({...formData, leave_type: e.target.value})} className="w-full p-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-purple-500 transition-all cursor-pointer">
-                    <option value="ลาป่วย (Sick Leave)">🤒 Sick Leave</option>
-                    <option value="ลากิจ (Business Leave)">💼 Business Leave</option>
-                    <option value="ลาพักร้อน (Annual Leave)">🏖️ Annual Leave</option>
+                    <option value="ลาป่วย (Sick Leave)">🤒 ลาป่วย (Sick Leave)</option>
+                    <option value="ลากิจ (Business Leave)">💼 ลากิจ (Business Leave)</option>
+                    <option value="ลาพักร้อน (Annual Leave)">🏖️ ลาพักร้อน (Annual Leave)</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Attachment</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.colAttachment}</label>
                   <div onClick={() => fileInputRef.current?.click()} className="w-full p-3 bg-purple-50 border-2 border-dashed border-purple-200 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-purple-100 transition-all group">
                     <input type="file" ref={fileInputRef} hidden onChange={(e)=>setSelectedFile(e.target.files?.[0] || null)} />
                     <span className="text-[10px] font-black text-purple-600 uppercase truncate px-2 group-hover:scale-105 transition-transform">
-                        {selectedFile ? selectedFile.name : "Select File"}
+                        {selectedFile ? selectedFile.name : t.selFile}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Start Date *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.lblStartDate}</label>
                   <input type="date" value={formData.start_date} onChange={(e)=>setFormData({...formData, start_date: e.target.value})} className="w-full p-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-purple-500 transition-all outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">End Date *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.lblEndDate}</label>
                   <input type="date" value={formData.end_date} onChange={(e)=>setFormData({...formData, end_date: e.target.value})} className="w-full p-3.5 bg-slate-50 border-none rounded-2xl text-sm font-bold focus:ring-2 focus:ring-purple-500 transition-all outline-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">Reason *</label>
-                <textarea rows={2} value={formData.reason} onChange={(e)=>setFormData({...formData, reason: e.target.value})} className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold resize-none outline-none focus:ring-2 focus:ring-purple-500 transition-all" placeholder="ระบุเหตุผลการลา..." />
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">{t.lblReason}</label>
+                <textarea rows={2} value={formData.reason} onChange={(e)=>setFormData({...formData, reason: e.target.value})} className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm font-bold resize-none outline-none focus:ring-2 focus:ring-purple-500 transition-all" placeholder={t.plhReason} />
               </div>
             </div>
             <div className="px-8 py-6 bg-slate-50 flex justify-end gap-4 border-t border-slate-100">
-              <button onClick={() => setShowModal(false)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-600 transition-colors">Cancel</button>
+              <button onClick={() => setShowModal(false)} className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-4 hover:text-slate-600 transition-colors">{t.btnCancel}</button>
               <button onClick={handleSave} disabled={saving} className="px-8 py-3.5 bg-purple-600 text-white rounded-2xl font-black text-[10px] shadow-xl shadow-purple-100 hover:bg-purple-700 active:scale-95 transition-all tracking-widest uppercase">
-                {saving ? "SAVING..." : "SUBMIT REQUEST"}
+                {saving ? t.btnSaving : t.btnSubmit}
               </button>
             </div>
           </div>

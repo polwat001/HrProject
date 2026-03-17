@@ -70,7 +70,7 @@ const UserPermissions = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">⚙️ System Permissions</h1>
+          <h1 className="text-3xl font-bold text-slate-900"> System Permissions</h1>
           <p className="text-slate-600 mt-1">จัดการบทบาทผู้ใช้งานและกำหนดสิทธิ์การเข้าถึงโมดูลต่างๆ</p>
         </div>
       </div>
@@ -245,19 +245,8 @@ const UserPermissions = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Footer Info */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 shadow-lg">
-        <div className="flex items-start gap-4">
-          <div className="p-3 bg-white/10 rounded-xl"><Lock size={24} className="text-yellow-400" /></div>
-          <div>
-            <h3 className="font-bold text-lg mb-1">ความปลอดภัยและสิทธิ์การใช้งาน</h3>
-            <p className="text-slate-400 text-sm">
-              การแก้ไขสิทธิ์จะมีผลทันทีเมื่อผู้ใช้งานทำการ Refresh หน้าจอ หรือเข้าสู่ระบบใหม่ 
-              กรุณาตรวจสอบ Matrix อย่างละเอียดก่อนทำการบันทึก
-            </p>
-          </div>
-        </div>
-      </div>
+     
+      
     </div>
   );
 };
