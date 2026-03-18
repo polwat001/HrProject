@@ -1,142 +1,118 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, Lock, User } from 'lucide-react';
+import { Building2, Shield, User } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { authAPI } from '@/services/api';
 
 export default function LoginPage() {
   const router = useRouter();
   const { setUser, setAvailableCompanies, setCurrentCompanyId, setToken } = useAppStore();
-  
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsLoading(true);
+  // 📦 ข้อมูลจำลองสำหรับ HR / Admin (Super Admin)
+  const handleLoginAsAdmin = () => {
+    const adminData = {
+      id: 1,
+      username: "superadmin",
+      firstName: "ผู้ดูแลระบบ",
+      lastName: "ส่วนกลาง",
+      role_id: 1, 
+      is_super_admin: true,
+      email: "admin@hrgroup.com"
+    };
 
-    try {
-      const response = await authAPI.login(username, password);
-      const { token, userData, availableCompanies } = response.data;
+    // จำลองตั้งค่า Store และ LocalStorage
+    localStorage.setItem('hr_token', 'mock_admin_token_123');
+    setUser(adminData);
+    setToken('mock_admin_token_123');
+    
+    // ตั้งค่าบริษัท (null = เห็นทุกบริษัท)
+    setAvailableCompanies([{ company_id: 1, name_th: "สำนักงานใหญ่" }]);
+    setCurrentCompanyId(null); 
 
-      // Store token
-      localStorage.setItem('hr_token', token);
+    router.push('/dashboard');
+  };
 
-      //  อัปเดต store โดยใช้ userData
-      setUser(userData); 
-      setAvailableCompanies(availableCompanies || []);
-      setToken(token);
-      
-      // เช็กสิทธิ์โดยใช้ userData
-      // ใส่เครื่องหมาย ? (Optional Chaining) กันเหนียวไว้ด้วย
-      if (userData?.is_super_admin) {
-        setCurrentCompanyId(null); // null means "All Companies" for super admin
-      } else if (availableCompanies?.length > 0) {
-        setCurrentCompanyId(availableCompanies[0].company_id);
-      }
+  // 📦 ข้อมูลจำลองสำหรับ พนักงาน (Employee)
+  const handleLoginAsEmployee = () => {
+    const employeeData = {
+      id: 1, // ตรงกับ Employee ID ใน Mock Data ของหน้า Dashboard
+      username: "nadech",
+      firstName: "สมชาย",
+      lastName: "มั่นคง",
+      role_id: 4, // 4 = Employee
+      is_super_admin: false,
+      email: "somchai@hrgroup.com",
+      position: "Senior Developer",
+      department: "IT",
+      employeeCode: "IT-001"
+    };
 
-      // Redirect to dashboard
-      router.push('/dashboard');
-      
-    } catch (err: any) {
-      console.error('Login error:', err);
-      setError(err.response?.data?.message || 'เกิดข้อผิดพลาดในการเข้าสู่ระบบ');
-    } finally {
-      setIsLoading(false);
-    }
+    // จำลองตั้งค่า Store และ LocalStorage
+    localStorage.setItem('hr_token', 'mock_employee_token_456');
+    setUser(employeeData);
+    setToken('mock_employee_token_456');
+    
+    // พนักงานมีสิทธิ์ในบริษัทเดียว
+    setAvailableCompanies([{ company_id: 1, name_th: "สำนักงานใหญ่" }]);
+    setCurrentCompanyId(1);
+
+    router.push('/dashboard');
   };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center text-blue-600">
-          <Building2 size={48} />
+        <div className="flex justify-center text-blue-600 mb-6">
+          <div className="w-20 h-20 bg-white shadow-xl shadow-blue-100/50 rounded-3xl flex items-center justify-center border border-blue-50">
+             <Building2 size={40} className="text-blue-600" />
+          </div>
         </div>
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+        <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight italic uppercase">
           HR Group System
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
-          ลงชื่อเข้าใช้ระบบบริหารจัดการทรัพยากรบุคคล
+        <p className="mt-2 text-center text-sm font-bold text-slate-500 uppercase tracking-widest">
+          Demo Login Portal
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-sm border border-gray-100 sm:rounded-xl sm:px-10">
+      <div className="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-10 px-8 shadow-xl shadow-slate-200/50 border border-slate-100 sm:rounded-[2.5rem] space-y-6">
           
-          {error && (
-            <div className="mb-4 bg-red-50 border-l-4 border-red-500 p-4">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
+          <div className="text-center mb-8">
+             <h3 className="text-slate-800 font-black text-lg">เลือกสิทธิ์การเข้าใช้งาน</h3>
+             <p className="text-slate-400 text-xs font-bold mt-1">คลิกที่ปุ่มด้านล่างเพื่อเข้าสู่ระบบทันที (ไม่ต้องใส่รหัสผ่าน)</p>
+          </div>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้ (Username)</label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="text-gray-400" size={20} />
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="เช่น nadech"
-                />
+          <div className="space-y-4">
+            {/* ปุ่มเข้าสู่ระบบ Admin */}
+            <button
+              onClick={handleLoginAsAdmin}
+              className="w-full flex items-center gap-5 p-5 rounded-3xl border-2 border-blue-50 hover:border-blue-600 hover:bg-blue-600 group transition-all duration-300 text-left"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-white group-hover:text-blue-600 transition-colors shadow-sm">
+                <Shield size={24} />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700">รหัสผ่าน (Password)</label>
-              <div className="mt-1 relative rounded-md shadow-sm">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="text-gray-400" size={20} />
-                </div>
-                <input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="••••••••"
-                />
+              <div>
+                <h4 className="font-black text-slate-800 group-hover:text-white text-lg">Admin</h4>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input id="remember-me" name="remember-me" type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  จดจำการเข้าสู่ระบบ
-                </label>
+            {/* ปุ่มเข้าสู่ระบบ Employee */}
+            <button
+              onClick={handleLoginAsEmployee}
+              className="w-full flex items-center gap-5 p-5 rounded-3xl border-2 border-emerald-50 hover:border-emerald-500 hover:bg-emerald-500 group transition-all duration-300 text-left"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-white group-hover:text-emerald-600 transition-colors shadow-sm">
+                <User size={24} />
               </div>
-            </div>
+              <div>
+                <h4 className="font-black text-slate-800 group-hover:text-white text-lg">Employee</h4>
+              </div>
+            </button>
+          </div>
 
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className={`w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${isLoading ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors`}
-              >
-                {isLoading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}
-              </button>
-            </div>
-          </form>
-
-          {/* ข้อมูล Mock สำหรับ Demo */}
-          <div className="mt-6 border-t border-gray-200 pt-6">
-            <h4 className="text-xs font-semibold text-gray-500 tracking-wider uppercase">Demo Accounts:</h4>
-            <ul className="mt-2 text-xs text-gray-500 space-y-1">
-              <li>Super Admin: <code className="bg-gray-100 px-1 rounded">superadmin</code> / 123456</li>
-              <li>HR HQ: <code className="bg-gray-100 px-1 rounded">hr_hq</code> / 123456</li>
-              <li>Staff (Factory): <code className="bg-gray-100 px-1 rounded">nadech</code> / 123456</li>
-            </ul>
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">For Demonstration Purposes Only</p>
           </div>
 
         </div>
