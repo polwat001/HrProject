@@ -1,18 +1,42 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { organizationAPI } from "@/services/api";
+import { useState, useEffect, useMemo } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { Plus, Edit2, Trash2, Loader, Briefcase, X, Filter } from "lucide-react";
 import type { Division, Section } from "@/types";
 
+// ==========================================
+// 📦 MOCK DATA (ข้อมูลตั้งต้น)
+// ==========================================
+const INITIAL_MOCK_DIVISIONS: Division[] = [
+  { id: 1, name: "สายงานบริหาร (Administration)", company_id: 1 },
+  { id: 2, name: "สายงานการตลาดและการขาย (Marketing & Sales)", company_id: 1 },
+  { id: 3, name: "สายงานปฏิบัติการ (Operations)", company_id: 1 },
+  { id: 4, name: "สายงานเทคโนโลยีสารสนเทศ (IT)", company_id: 1 },
+  { id: 5, name: "สายงานทรัพยากรบุคคล (Human Resources)", company_id: 1 },
+];
+
+const INITIAL_MOCK_SECTIONS: any[] = [
+  { id: 1, name: "ส่วนงานบัญชี", division_id: 1 },
+  { id: 2, name: "ส่วนงานจัดซื้อ", division_id: 1 },
+  { id: 3, name: "ส่วนงานการขายในประเทศ", division_id: 2 },
+  { id: 4, name: "ส่วนงานการขายต่างประเทศ", division_id: 2 },
+  { id: 5, name: "ส่วนงานการตลาดดิจิทัล", division_id: 2 },
+  { id: 6, name: "ส่วนงานผลิต", division_id: 3 },
+  { id: 7, name: "ส่วนงานคลังสินค้า", division_id: 3 },
+  { id: 8, name: "ส่วนงานซัพพอร์ต", division_id: 4 },
+  { id: 9, name: "ส่วนงานพัฒนาซอฟต์แวร์", division_id: 4 },
+  { id: 10, name: "ส่วนงานสรรหาว่าจ้าง", division_id: 5 },
+];
+
 export default function SectionPage() {
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
-  const [divisions, setDivisions] = useState<Division[]>([]);
-  const [sections, setSections] = useState<Section[]>([]);
   
-  // ✅ กำหนดค่าเริ่มต้นเป็น 0 (All Divisions)
+  // ✅ ใช้ Mock Data เป็นค่าเริ่มต้น
+  const [divisions, setDivisions] = useState<Division[]>(INITIAL_MOCK_DIVISIONS);
+  const [sections, setSections] = useState<Section[]>(INITIAL_MOCK_SECTIONS);
+  
   const [filterDivisionId, setFilterDivisionId] = useState<number>(0);
 
   // Modal & Edit State
@@ -29,36 +53,14 @@ export default function SectionPage() {
     loadInitialData();
   }, [currentCompanyId]);
 
-  useEffect(() => {
-    loadSections();
-  }, [filterDivisionId, currentCompanyId]); // โหลดใหม่เมื่อเปลี่ยน Filter หรือเปลี่ยนบริษัท
-
-  const loadInitialData = async () => {
-    try {
-      setLoading(true);
-      // โหลด Divisions ของบริษัทปัจจุบันมาเป็นตัวเลือกใน Dropdown
-      const resDivisions = await organizationAPI.getDivisions(currentCompanyId || undefined); 
-      setDivisions(resDivisions.data);
-      
-      // ✅ ไม่ต้องบังคับเซ็ตค่า Division แรกแล้ว ปล่อยให้เป็น 0 (All Divisions) ต่อไป
-    } catch (err) {
-      console.error("Error loading divisions:", err);
-    } finally {
+  // โหลดข้อมูลเบื้องต้น
+  const loadInitialData = () => {
+    setLoading(true);
+    setTimeout(() => {
+      // ในระบบจริง จะต้อง setDivisions ตาม companyId แต่ตอนนี้ให้มันดึง Mock ทั้งหมดมา
+      setDivisions(INITIAL_MOCK_DIVISIONS);
       setLoading(false);
-    }
-  };
-
-  const loadSections = async () => {
-    try {
-      setLoading(true);
-      // ส่ง filterDivisionId ไป ถ้าเป็น 0 Backend จะไม่ query WHERE division_id (ดึงมาทั้งหมด)
-      const res = await organizationAPI.getSections(filterDivisionId || undefined);
-      setSections(res.data);
-    } catch (err) {
-      console.error("Error loading sections:", err);
-    } finally {
-      setLoading(false);
-    }
+    }, 500);
   };
 
   const handleOpenModal = () => {
@@ -66,8 +68,6 @@ export default function SectionPage() {
     setEditingId(null);
     setFormError("");
     
-    // ถ้า Filter เป็น All Divisions อยู่ ตอนกดเพิ่มให้บังคับเลือกใหม่ (ค่าเริ่มต้น 0)
-    // แต่ถ้า Filter เลือก Division ไหนอยู่ ให้เอาค่านั้นมาเป็นค่าเริ่มต้นในฟอร์มเลย
     setSectionForm({ 
       name: "", 
       division_id: filterDivisionId !== 0 ? filterDivisionId : (divisions[0]?.id || 0) 
@@ -86,19 +86,30 @@ export default function SectionPage() {
         return;
       }
       
-      const payload = { ...sectionForm };
+      // จำลองเวลาบันทึกข้อมูล
+      await new Promise((resolve) => setTimeout(resolve, 400));
+
       if (isEditMode && editingId) {
-        await organizationAPI.updateSection(editingId, payload);
+        // ✅ อัปเดตข้อมูล
+        setSections((prev) => 
+          prev.map((sec) => sec.id === editingId ? { ...sec, ...sectionForm } : sec)
+        );
       } else {
-        await organizationAPI.createSection(payload);
+        // ✅ สร้างใหม่
+        const newId = sections.length > 0 ? Math.max(...sections.map(s => s.id)) + 1 : 1;
+        const newSection: Section = {
+          id: newId,
+          name: sectionForm.name,
+          division_id: sectionForm.division_id
+        };
+        setSections((prev) => [...prev, newSection]);
       }
       
       setShowModal(false);
       setIsEditMode(false);
       setEditingId(null);
-      await loadSections();
     } catch (err: any) {
-      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setFormError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving(false);
     }
@@ -114,20 +125,22 @@ export default function SectionPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(`ยืนยันการลบ Section นี้?`)) return;
-    try {
-      await organizationAPI.deleteSection(id);
-      await loadSections();
-    } catch (err: any) {
-      console.error("Delete failed:", err);
-      alert(err.response?.data?.message || `ไม่สามารถลบได้ อาจมีข้อมูล Department ผูกอยู่`);
-    }
+    
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    setSections((prev) => prev.filter((sec) => sec.id !== id));
   };
 
   const getModalTitle = () => {
     return isEditMode ? "แก้ไข Section" : "เพิ่ม Section";
   };
 
-  if (loading && sections.length === 0) {
+  // ✅ ตัวกรองข้อมูลเพื่อนำไปใช้โชว์ตาราง
+  const filteredSections = useMemo(() => {
+    if (filterDivisionId === 0) return sections;
+    return sections.filter(sec => sec.division_id === filterDivisionId);
+  }, [sections, filterDivisionId]);
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
@@ -154,14 +167,7 @@ export default function SectionPage() {
         </button>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 p-6">
-          <h3 className="font-bold text-purple-900 mb-3">Sections</h3>
-          <p className="text-4xl font-bold text-purple-900">{sections.length}</p>
-          <p className="text-sm text-purple-700 mt-2">Total section units</p>
-        </div>
-      </div>
+    
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex border-b border-slate-200">
@@ -169,7 +175,7 @@ export default function SectionPage() {
             <Briefcase size={20} />
             Sections (ส่วนงาน)
             <span className="ml-2 px-2 py-1 bg-slate-200 rounded-full text-xs font-bold text-slate-700">
-              {sections.length}
+              {filteredSections.length}
             </span>
           </div>
         </div>
@@ -194,10 +200,10 @@ export default function SectionPage() {
           </div>
 
           {/* Table */}
-          {sections.length === 0 ? (
+          {filteredSections.length === 0 ? (
             <div className="text-center py-12">
               <Briefcase className="mx-auto text-slate-300 mb-3" size={48} />
-              <p className="text-slate-600 font-medium">No sections found</p>
+              <p className="text-slate-600 font-medium">No sections found for the selected division</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -211,7 +217,7 @@ export default function SectionPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {sections.map((sec) => (
+                  {filteredSections.map((sec) => (
                     <tr key={sec.id} className="hover:bg-purple-50 transition-colors">
                       <td className="py-4 px-6 font-semibold text-slate-900">{sec.id}</td>
                       <td className="py-4 px-6 text-slate-800">{sec.name}</td>

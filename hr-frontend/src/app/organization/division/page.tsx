@@ -1,16 +1,27 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { organizationAPI } from "@/services/api";
 import { useAppStore } from "@/store/useAppStore";
 import { Plus, Edit2, Trash2, Loader, Users, X } from "lucide-react";
 import type { Division } from "@/types";
 
+// ==========================================
+// 📦 MOCK DATA (ข้อมูลตั้งต้น)
+// ==========================================
+const INITIAL_MOCK_DIVISIONS: Division[] = [
+  { id: 1, name: "สายงานบริหาร (Administration)", company_id: 1 },
+  { id: 2, name: "สายงานการตลาดและการขาย (Marketing & Sales)", company_id: 1 },
+  { id: 3, name: "สายงานปฏิบัติการ (Operations)", company_id: 1 },
+  { id: 4, name: "สายงานเทคโนโลยีสารสนเทศ (IT)", company_id: 1 },
+  { id: 5, name: "สายงานทรัพยากรบุคคล (Human Resources)", company_id: 1 },
+];
+
 export default function DivisionPage() {
-  // ดึง companyId ปัจจุบันมาใช้เป็นค่าเริ่มต้นเบื้องหลัง
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
-  const [divisions, setDivisions] = useState<Division[]>([]);
+  
+  // ✅ ใช้ Mock Data เป็นค่าเริ่มต้นของ State
+  const [divisions, setDivisions] = useState<Division[]>(INITIAL_MOCK_DIVISIONS);
 
   // Modal & Edit State
   const [showModal, setShowModal] = useState(false);
@@ -19,25 +30,21 @@ export default function DivisionPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Form State (เหลือแค่ชื่อฝ่าย)
+  // Form State
   const [divisionForm, setDivisionForm] = useState({ name: "" });
 
-  // โหลดข้อมูลเมื่อเข้าหน้าเว็บ หรือเมื่อ currentCompanyId เปลี่ยน
   useEffect(() => {
     loadDivisions();
   }, [currentCompanyId]);
 
-  const loadDivisions = async () => {
-    try {
-      setLoading(true);
-      // ส่ง currentCompanyId ไปให้ API กรองข้อมูลให้เลย
-      const res = await organizationAPI.getDivisions(currentCompanyId || undefined);
-      setDivisions(res.data);
-    } catch (err) {
-      console.error("Error loading divisions:", err);
-    } finally {
+  const loadDivisions = () => {
+    setLoading(true);
+    // จำลองเวลาโหลดข้อมูลจาก Backend 0.5 วินาที
+    setTimeout(() => {
+      // ในระบบ Mock เราจะไม่กรองตาม company_id เพื่อให้เห็นข้อมูลทันที
+      // แต่ถ้าอยากกรอง ให้ใช้: setDivisions(INITIAL_MOCK_DIVISIONS.filter(d => d.company_id === currentCompanyId))
       setLoading(false);
-    }
+    }, 500);
   };
 
   const handleOpenModal = () => {
@@ -59,24 +66,31 @@ export default function DivisionPage() {
         return;
       }
       
-      // แอบแนบ company_id ส่งไปหลังบ้านอัตโนมัติ (ถ้าไม่มีให้ default เป็น 1)
-      const payload = { 
-        name: divisionForm.name,
-        company_id: currentCompanyId || 1 
-      };
+      // จำลองเวลาบันทึกข้อมูล 0.4 วินาที
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       if (isEditMode && editingId) {
-        await organizationAPI.updateDivision(editingId, payload);
+        // ✅ อัปเดตข้อมูลใน State
+        setDivisions((prev) => 
+          prev.map((div) => div.id === editingId ? { ...div, name: divisionForm.name } : div)
+        );
       } else {
-        await organizationAPI.createDivision(payload);
+        // ✅ สร้างข้อมูลใหม่ (หา ID ล่าสุดแล้ว +1)
+        const newId = divisions.length > 0 ? Math.max(...divisions.map(d => d.id)) + 1 : 1;
+        const newDivision: Division = {
+          id: newId,
+          name: divisionForm.name,
+          company_id: currentCompanyId || 1
+        };
+        setDivisions((prev) => [...prev, newDivision]);
       }
       
       setShowModal(false);
       setIsEditMode(false);
       setEditingId(null);
-      await loadDivisions();
+      setDivisionForm({ name: "" }); // เคลียร์ฟอร์ม
     } catch (err: any) {
-      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setFormError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving(false);
     }
@@ -92,13 +106,12 @@ export default function DivisionPage() {
 
   const handleDelete = async (id: number) => {
     if (!confirm(`ยืนยันการลบ Division นี้?`)) return;
-    try {
-      await organizationAPI.deleteDivision(id);
-      await loadDivisions();
-    } catch (err: any) {
-      console.error("Delete failed:", err);
-      alert(err.response?.data?.message || `ไม่สามารถลบได้ อาจมีข้อมูล Section ผูกอยู่`);
-    }
+    
+    // จำลองเวลาลบข้อมูล 0.3 วินาที
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    
+    // ✅ ลบข้อมูลออกจาก State
+    setDivisions((prev) => prev.filter((div) => div.id !== id));
   };
 
   const getModalTitle = () => {
@@ -134,14 +147,7 @@ export default function DivisionPage() {
         </button>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
-          <h3 className="font-bold text-blue-900 mb-3">Divisions</h3>
-          <p className="text-4xl font-bold text-blue-900">{divisions.length}</p>
-          <p className="text-sm text-blue-700 mt-2">Total division units</p>
-        </div>
-      </div>
+   
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex border-b border-slate-200">

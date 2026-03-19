@@ -1,24 +1,33 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { organizationAPI } from "@/services/api";
 import { useAppStore } from "@/store/useAppStore";
 import { Plus, Edit2, Trash2, Loader, Briefcase, X } from "lucide-react";
 import type { Department } from "@/types";
 
-interface DepartmentAPI {
-  id: number;
-  NAME: string;
-  company_id: number;
-  parent_dept_id?: number;
-  cost_center?: string;
-}
+// ==========================================
+// 📦 MOCK DATA (ข้อมูลตั้งต้น)
+// ==========================================
+const INITIAL_MOCK_COMPANIES = [
+  { id: 1, name_th: "Thai Summit Automotive Co., Ltd. (Headquarter)" },
+  { id: 2, name_th: "Thai Summit Harness Co., Ltd." },
+];
+
+const INITIAL_MOCK_DEPARTMENTS: Department[] = [
+  { id: 1, name: "แผนกทรัพยากรบุคคล (HR)", companyId: 1, costCenterCode: "CC-HR01", headCount: 15 },
+  { id: 2, name: "แผนกเทคโนโลยีสารสนเทศ (IT)", companyId: 1, costCenterCode: "CC-IT01", headCount: 24 },
+  { id: 3, name: "แผนกบัญชีและการเงิน (Accounting)", companyId: 1, costCenterCode: "CC-ACC01", headCount: 10 },
+  { id: 4, name: "แผนกผลิตชิ้นส่วน (Production)", companyId: 2, costCenterCode: "CC-PRD01", headCount: 120 },
+  { id: 5, name: "แผนกควบคุมคุณภาพ (QA/QC)", companyId: 2, costCenterCode: "CC-QA01", headCount: 35 },
+];
 
 export default function DepartmentPage() {
   const { currentCompanyId } = useAppStore();
-  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [companies, setCompanies] = useState<any[]>([]);
+  
+  // ✅ ใช้ Mock Data เป็นค่าเริ่มต้นของ State
+  const [departments, setDepartments] = useState<Department[]>(INITIAL_MOCK_DEPARTMENTS);
+  const [companies, setCompanies] = useState<any[]>(INITIAL_MOCK_COMPANIES);
   
   // Modal & Edit State
   const [showModal, setShowModal] = useState(false);
@@ -38,34 +47,12 @@ export default function DepartmentPage() {
     loadData();
   }, [currentCompanyId]);
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-
-      const [depRes, companyRes] = await Promise.all([
-        organizationAPI.getDepartments(),
-        organizationAPI.getCompanies(),
-      ]);
-
-      setCompanies(companyRes.data);
-
-      const mappedDepartments: Department[] = depRes.data.map(
-        (dept: DepartmentAPI) => ({
-          id: dept.id,
-          name: dept.NAME,
-          companyId: dept.company_id,
-          parentId: dept.parent_dept_id ?? undefined,
-          costCenterCode: dept.cost_center ?? undefined,
-          headCount: 0,
-        }),
-      );
-
-      setDepartments(mappedDepartments);
-    } catch (err) {
-      console.error("Error loading department data:", err);
-    } finally {
+  const loadData = () => {
+    setLoading(true);
+    // จำลองเวลาโหลดข้อมูลจาก Backend 0.5 วินาที
+    setTimeout(() => {
       setLoading(false);
-    }
+    }, 500);
   };
 
   const handleOpenModal = () => {
@@ -91,26 +78,41 @@ export default function DepartmentPage() {
         return;
       }
 
-      const payload = {
-        NAME: deptForm.name,
-        cost_center: deptForm.costCenter,
-        company_id: deptForm.companyId,
-      };
+      // จำลองเวลาบันทึกข้อมูล 0.4 วินาที
+      await new Promise((resolve) => setTimeout(resolve, 400));
 
       if (isEditMode && editingId) {
-        await organizationAPI.updateDepartment(editingId, payload);
+        // อัปเดตข้อมูลลงใน State
+        setDepartments((prev) => 
+          prev.map((dept) => 
+            dept.id === editingId 
+              ? { 
+                  ...dept, 
+                  name: deptForm.name, 
+                  costCenterCode: deptForm.costCenter, 
+                  companyId: deptForm.companyId 
+                } 
+              : dept
+          )
+        );
       } else {
-        await organizationAPI.createDepartment(payload);
+        // สร้างข้อมูลใหม่ (หา ID ล่าสุดแล้ว +1)
+        const newId = departments.length > 0 ? Math.max(...departments.map(d => d.id)) + 1 : 1;
+        const newDept: Department = {
+          id: newId,
+          name: deptForm.name,
+          costCenterCode: deptForm.costCenter,
+          companyId: deptForm.companyId,
+          headCount: 0, // ค่าเริ่มต้น
+        };
+        setDepartments((prev) => [...prev, newDept]);
       }
 
       setShowModal(false);
       setIsEditMode(false);
       setEditingId(null);
-      await loadData();
     } catch (err: any) {
-      setFormError(
-        err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่",
-      );
+      setFormError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving(false);
     }
@@ -130,12 +132,12 @@ export default function DepartmentPage() {
 
   const handleDeleteDepartment = async (id: number) => {
     if (!confirm("ยืนยันการลบแผนกนี้ ?")) return;
-    try {
-      await organizationAPI.deleteDepartment(id);
-      await loadData();
-    } catch (err) {
-      console.error("Delete failed:", err);
-    }
+    
+    // จำลองเวลาลบข้อมูล 0.3 วินาที
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    
+    // ลบข้อมูลออกจาก State
+    setDepartments((prev) => prev.filter((dept) => dept.id !== id));
   };
 
   const getModalTitle = () => {
@@ -164,7 +166,7 @@ export default function DepartmentPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Thai Summit Automotive Co., Ltd. (Headquarter)
+            Departments Management
           </h1>
         </div>
         <button
@@ -176,16 +178,7 @@ export default function DepartmentPage() {
         </button>
       </div>
 
-      {/* Info Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 p-6">
-          <h3 className="font-bold text-blue-900 mb-3">Departments</h3>
-          <p className="text-4xl font-bold text-blue-900">
-            {departments.length}
-          </p>
-          <p className="text-sm text-blue-700 mt-2">Total Department units</p>
-        </div>
-      </div>
+     
 
       {/* Content */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -213,60 +206,51 @@ export default function DepartmentPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {departments.map((dept) => (
-                <div
-                  key={dept.id}
-                  className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md transition-all"
-                >
-                  <div className="p-5">
-                    {/* Card Header */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900">
-                          {dept.name}
-                        </h3>
-                        <p className="text-sm text-slate-500 mt-1">
-                          Company:{" "}
-                          {companies.find((c) => c.id === dept.companyId)
-                            ?.name_th || "-"}
-                        </p>
-                      </div>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
-                        ID: {dept.id}
-                      </span>
-                    </div>
-
-                    {/* Card Details */}
-                    <div className="mt-4 space-y-2 text-sm text-slate-600">
-                      {dept.costCenterCode && (
-                        <p>
-                          <span className="font-medium text-slate-700">
-                            Cost Center:
-                          </span>{" "}
-                          {dept.costCenterCode}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Card Actions */}
-                    <div className="flex justify-end gap-2 mt-5">
-                      <button
-                        onClick={() => handleEditDepartment(dept)}
-                        className="p-2 hover:bg-blue-100 rounded-lg transition-colors text-blue-600"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDepartment(dept.id)}
-                        className="p-2 hover:bg-red-100 rounded-lg transition-colors text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            /* ✅ เปลี่ยนจาก Grid Card มาเป็นตารางตรงนี้ครับ */
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                    <th className="py-4 px-6 font-semibold text-slate-700 w-24">ID</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Department Name</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Company</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Cost Center</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700 w-32">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {departments.map((dept) => (
+                    <tr key={dept.id} className="hover:bg-blue-50 transition-colors">
+                      <td className="py-4 px-6 font-semibold text-slate-900">{dept.id}</td>
+                      <td className="py-4 px-6 text-slate-800 font-medium">{dept.name}</td>
+                      <td className="py-4 px-6">
+                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                          {companies.find((c) => c.id === dept.companyId)?.name_th || "Unknown"}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-slate-600 font-mono text-sm">
+                        {dept.costCenterCode || "-"}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button 
+                            onClick={() => handleEditDepartment(dept)} 
+                            className="p-2 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors"
+                          >
+                            <Edit2 size={16} />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteDepartment(dept.id)} 
+                            className="p-2 hover:bg-red-100 rounded-lg text-red-600 transition-colors"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

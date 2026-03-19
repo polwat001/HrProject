@@ -24,7 +24,7 @@ import {
   Wallet,
   Shield,
   Circle,
-  ClockPlus
+  ClockPlus,
 } from "lucide-react";
 import { authAPI } from "@/services/api";
 
@@ -45,51 +45,51 @@ export default function MainLayout({
     availableCompanies,
     user,
     logout,
-    language, // ✅ ดึง language มาจาก Store
-    setLanguage // ✅ ดึง setLanguage มาจาก Store
+    language,
+    setLanguage,
   } = useAppStore();
 
-  // ✅ 1. เช็คสิทธิ์: ว่าผู้ใช้คนนี้เป็นพนักงาน (Role 4) หรือไม่
   const roleId = Number(user?.role_id || user?.is_super_admin);
   const isEmployee = roleId === 4;
 
-  // ✅ 2. จัดการเมนู: ซ่อนเมนูสำหรับ Employee และแสดงให้ครบสำหรับ Admin/HR
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-    
-    // --- ซ่อนกลุ่ม Organization & Employees ถ้าเป็นพนักงาน ---
-    ...(isEmployee ? [] : [
-      { 
-        name: "Organization", 
-        path: "/organization", 
-        icon: Building2,
-        subItems: [
-          { name: "Division", path: "/organization/division" },
-          { name: "Section", path: "/organization/section" },
-          { name: "Department", path: "/organization/department" },
-          { name: "Position", path: "/organization/position" },
-          { name: "Level", path: "/organization/level" },
-        ]
-      },
-      { 
-        name: "Employees", 
-        path: "/employees", 
-        icon: Users,
-      },
-    ]),
 
-    // --- เมนูที่พนักงานมองเห็นได้ ---
+    ...(isEmployee
+      ? []
+      : [
+          {
+            name: "Organization",
+            path: "/organization",
+            icon: Building2,
+            subItems: [
+              { name: "Division", path: "/organization/division" },
+              { name: "Section", path: "/organization/section" },
+              { name: "Department", path: "/organization/department" },
+              { name: "Level", path: "/organization/level" },
+              { name: "Position", path: "/organization/position" },
+            ],
+          },
+          {
+            name: "Employees",
+            path: "/employees",
+            icon: Users,
+          },
+        ]),
+
     { name: "Attendance Logs", path: "/attendance", icon: Clock },
     { name: "OT Management", path: "/overtime", icon: ClockPlus },
+    { name: "Leaves Management", path: "/leaves", icon: Calendar },
 
-    // --- ซ่อนเมนูระบบหลังบ้านทั้งหมดถ้าเป็นพนักงาน ---
-    ...(isEmployee ? [] : [
-      { name: "Leaves Management", path: "/leaves", icon: Calendar },
-      { name: "Contracts Management", path: "/contracts", icon: FileText },
-      { name: "Payroll Management", path: "/payroll", icon: Wallet },
-      { name: "Reports", path: "/reports", icon: BarChart3 },
-      { name: "User & Permissions", path: "/settings", icon: Shield },
-    ])
+    ...(isEmployee
+      ? []
+      : [
+          
+          { name: "Contracts Management", path: "/contracts", icon: FileText },
+          { name: "Payroll Management", path: "/payroll", icon: Wallet },
+          { name: "Reports", path: "/reports", icon: BarChart3 },
+          { name: "User & Permissions", path: "/settings", icon: Shield },
+        ]),
   ];
 
   const toggleSubmenu = (path: string) => {
@@ -100,11 +100,11 @@ export default function MainLayout({
   };
 
   useEffect(() => {
-    if (!pathname) return; 
-    
-    menuItems.forEach(item => {
+    if (!pathname) return;
+
+    menuItems.forEach((item) => {
       if (item.subItems && pathname.startsWith(item.path)) {
-        setOpenSubmenus(prev => ({ ...prev, [item.path]: true }));
+        setOpenSubmenus((prev) => ({ ...prev, [item.path]: true }));
       }
     });
   }, [pathname]);
@@ -113,7 +113,9 @@ export default function MainLayout({
 
   const handleLogout = async () => {
     try {
-      await authAPI.logout();
+      if (typeof authAPI.logout === 'function') {
+        await authAPI.logout();
+      }
     } catch (err) {
       console.error("Logout error:", err);
     }
@@ -150,7 +152,9 @@ export default function MainLayout({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const hasSubItems = item.subItems && item.subItems.length > 0;
-            const isActive = pathname === item.path || (hasSubItems && pathname?.startsWith(item.path));
+            const isActive =
+              pathname === item.path ||
+              (hasSubItems && pathname?.startsWith(item.path));
             const isSubOpen = openSubmenus[item.path];
 
             return (
@@ -165,15 +169,18 @@ export default function MainLayout({
                     }`}
                     title={!sidebarOpen ? item.name : undefined}
                   >
-                    <Icon size={20} className={`flex-shrink-0 ${isActive ? "text-blue-400" : "text-slate-300"}`} />
+                    <Icon
+                      size={20}
+                      className={`flex-shrink-0 ${isActive ? "text-blue-400" : "text-slate-300"}`}
+                    />
                     {sidebarOpen && (
                       <>
                         <span className="text-sm font-medium flex-1 text-left text-white">
                           {item.name}
                         </span>
-                        <ChevronDown 
-                          size={16} 
-                          className={`transition-transform duration-300 text-slate-400 ${isSubOpen ? 'rotate-180' : ''}`} 
+                        <ChevronDown
+                          size={16}
+                          className={`transition-transform duration-300 text-slate-400 ${isSubOpen ? "rotate-180" : ""}`}
                         />
                       </>
                     )}
@@ -188,7 +195,10 @@ export default function MainLayout({
                     }`}
                     title={!sidebarOpen ? item.name : undefined}
                   >
-                    <Icon size={20} className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`} />
+                    <Icon
+                      size={20}
+                      className={`flex-shrink-0 ${isActive ? "text-white" : "text-slate-300"}`}
+                    />
                     {sidebarOpen && (
                       <span className="text-sm font-medium flex-1 text-white">
                         {item.name}
@@ -206,14 +216,31 @@ export default function MainLayout({
                         <Link
                           key={subItem.path}
                           href={subItem.path}
-                          className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+                          // ✅ ใช้คลาส group เพื่อให้ hover ทำงานประสานกันทั้งบรรทัด
+                          className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                             isSubActive
-                              ? "bg-white/5 font-medium"
-                              : " hover:text-white hover:bg-slate-700/30"
+                              ? "bg-blue-600/10 font-medium"
+                              : "hover:bg-slate-700/30"
                           }`}
                         >
-                          <Circle size={8} className={isSubActive ? "text-blue-400 fill-blue-400" : "text-slate-500"} />
-                          <span>{subItem.name}</span>
+                          <Circle
+                            size={8}
+                            className={
+                              isSubActive
+                                ? "text-blue-400 fill-blue-400"
+                                : "text-slate-500 group-hover:text-blue-300"
+                            }
+                          />
+                          {/* ✅ บังคับสีข้อความตรงนี้ให้ชัดเจน */}
+                          <span 
+                            className={
+                              isSubActive 
+                                ? "text-white" 
+                                : "text-white group-hover:text-white"
+                            }
+                          >
+                            {subItem.name}
+                          </span>
                         </Link>
                       );
                     })}
@@ -248,21 +275,24 @@ export default function MainLayout({
           </div>
 
           <div className="flex items-center gap-4">
-            
-            {/* ✅ Language Switcher ย้ายมาอยู่ตรงนี้ */}
+            {/* Language Switcher */}
             <div className="flex bg-slate-200/60 p-1 rounded-xl shadow-inner border border-slate-200">
-              <button 
-                onClick={() => setLanguage('th')}
+              <button
+                onClick={() => setLanguage("th")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-widest uppercase transition-all ${
-                  language === 'th' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  language === "th"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
                 }`}
               >
                 TH
               </button>
-              <button 
-                onClick={() => setLanguage('en')}
+              <button
+                onClick={() => setLanguage("en")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-black tracking-widest uppercase transition-all ${
-                  language === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'
+                  language === "en"
+                    ? "bg-white text-blue-600 shadow-sm"
+                    : "text-slate-400 hover:text-slate-600"
                 }`}
               >
                 EN
@@ -296,7 +326,9 @@ export default function MainLayout({
                 className="flex items-center gap-3 px-3 py-2 hover:bg-slate-100 rounded-lg transition-colors group"
               >
                 <div className="w-9 h-9 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-sm font-bold text-white shadow-lg">
-                  {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
+                  {user?.firstName?.charAt(0) ||
+                    user?.username?.charAt(0) ||
+                    "U"}
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-semibold text-slate-900 ">
@@ -317,7 +349,9 @@ export default function MainLayout({
                   <div className="px-4 py-4 bg-gradient-to-r from-blue-50 to-slate-50 border-b border-slate-200">
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-lg font-bold text-white shadow-lg">
-                        {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
+                        {user?.firstName?.charAt(0) ||
+                          user?.username?.charAt(0) ||
+                          "U"}
                       </div>
                       <div className="flex-1">
                         <p className="text-sm font-bold text-slate-900">
@@ -360,9 +394,7 @@ export default function MainLayout({
           </div>
         </header>
 
-        <main className="flex-1 overflow-auto bg-slate-50/50">
-          {children}
-        </main>
+        <main className="flex-1 overflow-auto bg-slate-50/50">{children}</main>
       </div>
     </div>
   );

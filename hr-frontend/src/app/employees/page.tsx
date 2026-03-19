@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAppStore } from "@/store/useAppStore";
-import { employeeAPI, organizationAPI } from "@/services/api";
 import {
   Plus,
   Search,
@@ -19,7 +18,17 @@ import {
   UserPlus,
 } from "lucide-react";
 
-// ✅ เพิ่ม department_id และ position_id เข้าไปใน Form เริ่มต้น
+// ✅ Import ข้อมูลจำลองจากโฟลเดอร์ mocks
+import {
+  MOCK_COMPANIES,
+  MOCK_DIVISIONS,
+  MOCK_SECTIONS,
+  MOCK_DEPARTMENTS,
+  MOCK_POSITIONS,
+  MOCK_LEVELS,
+  MOCK_EMPLOYEES,
+} from "@/mocks/employeeData";
+
 const EMPTY_FORM = {
   employee_code: "",
   firstname_th: "",
@@ -80,67 +89,57 @@ export default function EmployeesPage() {
   const [formError, setFormError] = useState("");
 
   // ===========================
-  // LOAD DATA
+  // LOAD MOCK DATA
   // ===========================
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const [empRes, coRes, divRes, secRes, deptRes, posRes, lvlRes] = await Promise.all([
-        employeeAPI.getEmployees(),
-        organizationAPI.getCompanies(),
-        organizationAPI.getDivisions ? organizationAPI.getDivisions().catch(() => ({ data: [] })) : { data: [] },
-        organizationAPI.getSections ? organizationAPI.getSections().catch(() => ({ data: [] })) : { data: [] },
-        organizationAPI.getDepartments(),
-        organizationAPI.getPositions(),
-        organizationAPI.getLevels ? organizationAPI.getLevels().catch(() => ({ data: [] })) : { data: [] },
-      ]);
+    setLoading(true);
+    // จำลองเวลาโหลดข้อมูล 0.5 วินาที
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-      const companiesData = coRes.data;
-      const departmentsData = deptRes.data;
-      const positionsData = posRes.data;
+    setCompanies(MOCK_COMPANIES);
+    setDivisions(MOCK_DIVISIONS);
+    setSections(MOCK_SECTIONS);
+    setDepartments(MOCK_DEPARTMENTS);
+    setPositions(MOCK_POSITIONS);
+    setLevels(MOCK_LEVELS);
 
-      setCompanies(companiesData);
-      setDivisions(divRes.data || []);
-      setSections(secRes.data || []);
-      setDepartments(departmentsData);
-      setPositions(positionsData);
-      setLevels(lvlRes.data || []);
+    // แมปปิ้งข้อมูลพนักงานให้แสดงชื่อแผนกและตำแหน่ง
+    const mappedEmployees = MOCK_EMPLOYEES.map((emp: any) => {
+      const company = MOCK_COMPANIES.find((c: any) => Number(c.id) === Number(emp.current_company_id));
+      const department = MOCK_DEPARTMENTS.find((d: any) => Number(d.id) === Number(emp.department_id));
+      const position = MOCK_POSITIONS.find((p: any) => Number(p.id) === Number(emp.position_id));
+      
+      return {
+        ...emp,
+        company_name: company?.name_th ?? "-",
+        department_name: department?.NAME ?? "-",
+        position_name: position?.title_th ?? "-",
+        status: emp.STATUS?.toLowerCase() || emp.status?.toLowerCase() || "active",
+      };
+    });
 
-      const mappedEmployees = empRes.data.map((emp: any) => {
-        // ✅ ใช้ Number() ครอบเพื่อป้องกันบั๊ก Type Mismatch จาก API
-        const company = companiesData.find((c: any) => Number(c.id) === Number(emp.current_company_id));
-        const department = departmentsData.find((d: any) => Number(d.id) === Number(emp.department_id));
-        const position = positionsData.find((p: any) => Number(p.id) === Number(emp.position_id));
-        
-        return {
-          id: emp.id,
-          employee_code: emp.employee_code,
-          firstname_th: emp.firstname_th,
-          lastname_th: emp.lastname_th,
-          nickname: emp.nickname,
-          id_card_number: emp.id_card_number,
-          current_company_id: emp.current_company_id,
-          department_id: emp.department_id,
-          position_id: emp.position_id,
-          company_name: company?.name_th ?? "-",
-          department_name: department?.NAME ?? "-",
-          position_name: position?.title_th ?? "-", // 👈 ตรงนี้จะแสดงผลได้ถูกต้องแล้ว
-          status: emp.STATUS?.toLowerCase() || emp.status?.toLowerCase() || "active",
-          avatar_url: emp.avatar_url,
-        };
-      });
-
-      setEmployees(mappedEmployees);
-    } catch (err) {
-      console.error("Error loading employees:", err);
-    } finally {
-      setLoading(false);
-    }
+    setEmployees(mappedEmployees);
+    setLoading(false);
   };
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // ฟังก์ชันช่วยอัปเดตข้อมูลพนักงานให้มีชื่อแผนกและตำแหน่งครบถ้วน ก่อนเอาไปลง State
+  const mapSingleEmployee = (empData: any) => {
+    const company = companies.find((c: any) => Number(c.id) === Number(empData.current_company_id));
+    const department = departments.find((d: any) => Number(d.id) === Number(empData.department_id));
+    const position = positions.find((p: any) => Number(p.id) === Number(empData.position_id));
+    
+    return {
+      ...empData,
+      company_name: company?.name_th ?? "-",
+      department_name: department?.NAME ?? "-",
+      position_name: position?.title_th ?? "-",
+      status: empData.STATUS?.toLowerCase() || "active",
+    };
+  };
 
   // ===========================
   // ADD / EDIT / DELETE LOGIC
@@ -163,8 +162,8 @@ export default function EmployeesPage() {
       nickname: emp.nickname ?? "",
       id_card_number: emp.id_card_number ?? "",
       current_company_id: emp.current_company_id ?? 0,
-      department_id: emp.department_id ?? 0, // ✅ โหลดแผนกเดิม
-      position_id: emp.position_id ?? 0,     // ✅ โหลดตำแหน่งเดิม
+      department_id: emp.department_id ?? 0,
+      position_id: emp.position_id ?? 0,
       STATUS: emp.status ?? "active",
     });
     setFormError("");
@@ -177,10 +176,11 @@ export default function EmployeesPage() {
       setFormError("กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");
       return;
     }
+
     try {
       setSaving(true);
-      
-      // ✅ เคลียร์ค่า 0 เป็น null ให้ฐานข้อมูล
+      await new Promise((resolve) => setTimeout(resolve, 400)); // จำลองดีเลย์ตอนเซฟ
+
       const payload = { 
         ...formData,
         department_id: formData.department_id || null,
@@ -188,14 +188,20 @@ export default function EmployeesPage() {
       };
 
       if (isEditMode && editingId) {
-        await employeeAPI.updateEmployee(editingId, payload);
+        // กรณีแก้ไข
+        setEmployees(prev => prev.map(emp => emp.id === editingId ? mapSingleEmployee({ ...emp, ...payload }) : emp));
       } else {
-        await employeeAPI.createEmployee(payload);
+        // กรณีเพิ่มใหม่
+        const newId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) + 1 : 1;
+        const newEmployee = mapSingleEmployee({ id: newId, ...payload });
+        setEmployees(prev => [...prev, newEmployee]);
       }
+
       setShowFormModal(false);
-      await loadData();
+      setIsEditMode(false);
+      setEditingId(null);
     } catch (err: any) {
-      setFormError(err.response?.data?.message || "เกิดข้อผิดพลาด กรุณาลองใหม่");
+      setFormError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
       setSaving(false);
     }
@@ -210,10 +216,11 @@ export default function EmployeesPage() {
     if (!deletingEmployee) return;
     try {
       setDeleting(true);
-      await employeeAPI.deleteEmployee(deletingEmployee.id);
+      await new Promise((resolve) => setTimeout(resolve, 300)); // จำลองดีเลย์ลบข้อมูล
+
+      setEmployees(prev => prev.filter(emp => emp.id !== deletingEmployee.id));
       setShowDeleteModal(false);
       setDeletingEmployee(null);
-      await loadData();
     } catch (err) {
       console.error("Delete failed:", err);
     } finally {
@@ -233,7 +240,7 @@ export default function EmployeesPage() {
   };
 
   // ===========================
-  // APPLY FILTERS (Client-side)
+  // APPLY FILTERS
   // ===========================
   const filteredEmployees = employees.filter((emp) => {
     const keyword = searchTerm.toLowerCase();
@@ -277,7 +284,7 @@ export default function EmployeesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">👥 Employee Directory</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Employee Directory</h1>
           <p className="text-slate-600 mt-1">Manage and view all employees</p>
         </div>
         <div className="flex gap-3">
@@ -350,20 +357,18 @@ export default function EmployeesPage() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
               {/* Status */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Status</label>
                 <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">All Statuses</option>
+                  <option value="">All Status</option>
                   <option value="active">Active (ใช้งานปกติ)</option>
                   <option value="probation">Probation (ทดลองงาน)</option>
                   <option value="resigned">Resigned (ลาออก)</option>
                   <option value="retired">Retired (เกษียณ)</option>
                 </select>
               </div>
-
-              
 
               {/* Division */}
               <div>
@@ -392,6 +397,15 @@ export default function EmployeesPage() {
                 </select>
               </div>
 
+              {/* Level */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Level (ระดับ)</label>
+                <select value={filterLevelId} onChange={(e) => setFilterLevelId(e.target.value ? Number(e.target.value) : "")} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="">All Levels</option>
+                  {levels.map((l) => (<option key={l.id} value={l.id}>{l.level_code} - {l.level_title}</option>))}
+                </select>
+              </div>
+
               {/* Position */}
               <div>
                 <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Position (ตำแหน่ง)</label>
@@ -401,14 +415,7 @@ export default function EmployeesPage() {
                 </select>
               </div>
 
-              {/* Level */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Level (ระดับ)</label>
-                <select value={filterLevelId} onChange={(e) => setFilterLevelId(e.target.value ? Number(e.target.value) : "")} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
-                  <option value="">All Levels</option>
-                  {levels.map((l) => (<option key={l.id} value={l.id}>{l.level_code} - {l.level_title}</option>))}
-                </select>
-              </div>
+
             </div>
           </div>
         )}
@@ -427,7 +434,6 @@ export default function EmployeesPage() {
               <thead>
                 <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Name</th>
-                  
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Department</th>
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Position</th>
                   <th className="text-left py-4 px-6 font-semibold text-slate-700">Status</th>
@@ -548,7 +554,7 @@ export default function EmployeesPage() {
                 </div>
               </div>
 
-              {/* ✅ Form Row 5: Department & Position (เพิ่มใหม่) */}
+              {/* Form Row 5: Department & Position */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-1">แผนก (Department)</label>
