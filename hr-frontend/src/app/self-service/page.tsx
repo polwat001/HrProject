@@ -1,304 +1,279 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { attendanceAPI, otAPI } from "@/services/api"; // ✅ นำเข้า API จริง
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Clock, CalendarDays, Briefcase, User, Building, Timer, Loader } from "lucide-react";
+import { 
+  Shield, Search, Edit2, Trash2, AlertTriangle, UserCheck, 
+  UserX, UserPlus, X, Users, CheckCircle2, XCircle, LayoutGrid
+} from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 
-// ✅ สีและข้อความสถานะ
-const statusColors: Record<string, string> = {
-  present: "bg-emerald-500",
-  late: "bg-amber-400",
-  absent: "bg-red-500",
-  leave: "bg-blue-400",
-};
+// ==========================================
+// 📦 MOCK DATA: อิงจาก 2 Role หลักของระบบ
+// ==========================================
+const MOCK_ROLE_GROUPS = [
+  { id: 1, name: "Admin / HR", badge: "bg-blue-100 text-blue-700", description: "ผู้ดูแลระบบและฝ่ายบุคคล (เข้าถึงและจัดการได้ทุกเมนู)" },
+  { id: 4, name: "Employee", badge: "bg-slate-100 text-slate-700", description: "พนักงานทั่วไป (ระบบ Self-Service ดูเฉพาะข้อมูลตัวเอง)" },
+];
 
-const statusLabels: Record<string, string> = {
-  present: "มาทำงาน",
-  late: "สาย",
-  absent: "ขาด",
-  leave: "ลา",
-};
+const MOCK_USERS = [
+  { id: 1, employee_code: "EMP-000", name: "ผู้ดูแลระบบ", email: "admin@company.com", role_id: 1, status: "active" },
+  { id: 2, employee_code: "EMP-HR-01", name: "สมศรี งานบุคคล", email: "somsri.hr@company.com", role_id: 1, status: "active" },
+  { id: 3, employee_code: "EMP-001", name: "สมชาย มั่นคง", email: "somchai@company.com", role_id: 4, status: "active" },
+  { id: 4, employee_code: "EMP-002", name: "สมหญิง ใจดี", email: "somying@company.com", role_id: 4, status: "inactive" },
+];
 
-const LEAVE_COLORS = ["hsl(var(--primary))", "hsl(var(--warning))", "hsl(var(--info))"];
+const PERMISSION_MATRIX = [
+  { module: "Dashboard", admin: "ดูภาพรวมทั้งหมด", emp: "ดูสถิติส่วนตัว" },
+  { module: "Organization & Employees", admin: "จัดการ เพิ่ม/ลบ/แก้ไข", emp: "เข้าถึงไม่ได้ (ซ่อนเมนู)" },
+  { module: "Attendance (เวลาเข้างาน)", admin: "ดูและแก้ไขของทุกคน", emp: "ดูเฉพาะของตัวเอง" },
+  { module: "OT & Leaves (โอที/ลางาน)", admin: "จัดการและกด อนุมัติ/ปฏิเสธ", emp: "ดูโควต้าและ กดส่งคำขอ (Request)" },
+  { module: "Payroll (เงินเดือน)", admin: "ดูข้อมูลทั้งหมดและดาวน์โหลดสลิป", emp: "ดูและดาวน์โหลดสลิปของตัวเอง" },
+  { module: "Reports (รายงาน)", admin: "Export ข้อมูลได้ทั้งหมด", emp: "เข้าถึงไม่ได้ (ซ่อนเมนู)" },
+];
 
-export default function SelfService() {
-  // ✅ ดึงข้อมูล User จาก Store (คนที่ล็อกอินอยู่)
-  const { user, currentCompanyId, leaveQuotas } = useAppStore();
-  
-  const [loading, setLoading] = useState(true);
-  const [attendanceRecords, setAttendanceRecords] = useState<any[]>([]);
-  const [otRecords, setOtRecords] = useState<any[]>([]);
+export default function UserPermissionsPage() {
+  const { currentCompanyId } = useAppStore();
+  const [activeTab, setActiveTab] = useState<"users" | "roles">("users");
 
-  // วันที่ปัจจุบันสำหรับสร้างปฏิทิน
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
+  const [users, setUsers] = useState<any[]>(MOCK_USERS);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState<number | "all">("all");
 
-  // ✅ โหลดข้อมูลจริงเมื่อเข้าหน้าเว็บ
-  useEffect(() => {
-    const fetchSelfServiceData = async () => {
-      if (!user) return;
-      setLoading(true);
-      try {
-        // หาช่วงวันที่ของเดือนปัจจุบัน (วันที่ 1 ถึง สิ้นเดือน)
-        const startDate = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-        const endDate = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ name: "", email: "", role_id: 4, status: "active" });
 
-        // ดึงประวัติเข้างาน และ OT ของตัวเอง
-        // หมายเหตุ: ปรับ employeeId ให้ตรงกับฟิลด์จริงของคุณ เช่น user.employee_id หรือ user.id
-        const empId = user.id; 
-
-        const [attRes, otRes] = await Promise.all([
-          attendanceAPI.getAttendanceLogs({ employeeId: empId, startDate, endDate }),
-          otAPI.getOTRecords({ employeeId: empId })
-        ]);
-
-        setAttendanceRecords(attRes.data || []);
-        setOtRecords(otRes.data || []);
-      } catch (error) {
-        console.error("Failed to load self-service data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchSelfServiceData();
-  }, [user, currentCompanyId, currentYear, currentMonth]);
-
-  // ✅ คำนวณอายุงาน (ถ้าไม่มีข้อมูลให้เป็น -)
-  const tenure = useMemo(() => {
-    if (!user?.hireDate) return "-";
-    const hire = new Date(user.hireDate);
-    const years = now.getFullYear() - hire.getFullYear();
-    const months = now.getMonth() - hire.getMonth();
-    const totalMonths = years * 12 + months;
-    return `${Math.floor(totalMonths / 12)} ปี ${totalMonths % 12} เดือน`;
-  }, [user?.hireDate]);
-
-  // ✅ สร้างข้อมูลปฏิทินสำหรับเดือนปัจจุบัน
-  const calendarData = useMemo(() => {
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay(); // 0 = อา, 1 = จ
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    
-    // แปลงข้อมูลเข้างานให้อยู่ในรูปแบบ Map { "YYYY-MM-DD" => record }
-    const attendanceMap = new Map();
-    attendanceRecords.forEach((record: any) => {
-      // ดึงเฉพาะส่วนวันที่ YYYY-MM-DD
-      const dateStr = (record.DATE || record.date)?.split("T")[0];
-      if (dateStr) attendanceMap.set(dateStr, record);
+  const filteredUsers = useMemo(() => {
+    return users.filter(u => {
+      const matchSearch = u.name.includes(searchQuery) || u.email.includes(searchQuery);
+      const matchRole = filterRole === "all" ? true : u.role_id === filterRole;
+      return matchSearch && matchRole;
     });
+  }, [users, searchQuery, filterRole]);
 
-    const cells: { day: number; record?: any }[] = [];
-    
-    // เติมช่องว่างของวันแรกในเดือน
-    for (let i = 0; i < firstDay; i++) cells.push({ day: 0 });
-    
-    // เติมวันที่
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      cells.push({ day: d, record: attendanceMap.get(dateStr) });
-    }
-    
-    return cells;
-  }, [attendanceRecords, currentYear, currentMonth]);
-
-  // ✅ คำนวณ OT
-  const otTotalHours = otRecords.filter(r => r.log_status === 'approved').reduce((sum, r) => sum + Number(r.hours || 0), 0);
-  
-  // สมมติฐาน: ถ้าใน Backend ไม่มีเรท OT ให้ตั้งค่าพื้นฐาน (เช่น ชม.ละ 150 บาท) เพื่อแสดงผลไปก่อน
-  const otRatePerHour = 150; 
-  const otAmount = otTotalHours * otRatePerHour;
-
-  const monthNamesTh = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <Loader className="animate-spin text-blue-600 mb-4" size={40} />
-        <p className="text-slate-500 font-bold">กำลังโหลดข้อมูลส่วนตัว...</p>
-      </div>
-    );
-  }
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newUser = { id: Math.random(), employee_code: "EMP-NEW", ...formData };
+    setUsers([newUser, ...users]);
+    setShowModal(false);
+    setFormData({ name: "", email: "", role_id: 4, status: "active" });
+  };
 
   return (
-    <div className="space-y-6 p-6">
-      <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">Self-Service</h2>
-
-      {/* ✅ Profile Card */}
-      <Card className="rounded-[2rem] border-none shadow-sm">
-        <CardContent className="flex flex-col md:flex-row items-center gap-6 p-8">
-          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-4xl font-black text-white shadow-xl shadow-blue-200">
-            {user?.firstName?.charAt(0) || user?.username?.charAt(0) || "U"}
-          </div>
-          <div className="flex-1 space-y-2 text-center md:text-left">
-            <h3 className="text-2xl font-black text-slate-900">
-              {user?.firstName} {user?.lastName}
-            </h3>
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-2 text-sm font-bold text-slate-500">
-              <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-blue-500"/> {user?.position || "พนักงาน"}</span>
-              <span className="flex items-center gap-1.5"><Building size={16} className="text-blue-500"/> {user?.department || "ไม่ระบุแผนก"}</span>
-              <span className="flex items-center gap-1.5"><User size={16} className="text-blue-500"/> รหัส: {user?.employeeCode || "-"}</span>
-              <span className="flex items-center gap-1.5"><CalendarDays size={16} className="text-blue-500"/> อายุงาน: {tenure}</span>
-            </div>
-          </div>
-          <Badge className="bg-green-100 text-green-700 border-none px-4 py-1.5 text-xs font-black uppercase tracking-widest rounded-xl">
-            {user?.status || "Active"}
-          </Badge>
-        </CardContent>
-      </Card>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* ✅ Leave Quota (อิงจากข้อมูลใน Store ถ้ามี หรือใช้ Mock ชั่วคราวถ้าว่าง) */}
-        <Card className="lg:col-span-1 rounded-3xl border-none shadow-sm">
-          <CardHeader className="pb-2 border-b border-slate-50 mb-4">
-            <CardTitle className="text-lg font-black text-slate-800 tracking-tight">โควต้าวันลา</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {(leaveQuotas && leaveQuotas.length > 0 ? leaveQuotas : [
-              { type: "ลาป่วย", used: 2, total: 30 },
-              { type: "ลากิจ", used: 1, total: 6 },
-              { type: "พักร้อน", used: 0, total: 10 }
-            ]).map((lq: any, i) => {
-              const pieData = [
-                { name: "ใช้แล้ว", value: lq.used },
-                { name: "คงเหลือ", value: Math.max(0, lq.total - lq.used) },
-              ];
-              return (
-                <div key={lq.type} className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
-                  <div className="w-16 h-16 shrink-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie data={pieData} cx="50%" cy="50%" innerRadius={18} outerRadius={28} dataKey="value" strokeWidth={0}>
-                          <Cell fill={LEAVE_COLORS[i % LEAVE_COLORS.length]} />
-                          <Cell fill="hsl(var(--muted))" />
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex-1">
-                    <div className="text-sm font-black text-slate-800">{lq.type}</div>
-                    <div className="text-xs font-bold text-slate-400 mt-1">
-                      ใช้ {lq.used} / {lq.total} วัน <br /> 
-                      <span className="text-blue-600">เหลือ {Math.max(0, lq.total - lq.used)} วัน</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-
-        {/* ✅ Attendance Calendar */}
-        <Card className="lg:col-span-2 rounded-3xl border-none shadow-sm">
-          <CardHeader className="pb-4 border-b border-slate-50 mb-4">
-            <CardTitle className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-              <Clock className="text-blue-500" size={20} /> 
-              ปฏิทินเข้างาน — {monthNamesTh[currentMonth]} {currentYear}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-7 gap-2 text-center text-[10px] font-black uppercase text-slate-400 tracking-widest mb-2">
-              {["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"].map((d) => (
-                <div key={d} className="py-1">{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-2">
-              {calendarData.map((cell, idx) =>
-                cell.day === 0 ? (
-                  <div key={idx} className="bg-slate-50/50 rounded-xl" />
-                ) : (
-                  <div
-                    key={idx}
-                    className={`rounded-xl border border-slate-100 p-2 text-center min-h-[70px] flex flex-col items-center justify-start transition-all hover:border-blue-300 hover:shadow-sm bg-white ${cell.record?.STATUS ? 'ring-1 ring-inset ring-slate-100' : ''}`}
-                    title={
-                      cell.record
-                        ? `${statusLabels[cell.record.STATUS?.toLowerCase()] || cell.record.STATUS} ${cell.record.check_in_time || ''}`
-                        : "ไม่มีข้อมูล"
-                    }
-                  >
-                    <span className={`text-xs font-black mb-1 ${new Date().getDate() === cell.day ? 'bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md' : 'text-slate-600'}`}>{cell.day}</span>
-                    
-                    {cell.record && (
-                      <div className="flex flex-col items-center mt-1">
-                        <span className={`h-2.5 w-2.5 rounded-full shadow-sm ${statusColors[cell.record.STATUS?.toLowerCase()] || "bg-slate-300"}`} />
-                        {cell.record.check_in_time && (
-                          <span className="text-[9px] font-bold text-slate-500 leading-tight mt-1 bg-slate-50 px-1.5 py-0.5 rounded">
-                            {cell.record.check_in_time.split('.')[0].slice(0, 5)}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              )}
-            </div>
-            <div className="flex flex-wrap gap-4 mt-6 pt-4 border-t border-slate-50 text-xs font-bold text-slate-500 justify-center">
-              {Object.entries(statusLabels).map(([k, v]) => (
-                <span key={k} className="flex items-center gap-1.5">
-                  <span className={`h-3 w-3 shadow-sm rounded-full ${statusColors[k]}`} /> {v}
-                </span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">User & Permissions</h1>
+        <p className="text-slate-500 font-bold ml-1 mt-1">จัดการผู้ใช้งานและกลุ่มสิทธิ์การเข้าถึง (Role Groups)</p>
       </div>
 
-      {/* ✅ OT Summary */}
-      <Card className="rounded-3xl border-none shadow-sm">
-        <CardHeader className="pb-4 border-b border-slate-50 mb-4">
-          <CardTitle className="text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
-            <Timer className="text-orange-500" size={20} /> ประวัติการทำ OT
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-4 mb-6">
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100/50 border border-orange-100 rounded-2xl px-6 py-4 text-center min-w-[140px]">
-              <div className="text-3xl font-black text-orange-600">{otTotalHours}</div>
-              <div className="text-xs font-bold text-orange-400 mt-1 uppercase tracking-widest">ชั่วโมงทั้งหมด</div>
+      {/* Tabs Navigation */}
+      <div className="flex gap-4 border-b-2 border-slate-200/60 pb-px">
+        <button 
+          onClick={() => setActiveTab("users")}
+          className={`pb-4 px-4 font-black text-sm uppercase tracking-widest transition-all relative ${activeTab === 'users' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <span className="flex items-center gap-2"><Users size={18}/> ผู้ใช้งาน (Users)</span>
+          {activeTab === 'users' && <div className="absolute bottom-[-2px] left-0 w-full h-1 bg-blue-600 rounded-t-full" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab("roles")}
+          className={`pb-4 px-4 font-black text-sm uppercase tracking-widest transition-all relative ${activeTab === 'roles' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+        >
+          <span className="flex items-center gap-2"><Shield size={18}/> กลุ่มสิทธิ์ (Role Groups)</span>
+          {activeTab === 'roles' && <div className="absolute bottom-[-2px] left-0 w-full h-1 bg-blue-600 rounded-t-full" />}
+        </button>
+      </div>
+
+      {/* ==========================================
+          TAB 1: USERS (หน้าจัดการผู้ใช้งาน)
+          ========================================== */}
+      {activeTab === "users" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          {/* Filters & Actions */}
+          <div className="flex flex-col md:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
+            <div className="flex flex-1 gap-4 items-center">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                <input 
+                  type="text" placeholder="ค้นหาชื่อ หรือ อีเมล..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+              </div>
+              <select 
+                value={filterRole} onChange={(e) => setFilterRole(e.target.value === "all" ? "all" : Number(e.target.value))}
+                className="w-48 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              >
+                <option value="all">ทุกกลุ่มสิทธิ์</option>
+                {MOCK_ROLE_GROUPS.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-100 rounded-2xl px-6 py-4 text-center min-w-[140px]">
-              <div className="text-3xl font-black text-green-600">฿{otAmount.toLocaleString()}</div>
-              <div className="text-xs font-bold text-green-400 mt-1 uppercase tracking-widest">คาดการณ์ค่า OT</div>
-            </div>
+            <button onClick={() => setShowModal(true)} className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-2xl font-black hover:bg-blue-700 transition-all shadow-lg shadow-blue-200 active:scale-95 text-xs tracking-widest uppercase shrink-0">
+              <UserPlus size={18} /> เพิ่มผู้ใช้งาน
+            </button>
           </div>
 
-          <div className="border border-slate-100 rounded-2xl overflow-hidden">
-            <Table>
-              <TableHeader className="bg-slate-50">
-                <TableRow>
-                  <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">วันที่</TableHead>
-                  <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">ชั่วโมง</TableHead>
-                  <TableHead className="font-black text-slate-400 uppercase tracking-widest text-[10px]">สถานะ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {otRecords.length > 0 ? otRecords.map((r: any) => (
-                  <TableRow key={r.id} className="hover:bg-slate-50 border-slate-100">
-                    <TableCell className="font-bold text-slate-700">{new Date(r.date).toLocaleDateString('th-TH')}</TableCell>
-                    <TableCell className="font-bold text-slate-900 italic">{r.hours} ชม.</TableCell>
-                    <TableCell>
-                      <Badge className={`border-none px-3 py-1 font-black text-[10px] uppercase tracking-widest ${r.log_status === "approved" ? "bg-green-100 text-green-700" : r.log_status === "rejected" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>
-                        {r.log_status === "approved" ? "อนุมัติ" : r.log_status === "pending" ? "รออนุมัติ" : "ไม่อนุมัติ"}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-slate-400 font-medium">ไม่พบประวัติการทำ OT ในระบบ</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+          {/* Users Table */}
+          <Card className="rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <tr>
+                    <th className="py-6 px-8">ผู้ใช้งาน (User)</th>
+                    <th className="py-6 px-6">กลุ่มสิทธิ์ (Role Group)</th>
+                    <th className="py-6 px-6 text-center">สถานะ (Status)</th>
+                    <th className="py-6 px-8 text-center">จัดการ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-sm">
+                  {filteredUsers.map(u => {
+                    const role = MOCK_ROLE_GROUPS.find(r => r.id === u.role_id);
+                    return (
+                      <tr key={u.id} className="hover:bg-blue-50/30 transition-colors group">
+                        <td className="py-5 px-8">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center font-black text-slate-600 shadow-sm">
+                              {u.name.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-black text-slate-900 leading-tight">{u.name}</p>
+                              <p className="text-[10px] font-bold text-slate-400 mt-0.5 tracking-wider">{u.email} • {u.employee_code}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-5 px-6">
+                          <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest ${role?.badge}`}>
+                            {role?.name}
+                          </span>
+                        </td>
+                        <td className="py-5 px-6 text-center">
+                          {u.status === 'active' 
+                            ? <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-green-600 bg-green-50 border border-green-100 px-2.5 py-1 rounded-md uppercase tracking-wider"><UserCheck size={14}/> Active</span>
+                            : <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-red-600 bg-red-50 border border-red-100 px-2.5 py-1 rounded-md uppercase tracking-wider"><UserX size={14}/> Inactive</span>
+                          }
+                        </td>
+                        <td className="py-5 px-8 text-center">
+                          <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all active:scale-90" title="แก้ไข"><Edit2 size={16} /></button>
+                            <button className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all active:scale-90" title="ลบ"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="text-center py-16">
+                        <AlertTriangle className="mx-auto text-slate-300 mb-3" size={48} />
+                        <p className="text-slate-400 font-black uppercase tracking-widest">ไม่พบผู้ใช้งาน</p>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ==========================================
+          TAB 2: ROLE GROUPS (หน้าตารางสิทธิ์)
+          ========================================== */}
+      {activeTab === "roles" && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {MOCK_ROLE_GROUPS.map(role => (
+              <div key={role.id} className="bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm flex gap-4 items-start hover:shadow-md transition-shadow">
+                <div className={`p-4 rounded-2xl shrink-0 ${role.id === 1 ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-600'}`}>
+                  <Shield size={32} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight">{role.name}</h3>
+                  <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Role ID: {role.id}</p>
+                  <p className="text-sm font-medium text-slate-600 mt-3 leading-relaxed">{role.description}</p>
+                </div>
+              </div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+
+          <Card className="rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white mt-8">
+            <CardContent className="p-0 overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-900 text-white">
+                  <tr>
+                    <th className="py-6 px-8 text-sm font-black uppercase tracking-widest italic flex items-center gap-2"><LayoutGrid size={18}/> Modules / Features</th>
+                    <th className="py-6 px-6 text-center text-[10px] font-black uppercase tracking-widest text-blue-300">Admin / HR (Role 1)</th>
+                    <th className="py-6 px-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">Employee (Role 4)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {PERMISSION_MATRIX.map((perm, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                      <td className="py-5 px-8 font-black text-slate-700 text-sm">{perm.module}</td>
+                      <td className="py-5 px-6 text-center">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-100">
+                          <CheckCircle2 size={14}/> {perm.admin}
+                        </span>
+                      </td>
+                      <td className="py-5 px-6 text-center">
+                        {perm.emp.includes("เข้าถึงไม่ได้") ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-xs font-bold border border-slate-200">
+                            <XCircle size={14}/> {perm.emp}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold border border-blue-100">
+                            <CheckCircle2 size={14}/> {perm.emp}
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ==========================================
+          MODAL (เพิ่มผู้ใช้งาน)
+          ========================================== */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowModal(false)} />
+          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tighter italic">
+                <UserPlus size={24} className="text-blue-600"/> เพิ่มผู้ใช้งาน
+              </h3>
+              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-900 bg-white p-2 rounded-xl shadow-sm transition-all"><X size={20}/></button>
+            </div>
+            <form onSubmit={handleSave} className="p-8 space-y-5">
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">ชื่อ-นามสกุล</label>
+                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full mt-2 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="สมชาย มั่นคง" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">อีเมล (ใช้ล็อกอิน)</label>
+                <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} className="w-full mt-2 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 transition-all" placeholder="employee@company.com" />
+              </div>
+              <div>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">กลุ่มสิทธิ์ (Role Group)</label>
+                <select value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: Number(e.target.value)})} className="w-full mt-2 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                  {MOCK_ROLE_GROUPS.map(r => <option key={r.id} value={r.id}>{r.name} (Role {r.id})</option>)}
+                </select>
+                <p className="text-[10px] text-blue-500 font-bold mt-2 ml-1 italic">* ระบบจะปรับเปลี่ยนเมนูให้พนักงานโดยอัตโนมัติตามสิทธิ์ที่เลือก</p>
+              </div>
+              
+              <div className="flex gap-3 pt-6 border-t border-slate-50 mt-6">
+                <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-3.5 text-slate-400 font-black tracking-widest uppercase text-[10px] hover:bg-slate-100 rounded-2xl transition-all">ยกเลิก</button>
+                <button type="submit" className="flex-1 py-3.5 bg-blue-600 text-white font-black tracking-widest uppercase text-[10px] rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all">บันทึกข้อมูล</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

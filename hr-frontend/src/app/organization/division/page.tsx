@@ -2,18 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { Plus, Edit2, Trash2, Loader, Users, X } from "lucide-react";
-import type { Division } from "@/types";
+import { Plus, Edit2, Trash2, Loader, Users, X, CheckCircle2, XCircle, Layers } from "lucide-react";
 
 // ==========================================
-// 📦 MOCK DATA (ข้อมูลตั้งต้น)
+// 📦 MOCK DATA (ข้อมูลตั้งต้นสำหรับ Division)
 // ==========================================
+type Division = {
+  id: number;
+  code: string;
+  name: string;
+  company_id: number;
+  headName: string;
+  totalSections: number;
+  headCount: number;
+  status: "active" | "inactive";
+};
+
 const INITIAL_MOCK_DIVISIONS: Division[] = [
-  { id: 1, name: "สายงานบริหาร (Administration)", company_id: 1 },
-  { id: 2, name: "สายงานการตลาดและการขาย (Marketing & Sales)", company_id: 1 },
-  { id: 3, name: "สายงานปฏิบัติการ (Operations)", company_id: 1 },
-  { id: 4, name: "สายงานเทคโนโลยีสารสนเทศ (IT)", company_id: 1 },
-  { id: 5, name: "สายงานทรัพยากรบุคคล (Human Resources)", company_id: 1 },
+  { id: 1, code: "DIV-ADM", name: "สายงานบริหาร (Administration)", company_id: 1, headName: "สมชาย รักดี", totalSections: 3, headCount: 45, status: "active" },
+  { id: 2, code: "DIV-MKT", name: "สายงานการตลาดและการขาย (Marketing & Sales)", company_id: 1, headName: "มาลี สีสด", totalSections: 2, headCount: 30, status: "active" },
+  { id: 3, code: "DIV-OPS", name: "สายงานปฏิบัติการ (Operations)", company_id: 1, headName: "วิชัย ใจสู้", totalSections: 5, headCount: 150, status: "active" },
+  { id: 4, code: "DIV-IT", name: "สายงานเทคโนโลยีสารสนเทศ (IT)", company_id: 1, headName: "ณรงค์ โค้ดไว", totalSections: 2, headCount: 25, status: "active" },
+  { id: 5, code: "DIV-HR", name: "สายงานทรัพยากรบุคคล (Human Resources)", company_id: 1, headName: "สมหญิง งานเนี๊ยบ", totalSections: 2, headCount: 10, status: "active" },
 ];
 
 export default function DivisionPage() {
@@ -30,8 +40,13 @@ export default function DivisionPage() {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // Form State
-  const [divisionForm, setDivisionForm] = useState({ name: "" });
+  // Form State (เพิ่มฟิลด์ใหม่ตามตาราง)
+  const [divisionForm, setDivisionForm] = useState({ 
+    code: "",
+    name: "",
+    headName: "",
+    status: "active" as "active" | "inactive" 
+  });
 
   useEffect(() => {
     loadDivisions();
@@ -42,7 +57,6 @@ export default function DivisionPage() {
     // จำลองเวลาโหลดข้อมูลจาก Backend 0.5 วินาที
     setTimeout(() => {
       // ในระบบ Mock เราจะไม่กรองตาม company_id เพื่อให้เห็นข้อมูลทันที
-      // แต่ถ้าอยากกรอง ให้ใช้: setDivisions(INITIAL_MOCK_DIVISIONS.filter(d => d.company_id === currentCompanyId))
       setLoading(false);
     }, 500);
   };
@@ -51,7 +65,7 @@ export default function DivisionPage() {
     setIsEditMode(false);
     setEditingId(null);
     setFormError("");
-    setDivisionForm({ name: "" });
+    setDivisionForm({ code: "", name: "", headName: "", status: "active" });
     setShowModal(true);
   };
 
@@ -60,8 +74,8 @@ export default function DivisionPage() {
     setSaving(true);
 
     try {
-      if (!divisionForm.name.trim()) {
-        setFormError("กรุณากรอกชื่อฝ่าย");
+      if (!divisionForm.name.trim() || !divisionForm.code.trim()) {
+        setFormError("กรุณากรอกข้อมูลที่มีเครื่องหมาย (*) ให้ครบถ้วน");
         setSaving(false);
         return;
       }
@@ -72,15 +86,26 @@ export default function DivisionPage() {
       if (isEditMode && editingId) {
         // ✅ อัปเดตข้อมูลใน State
         setDivisions((prev) => 
-          prev.map((div) => div.id === editingId ? { ...div, name: divisionForm.name } : div)
+          prev.map((div) => div.id === editingId ? { 
+            ...div, 
+            code: divisionForm.code.toUpperCase(),
+            name: divisionForm.name,
+            headName: divisionForm.headName || "-",
+            status: divisionForm.status
+          } : div)
         );
       } else {
         // ✅ สร้างข้อมูลใหม่ (หา ID ล่าสุดแล้ว +1)
         const newId = divisions.length > 0 ? Math.max(...divisions.map(d => d.id)) + 1 : 1;
         const newDivision: Division = {
           id: newId,
+          code: divisionForm.code.toUpperCase(),
           name: divisionForm.name,
-          company_id: currentCompanyId || 1
+          company_id: currentCompanyId || 1,
+          headName: divisionForm.headName || "-",
+          totalSections: 0, // ค่าเริ่มต้นตอนสร้างใหม่
+          headCount: 0,     // ค่าเริ่มต้นตอนสร้างใหม่
+          status: divisionForm.status
         };
         setDivisions((prev) => [...prev, newDivision]);
       }
@@ -88,7 +113,7 @@ export default function DivisionPage() {
       setShowModal(false);
       setIsEditMode(false);
       setEditingId(null);
-      setDivisionForm({ name: "" }); // เคลียร์ฟอร์ม
+      setDivisionForm({ code: "", name: "", headName: "", status: "active" }); // เคลียร์ฟอร์ม
     } catch (err: any) {
       setFormError("เกิดข้อผิดพลาด กรุณาลองใหม่");
     } finally {
@@ -100,12 +125,17 @@ export default function DivisionPage() {
     setIsEditMode(true);
     setEditingId(division.id);
     setFormError("");
-    setDivisionForm({ name: division.name });
+    setDivisionForm({ 
+      code: division.code, 
+      name: division.name, 
+      headName: division.headName !== "-" ? division.headName : "",
+      status: division.status 
+    });
     setShowModal(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm(`ยืนยันการลบ Division นี้?`)) return;
+    if (!confirm(`ยืนยันการลบ Division นี้? (ข้อมูล Section ย่อยอาจได้รับผลกระทบ)`)) return;
     
     // จำลองเวลาลบข้อมูล 0.3 วินาที
     await new Promise((resolve) => setTimeout(resolve, 300));
@@ -172,20 +202,46 @@ export default function DivisionPage() {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                    <th className="py-4 px-6 font-semibold text-slate-700 w-24">ID</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Code</th>
                     <th className="py-4 px-6 font-semibold text-slate-700">Division Name</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Division Head</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700">Sections</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700">Headcount</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700">Status</th>
                     <th className="text-center py-4 px-6 font-semibold text-slate-700 w-32">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {divisions.map((div) => (
                     <tr key={div.id} className="hover:bg-blue-50 transition-colors">
-                      <td className="py-4 px-6 font-semibold text-slate-900">{div.id}</td>
-                      <td className="py-4 px-6 text-slate-800">{div.name}</td>
+                      <td className="py-4 px-6 font-mono text-sm text-blue-600 font-semibold">{div.code}</td>
+                      <td className="py-4 px-6 text-slate-800 font-medium">{div.name}</td>
+                      <td className="py-4 px-6 text-slate-600">{div.headName}</td>
+                      <td className="py-4 px-6 text-center">
+                        <div className="inline-flex items-center justify-center bg-slate-100 px-2 py-1 rounded-lg text-xs font-semibold text-slate-600">
+                          <Layers size={12} className="mr-1" /> {div.totalSections}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <div className="inline-flex items-center justify-center bg-slate-100 px-2 py-1 rounded-full text-xs font-semibold text-slate-600">
+                          <Users size={12} className="mr-1" /> {div.headCount}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        {div.status === 'active' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                            <CheckCircle2 size={14}/> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                            <XCircle size={14}/> Inactive
+                          </span>
+                        )}
+                      </td>
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={() => handleEdit(div)} className="p-2 hover:bg-blue-100 rounded-lg text-blue-600"><Edit2 size={16} /></button>
-                          <button onClick={() => handleDelete(div.id)} className="p-2 hover:bg-red-100 rounded-lg text-red-600"><Trash2 size={16} /></button>
+                          <button onClick={() => handleEdit(div)} className="p-2 hover:bg-blue-100 rounded-lg text-blue-600 transition-colors"><Edit2 size={16} /></button>
+                          <button onClick={() => handleDelete(div.id)} className="p-2 hover:bg-red-100 rounded-lg text-red-600 transition-colors"><Trash2 size={16} /></button>
                         </div>
                       </td>
                     </tr>
@@ -202,31 +258,67 @@ export default function DivisionPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
               <div className="flex items-center gap-3">
                 <Users className="text-blue-600" />
                 <h3 className="text-lg font-bold text-slate-900">{getModalTitle()}</h3>
               </div>
-              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-200 rounded-lg text-slate-500"><X size={20} /></button>
+              <button onClick={() => setShowModal(false)} className="p-2 hover:bg-slate-200 rounded-lg text-slate-500 transition-colors"><X size={20} /></button>
             </div>
 
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               {formError && <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 rounded text-sm text-red-700">{formError}</div>}
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">รหัสฝ่าย (Code) <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={divisionForm.code}
+                  onChange={(e) => setDivisionForm({ ...divisionForm, code: e.target.value })}
+                  placeholder="เช่น DIV-01"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all uppercase"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">Division Name <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={divisionForm.name}
                   onChange={(e) => setDivisionForm({ ...divisionForm, name: e.target.value })}
-                  placeholder="เช่น สายงานผลิต, สายงานบริหาร"
-                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="เช่น สายงานบริหาร"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">ชื่อผู้บริหารสายงาน (ตัวเลือก)</label>
+                <input
+                  type="text"
+                  value={divisionForm.headName}
+                  onChange={(e) => setDivisionForm({ ...divisionForm, headName: e.target.value })}
+                  placeholder="เช่น สมชาย มั่นคง"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">สถานะ</label>
+                <select
+                  value={divisionForm.status}
+                  onChange={(e) => setDivisionForm({ ...divisionForm, status: e.target.value as any })}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="active">ใช้งาน (Active)</option>
+                  <option value="inactive">ไม่ใช้งาน (Inactive)</option>
+                </select>
+              </div>
+
             </div>
 
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
-              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg">ยกเลิก</button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50">
+              <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-200 rounded-lg transition-colors">ยกเลิก</button>
+              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors">
                 {saving ? <Loader size={16} className="animate-spin" /> : <Plus size={16} />}
                 {saving ? "กำลังบันทึก..." : "บันทึก"}
               </button>

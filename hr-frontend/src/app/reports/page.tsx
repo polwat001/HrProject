@@ -2,124 +2,59 @@
 
 import { useState } from 'react';
 import { useAppStore } from '@/store/useAppStore';
-import { FileSpreadsheet, FileText, Download, BarChart3, TrendingUp, Users, Clock, AlertCircle, Loader } from 'lucide-react';
-
-interface Report {
-  id: string;
-  title: string;
-  description: string;
-  icon: React.ReactNode;
-  formats: ('excel' | 'pdf')[];
-  category: 'payroll' | 'attendance' | 'organization';
-}
+import { FileSpreadsheet, Clock, Users, AlertCircle, Settings2 } from 'lucide-react';
+import { REPORT_LIST, ReportConfig } from '@/mocks/reportData';
+import ReportFilterModal from './components/ReportFilterModal';
 
 export default function ReportsPage() {
   const { currentCompanyId } = useAppStore();
-  const [generating, setGenerating] = useState<string | null>(null);
-
-  const reports: Report[] = [
-    {
-      id: 'employee-master',
-      title: '👥 Employee Master List',
-      description: 'Complete employee directory with personal and employment information',
-      icon: <Users className="text-blue-600" size={32} />,
-      formats: ['excel', 'pdf'],
-      category: 'organization',
-    },
-    {
-      id: 'attendance-summary',
-      title: '⏱️ Attendance Summary',
-      description: 'Monthly attendance records including absences, late arrivals, and OT',
-      icon: <Clock className="text-green-600" size={32} />,
-      formats: ['excel', 'pdf'],
-      category: 'attendance',
-    },
-    {
-      id: 'ot-report',
-      title: '⚡ Overtime Report',
-      description: 'Detailed OT logs and costs for payroll processing',
-      icon: <TrendingUp className="text-purple-600" size={32} />,
-      formats: ['excel', 'pdf'],
-      category: 'payroll',
-    },
-    {
-      id: 'headcount-analysis',
-      title: '📊 Headcount Analysis',
-      description: 'Organization structure and headcount trends by department',
-      icon: <BarChart3 className="text-orange-600" size={32} />,
-      formats: ['excel', 'pdf'],
-      category: 'organization',
-    },
-    {
-      id: 'leave-summary',
-      title: '🏖️ Leave Summary',
-      description: 'Employee leave balances and utilization report',
-      icon: <FileText className="text-pink-600" size={32} />,
-      formats: ['excel'],
-      category: 'attendance',
-    },
-    {
-      id: 'contract-status',
-      title: '📋 Contract Status Report',
-      description: 'Active contracts and renewal schedule',
-      icon: <AlertCircle className="text-red-600" size={32} />,
-      formats: ['excel', 'pdf'],
-      category: 'organization',
-    },
-  ];
-
-  const handleGenerate = async (reportId: string, format: 'excel' | 'pdf') => {
-    setGenerating(`${reportId}-${format}`);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setGenerating(null);
-    // In real implementation, trigger download here
-  };
+  const [selectedReport, setSelectedReport] = useState<ReportConfig | null>(null);
 
   const categoryIcons = {
-    payroll: { icon: <FileSpreadsheet size={20} className="text-blue-600" />, label: 'Payroll' },
-    attendance: { icon: <Clock size={20} className="text-green-600" />, label: 'Attendance' },
-    organization: { icon: <Users size={20} className="text-purple-600" />, label: 'Organization' },
+    payroll: { icon: <FileSpreadsheet size={20} className="text-purple-600" />, label: 'Payroll & Finance' },
+    attendance: { icon: <Clock size={20} className="text-green-600" />, label: 'Attendance & Leave' },
+    organization: { icon: <Users size={20} className="text-blue-600" />, label: 'Organization & Employee' },
   };
 
   const reportsByCategory = {
-    payroll: reports.filter((r) => r.category === 'payroll'),
-    attendance: reports.filter((r) => r.category === 'attendance'),
-    organization: reports.filter((r) => r.category === 'organization'),
+    payroll: REPORT_LIST.filter((r) => r.category === 'payroll'),
+    attendance: REPORT_LIST.filter((r) => r.category === 'attendance'),
+    organization: REPORT_LIST.filter((r) => r.category === 'organization'),
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900"> Report Center</h1>
-        <p className="text-slate-600 mt-1">Generate and export HR reports in multiple formats</p>
+        <h1 className="text-4xl font-black text-slate-900 italic tracking-tighter uppercase">Report Center</h1>
+        <p className="text-slate-500 font-bold mt-1">ศูนย์รวมรายงาน สร้างและดาวน์โหลดข้อมูล (Mock Data)</p>
       </div>
 
       {/* Data Scope Notice */}
-      <div className="bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-300 rounded-lg p-4 flex items-start gap-3">
-        <AlertCircle className="text-blue-600 flex-shrink-0 mt-1" size={20} />
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl p-6 flex items-start gap-4 shadow-sm">
+        <div className="p-3 bg-blue-100 text-blue-600 rounded-2xl"><AlertCircle size={24} /></div>
         <div>
-          <p className="font-semibold text-blue-900">📋 Report Scope</p>
-          <p className="text-sm text-blue-800 mt-1">
-            Reports will include data from{' '}
-            <span className="font-bold">
-              {currentCompanyId === null ? 'all companies (Consolidated View)' : 'the currently selected company'}
+          <p className="font-black text-blue-900 uppercase tracking-widest text-sm">📋 Report Scope Configuration</p>
+          <p className="text-sm font-bold text-blue-700/80 mt-1">
+            รายงานทั้งหมดจะถูกดึงข้อมูลภายใต้{' '}
+            <span className="font-black text-blue-700 underline decoration-blue-300 underline-offset-4">
+              {currentCompanyId === null ? 'ทุกบริษัท (Consolidated View)' : 'บริษัทที่คุณกำลังเลือกใช้งานอยู่'}
             </span>
-            . Change your company selection to generate reports for a specific entity.
           </p>
         </div>
       </div>
 
       {/* Reports Grid */}
-      <div className="space-y-8">
-        {(Object.entries(reportsByCategory) as Array<[keyof typeof reportsByCategory, Report[]]>).map(
+      <div className="space-y-10">
+        {(Object.entries(reportsByCategory) as Array<[keyof typeof reportsByCategory, ReportConfig[]]>).map(
           ([category, categoryReports]) => (
-            <div key={category} className="space-y-4">
+            <div key={category} className="space-y-6">
               {/* Category Header */}
-              <div className="flex items-center gap-3 pb-3 border-b-2 border-slate-200">
-                {categoryIcons[category].icon}
-                <h2 className="text-xl font-bold text-slate-900">{categoryIcons[category].label} Reports</h2>
+              <div className="flex items-center gap-3 pb-3 border-b-2 border-slate-200/60">
+                <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
+                    {categoryIcons[category].icon}
+                </div>
+                <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{categoryIcons[category].label}</h2>
               </div>
 
               {/* Category Reports Grid */}
@@ -127,58 +62,19 @@ export default function ReportsPage() {
                 {categoryReports.map((report) => (
                   <div
                     key={report.id}
-                    className="bg-white rounded-xl shadow-sm border border-slate-200 hover:shadow-md hover:border-blue-300 transition-all p-6 flex flex-col"
+                    className="bg-white rounded-3xl shadow-sm border border-slate-100 hover:shadow-xl hover:shadow-blue-100/50 hover:border-blue-200 transition-all p-8 flex flex-col group cursor-pointer"
+                    onClick={() => setSelectedReport(report)}
                   >
-                    {/* Icon */}
-                    <div className="mb-4 flex items-center justify-center w-14 h-14 bg-slate-100 rounded-lg">
-                      {report.icon}
+                    <div className="mb-6 flex items-center justify-between">
+                      <div className="flex items-center justify-center w-16 h-16 bg-slate-50 group-hover:bg-blue-50 rounded-2xl transition-colors">
+                        {report.icon}
+                      </div>
+                      <div className="text-slate-300 group-hover:text-blue-500 transition-colors p-2 bg-slate-50 group-hover:bg-blue-50 rounded-full">
+                          <Settings2 size={20} />
+                      </div>
                     </div>
-
-                    {/* Content */}
-                    <h3 className="font-bold text-slate-900 mb-2 text-lg">{report.title}</h3>
-                    <p className="text-sm text-slate-600 mb-6 flex-grow">{report.description}</p>
-
-                    {/* Format Buttons */}
-                    <div className="flex gap-3">
-                      {report.formats.includes('excel') && (
-                        <button
-                          onClick={() => handleGenerate(report.id, 'excel')}
-                          disabled={generating === `${report.id}-excel`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-green-50 to-green-100 text-green-700 border border-green-300 hover:from-green-100 hover:to-green-200 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {generating === `${report.id}-excel` ? (
-                            <>
-                              <Loader size={16} className="animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <FileSpreadsheet size={16} />
-                              Excel
-                            </>
-                          )}
-                        </button>
-                      )}
-                      {report.formats.includes('pdf') && (
-                        <button
-                          onClick={() => handleGenerate(report.id, 'pdf')}
-                          disabled={generating === `${report.id}-pdf`}
-                          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-red-50 to-red-100 text-red-700 border border-red-300 hover:from-red-100 hover:to-red-200 rounded-lg font-semibold text-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {generating === `${report.id}-pdf` ? (
-                            <>
-                              <Loader size={16} className="animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <FileText size={16} />
-                              PDF
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
+                    <h3 className="font-black text-slate-900 mb-2 text-lg italic tracking-tight group-hover:text-blue-700 transition-colors">{report.title}</h3>
+                    <p className="text-sm font-bold text-slate-400 leading-relaxed">{report.description}</p>
                   </div>
                 ))}
               </div>
@@ -187,18 +83,14 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Quick Tips */}
-      <div className="bg-gradient-to-r from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-6">
-        <h3 className="font-bold text-purple-900 mb-3 flex items-center gap-2">
-          💡 Quick Tips
-        </h3>
-        <ul className="space-y-2 text-sm text-purple-800">
-          <li>• <strong>Excel format</strong> allows for further customization and analysis in spreadsheet applications</li>
-          <li>• <strong>PDF format</strong> is ideal for printing, sharing, and archival purposes</li>
-          <li>• All reports respect your current <strong>company selection</strong> filter</li>
-          <li>• Switch to "All Companies" view in the header to generate consolidated reports</li>
-        </ul>
-      </div>
+      {/* Filter Modal */}
+      {selectedReport && (
+        <ReportFilterModal 
+          report={selectedReport} 
+          isOpen={!!selectedReport} 
+          onClose={() => setSelectedReport(null)} 
+        />
+      )}
     </div>
   );
 }

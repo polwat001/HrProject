@@ -2,32 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
-import { Plus, Edit2, Trash2, Loader, Briefcase, X } from "lucide-react";
-import type { Department } from "@/types";
+import { Plus, Edit2, Trash2, Loader, Briefcase, X, Users, CheckCircle2, XCircle } from "lucide-react";
 
-// ==========================================
-// 📦 MOCK DATA (ข้อมูลตั้งต้น)
-// ==========================================
-const INITIAL_MOCK_COMPANIES = [
-  { id: 1, name_th: "Thai Summit Automotive Co., Ltd. (Headquarter)" },
-  { id: 2, name_th: "Thai Summit Harness Co., Ltd." },
-];
-
-const INITIAL_MOCK_DEPARTMENTS: Department[] = [
-  { id: 1, name: "แผนกทรัพยากรบุคคล (HR)", companyId: 1, costCenterCode: "CC-HR01", headCount: 15 },
-  { id: 2, name: "แผนกเทคโนโลยีสารสนเทศ (IT)", companyId: 1, costCenterCode: "CC-IT01", headCount: 24 },
-  { id: 3, name: "แผนกบัญชีและการเงิน (Accounting)", companyId: 1, costCenterCode: "CC-ACC01", headCount: 10 },
-  { id: 4, name: "แผนกผลิตชิ้นส่วน (Production)", companyId: 2, costCenterCode: "CC-PRD01", headCount: 120 },
-  { id: 5, name: "แผนกควบคุมคุณภาพ (QA/QC)", companyId: 2, costCenterCode: "CC-QA01", headCount: 35 },
-];
+// ✅ Import ข้อมูลจำลองและ Type ที่แยกไฟล์ไว้
+import { Department, INITIAL_MOCK_DEPARTMENTS, MOCK_SECTIONS } from "@/mocks/departmentData";
 
 export default function DepartmentPage() {
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
   
-  // ✅ ใช้ Mock Data เป็นค่าเริ่มต้นของ State
   const [departments, setDepartments] = useState<Department[]>(INITIAL_MOCK_DEPARTMENTS);
-  const [companies, setCompanies] = useState<any[]>(INITIAL_MOCK_COMPANIES);
   
   // Modal & Edit State
   const [showModal, setShowModal] = useState(false);
@@ -38,9 +22,11 @@ export default function DepartmentPage() {
 
   // Department form
   const [deptForm, setDeptForm] = useState({
+    code: "",
     name: "",
-    costCenter: "",
-    companyId: 1,
+    sectionId: "",
+    headName: "",
+    status: "active" as "active" | "inactive",
   });
 
   useEffect(() => {
@@ -49,7 +35,6 @@ export default function DepartmentPage() {
 
   const loadData = () => {
     setLoading(true);
-    // จำลองเวลาโหลดข้อมูลจาก Backend 0.5 วินาที
     setTimeout(() => {
       setLoading(false);
     }, 500);
@@ -60,9 +45,11 @@ export default function DepartmentPage() {
     setEditingId(null);
     setFormError("");
     setDeptForm({
+      code: "",
       name: "",
-      costCenter: "",
-      companyId: companies[0]?.id ?? 1,
+      sectionId: "",
+      headName: "",
+      status: "active",
     });
     setShowModal(true);
   };
@@ -72,38 +59,43 @@ export default function DepartmentPage() {
     setSaving(true);
 
     try {
-      if (!deptForm.name.trim()) {
-        setFormError("กรุณากรอกชื่อแผนก");
+      if (!deptForm.name.trim() || !deptForm.code.trim() || !deptForm.sectionId) {
+        setFormError("กรุณากรอกข้อมูลที่จำเป็นให้ครบถ้วน (*)");
         setSaving(false);
         return;
       }
 
-      // จำลองเวลาบันทึกข้อมูล 0.4 วินาที
       await new Promise((resolve) => setTimeout(resolve, 400));
 
+      const selectedSection = MOCK_SECTIONS.find(s => s.id === deptForm.sectionId);
+
       if (isEditMode && editingId) {
-        // อัปเดตข้อมูลลงใน State
         setDepartments((prev) => 
           prev.map((dept) => 
             dept.id === editingId 
               ? { 
                   ...dept, 
+                  code: deptForm.code.toUpperCase(),
                   name: deptForm.name, 
-                  costCenterCode: deptForm.costCenter, 
-                  companyId: deptForm.companyId 
+                  sectionName: selectedSection?.name || dept.sectionName,
+                  divisionName: selectedSection?.divName || dept.divisionName,
+                  headName: deptForm.headName || "-",
+                  status: deptForm.status
                 } 
               : dept
           )
         );
       } else {
-        // สร้างข้อมูลใหม่ (หา ID ล่าสุดแล้ว +1)
         const newId = departments.length > 0 ? Math.max(...departments.map(d => d.id)) + 1 : 1;
         const newDept: Department = {
           id: newId,
+          code: deptForm.code.toUpperCase(),
           name: deptForm.name,
-          costCenterCode: deptForm.costCenter,
-          companyId: deptForm.companyId,
-          headCount: 0, // ค่าเริ่มต้น
+          sectionName: selectedSection?.name || "-",
+          divisionName: selectedSection?.divName || "-",
+          headName: deptForm.headName || "-",
+          headCount: 0, 
+          status: deptForm.status,
         };
         setDepartments((prev) => [...prev, newDept]);
       }
@@ -119,10 +111,13 @@ export default function DepartmentPage() {
   };
 
   const handleEditDepartment = (dept: Department) => {
+    const sec = MOCK_SECTIONS.find(s => s.name === dept.sectionName);
     setDeptForm({
+      code: dept.code,
       name: dept.name,
-      costCenter: dept.costCenterCode || "",
-      companyId: dept.companyId,
+      sectionId: sec ? sec.id : "",
+      headName: dept.headName !== "-" ? dept.headName : "",
+      status: dept.status,
     });
     setIsEditMode(true);
     setEditingId(dept.id);
@@ -133,10 +128,7 @@ export default function DepartmentPage() {
   const handleDeleteDepartment = async (id: number) => {
     if (!confirm("ยืนยันการลบแผนกนี้ ?")) return;
     
-    // จำลองเวลาลบข้อมูล 0.3 วินาที
     await new Promise((resolve) => setTimeout(resolve, 300));
-    
-    // ลบข้อมูลออกจาก State
     setDepartments((prev) => prev.filter((dept) => dept.id !== id));
   };
 
@@ -178,8 +170,6 @@ export default function DepartmentPage() {
         </button>
       </div>
 
-     
-
       {/* Content */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         
@@ -206,30 +196,46 @@ export default function DepartmentPage() {
               </p>
             </div>
           ) : (
-            /* ✅ เปลี่ยนจาก Grid Card มาเป็นตารางตรงนี้ครับ */
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
-                    <th className="py-4 px-6 font-semibold text-slate-700 w-24">ID</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Code</th>
                     <th className="py-4 px-6 font-semibold text-slate-700">Department Name</th>
-                    <th className="py-4 px-6 font-semibold text-slate-700">Company</th>
-                    <th className="py-4 px-6 font-semibold text-slate-700">Cost Center</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Section / Division</th>
+                    <th className="py-4 px-6 font-semibold text-slate-700">Head</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700">Headcount</th>
+                    <th className="text-center py-4 px-6 font-semibold text-slate-700">Status</th>
                     <th className="text-center py-4 px-6 font-semibold text-slate-700 w-32">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {departments.map((dept) => (
                     <tr key={dept.id} className="hover:bg-blue-50 transition-colors">
-                      <td className="py-4 px-6 font-semibold text-slate-900">{dept.id}</td>
+                      <td className="py-4 px-6 font-mono text-sm text-blue-600 font-semibold">{dept.code}</td>
                       <td className="py-4 px-6 text-slate-800 font-medium">{dept.name}</td>
                       <td className="py-4 px-6">
-                        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
-                          {companies.find((c) => c.id === dept.companyId)?.name_th || "Unknown"}
-                        </span>
+                        <div className="font-medium text-slate-700">{dept.sectionName}</div>
+                        <div className="text-xs text-slate-500">{dept.divisionName}</div>
                       </td>
-                      <td className="py-4 px-6 text-slate-600 font-mono text-sm">
-                        {dept.costCenterCode || "-"}
+                      <td className="py-4 px-6 text-slate-600">
+                        {dept.headName}
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        <div className="inline-flex items-center justify-center bg-slate-100 px-2 py-1 rounded-full text-xs font-semibold text-slate-600">
+                          <Users size={12} className="mr-1" /> {dept.headCount}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-center">
+                        {dept.status === 'active' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-md">
+                            <CheckCircle2 size={14}/> Active
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-md">
+                            <XCircle size={14}/> Inactive
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -284,7 +290,7 @@ export default function DepartmentPage() {
             </div>
 
             {/* Modal Body */}
-            <div className="px-6 py-5 space-y-4">
+            <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               {formError && (
                 <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 rounded text-sm text-red-700">
                   {formError}
@@ -294,51 +300,72 @@ export default function DepartmentPage() {
               {/* Department Form */}
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  รหัสแผนก <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={deptForm.code}
+                  onChange={(e) => setDeptForm({ ...deptForm, code: e.target.value })}
+                  placeholder="เช่น DPT-IT-01"
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all uppercase"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
                   ชื่อแผนก <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={deptForm.name}
-                  onChange={(e) =>
-                    setDeptForm({ ...deptForm, name: e.target.value })
-                  }
-                  placeholder="เช่น ฝ่ายบุคคล"
+                  onChange={(e) => setDeptForm({ ...deptForm, name: e.target.value })}
+                  placeholder="เช่น แผนกพัฒนาซอฟต์แวร์"
                   className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  Cost Center Code
+                  สังกัดส่วนงาน (Section) <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={deptForm.sectionId}
+                  onChange={(e) => setDeptForm({ ...deptForm, sectionId: e.target.value })}
+                  className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                >
+                  <option value="">-- เลือกส่วนงานต้นสังกัด --</option>
+                  {MOCK_SECTIONS.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      {sec.name} ({sec.divName})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  ชื่อหัวหน้าแผนก (ตัวเลือก)
                 </label>
                 <input
                   type="text"
-                  value={deptForm.costCenter}
-                  onChange={(e) =>
-                    setDeptForm({ ...deptForm, costCenter: e.target.value })
-                  }
-                  placeholder="เช่น CC001"
+                  value={deptForm.headName}
+                  onChange={(e) => setDeptForm({ ...deptForm, headName: e.target.value })}
+                  placeholder="เช่น สมชาย มั่นคง"
                   className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 />
               </div>
+
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
-                  บริษัท <span className="text-red-500">*</span>
+                  สถานะ
                 </label>
                 <select
-                  value={deptForm.companyId}
-                  onChange={(e) =>
-                    setDeptForm({
-                      ...deptForm,
-                      companyId: Number(e.target.value),
-                    })
-                  }
+                  value={deptForm.status}
+                  onChange={(e) => setDeptForm({ ...deptForm, status: e.target.value as any })}
                   className="w-full border border-slate-300 rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                 >
-                  {companies.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name_th}
-                    </option>
-                  ))}
+                  <option value="active">ใช้งาน (Active)</option>
+                  <option value="inactive">ไม่ใช้งาน (Inactive)</option>
                 </select>
               </div>
             </div>

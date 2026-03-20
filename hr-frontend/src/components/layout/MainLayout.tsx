@@ -49,15 +49,13 @@ export default function MainLayout({
     setLanguage,
   } = useAppStore();
 
-  const roleId = Number(user?.role_id || user?.is_super_admin);
-  const isEmployee = roleId === 4;
+  const roleId = user ? Number(user.role_id || user.is_super_admin) : 4; 
+  const isAdminOrHR = roleId === 1 || roleId === 2 || roleId === 3;
 
   const menuItems = [
     { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
-
-    ...(isEmployee
-      ? []
-      : [
+    ...(isAdminOrHR
+      ? [
           {
             name: "Organization",
             path: "/organization",
@@ -75,21 +73,22 @@ export default function MainLayout({
             path: "/employees",
             icon: Users,
           },
-        ]),
+        ]
+      : []),
 
     { name: "Attendance Logs", path: "/attendance", icon: Clock },
     { name: "OT Management", path: "/overtime", icon: ClockPlus },
     { name: "Leaves Management", path: "/leaves", icon: Calendar },
 
-    ...(isEmployee
-      ? []
-      : [
-          
+
+    ...(isAdminOrHR
+      ? [
           { name: "Contracts Management", path: "/contracts", icon: FileText },
           { name: "Payroll Management", path: "/payroll", icon: Wallet },
           { name: "Reports", path: "/reports", icon: BarChart3 },
           { name: "User & Permissions", path: "/settings", icon: Shield },
-        ]),
+        ]
+      : []),
   ];
 
   const toggleSubmenu = (path: string) => {
