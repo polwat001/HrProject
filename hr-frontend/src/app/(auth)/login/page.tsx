@@ -67,7 +67,7 @@ export default function LoginPage() {
              <Building2 size={40} className="text-blue-600" />
           </div>
         </div>
-        <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight italic uppercase">
+        <h2 className="text-center text-3xl font-black text-slate-900 tracking-tight  uppercase">
           HR Group System
         </h2>
         <p className="mt-2 text-center text-sm font-bold text-slate-500 uppercase tracking-widest">

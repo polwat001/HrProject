@@ -34,12 +34,12 @@ export default function EmployeeAttendance() {
     <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">{t.title}</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">{t.title}</h1>
           <p className="text-slate-500 font-medium">My Attendance History</p>
         </div>
         
         <div className="text-right space-y-1">
-            <label className="text-[10px] font-black uppercase text-slate-400 italic">{t.filterDate}</label>
+            <label className="text-[10px] font-black uppercase text-slate-400 ">{t.filterDate}</label>
             <div className="relative">
                 <input 
                   type="date" 

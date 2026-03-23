@@ -48,7 +48,7 @@ export default function EmployeeOvertime() {
     <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
       <div className="flex justify-between items-start">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">
             {language === 'th' ? "ประวัติ OT ของฉัน" : "My OT Records"}
           </h1>
           <p className="text-slate-500 font-medium">Overtime History</p>
@@ -74,7 +74,7 @@ export default function EmployeeOvertime() {
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <table className="w-full">
             <thead className="bg-slate-50 font-black text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
@@ -114,7 +114,7 @@ export default function EmployeeOvertime() {
       {/* Modal ขอ OT */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl">
+          <div className="bg-white rounded-xl p-8 w-full max-w-md shadow-2xl">
             <h2 className="text-2xl font-black text-slate-900 mb-6 uppercase">Request Overtime</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>

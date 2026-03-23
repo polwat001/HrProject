@@ -90,7 +90,7 @@ export default function PayrollPage() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-4xl font-black text-slate-900 tracking-tighter italic uppercase">
+          <h2 className="text-4xl font-black text-slate-900 tracking-tighter  uppercase">
             {t.titlePayroll || "Payroll Management"}
           </h2>
           <p className="text-slate-500 font-bold ml-1">{t.descPayroll || "Manage and view employee salaries"}</p>
@@ -99,11 +99,11 @@ export default function PayrollPage() {
         {/* ตัวกรอง ปี และ เดือน */}
         <div className="flex flex-wrap gap-3">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
-            <SelectTrigger className="w-[140px] bg-white border border-slate-200 shadow-sm rounded-2xl font-black italic hover:bg-slate-50 transition-all cursor-pointer">
+            <SelectTrigger className="w-[140px] bg-white border border-slate-200 shadow-sm rounded-xl font-black  hover:bg-slate-50 transition-all cursor-pointer">
               <Calendar className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue placeholder="Year" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-slate-100 shadow-xl">
+            <SelectContent className="rounded-xl border border-slate-100 shadow-xl">
               {availableYears.map((yr) => (
                 <SelectItem key={yr} value={yr} className="font-bold cursor-pointer">
                   {language === 'th' ? `ปี ${yr}` : `Year ${yr}`}
@@ -113,11 +113,11 @@ export default function PayrollPage() {
           </Select>
 
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-            <SelectTrigger className="w-[200px] bg-white border border-slate-200 shadow-sm rounded-2xl font-black italic hover:bg-slate-50 transition-all cursor-pointer">
+            <SelectTrigger className="w-[200px] bg-white border border-slate-200 shadow-sm rounded-xl font-black  hover:bg-slate-50 transition-all cursor-pointer">
               <Calendar className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue placeholder="Month" />
             </SelectTrigger>
-            <SelectContent className="rounded-2xl border border-slate-100 shadow-xl max-h-[300px]">
+            <SelectContent className="rounded-xl border border-slate-100 shadow-xl max-h-[300px]">
               <SelectItem value="all" className="font-bold cursor-pointer">{language === 'th' ? "ทุกเดือน (All Months)" : "All Months"}</SelectItem>
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <SelectItem key={m} value={m.toString()} className="font-bold cursor-pointer">
@@ -127,7 +127,7 @@ export default function PayrollPage() {
             </SelectContent>
           </Select>
 
-          <Button variant="outline" className="bg-white border border-slate-200 shadow-sm rounded-2xl font-black px-6 hover:bg-slate-100 transition-all text-slate-700">
+          <Button variant="outline" className="bg-white border border-slate-200 shadow-sm rounded-xl font-black px-6 hover:bg-slate-100 transition-all text-slate-700">
             <Download className="h-4 w-4 mr-2" /> {t.btnExport || "Export"}
           </Button>
         </div>
@@ -135,33 +135,33 @@ export default function PayrollPage() {
 
       {/* SUMMARY WIDGETS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
+        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblTotalInc || "รวมรายได้ (Total Income)"}</p>
             <p className="text-3xl font-black mt-1 text-green-600 tracking-tighter">฿{fmt(totals.income)}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-green-50 text-green-500 shadow-inner"><TrendingUp size={28} /></div>
+          <div className="p-4 rounded-xl bg-green-50 text-green-500 shadow-inner"><TrendingUp size={28} /></div>
         </div>
 
-        <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
+        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblTotalDed || "รวมรายการหัก (Total Deductions)"}</p>
             <p className="text-3xl font-black mt-1 text-red-500 tracking-tighter">฿{fmt(totals.deduction)}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-red-50 text-red-500 shadow-inner"><TrendingDown size={28} /></div>
+          <div className="p-4 rounded-xl bg-red-50 text-red-500 shadow-inner"><TrendingDown size={28} /></div>
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-3xl border border-blue-500 shadow-lg shadow-blue-200 flex justify-between items-center transition-all hover:shadow-xl hover:scale-[1.01]">
+        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-xl border border-blue-500 shadow-lg shadow-blue-200 flex justify-between items-center transition-all hover:shadow-xl hover:scale-[1.01]">
           <div>
             <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest">{t.lblNetSalary || "ยอดเงินสุทธิ (Net Pay)"}</p>
-            <p className="text-3xl font-black mt-1 text-white tracking-tighter italic">฿{fmt(totals.net)}</p>
+            <p className="text-3xl font-black mt-1 text-white tracking-tighter ">฿{fmt(totals.net)}</p>
           </div>
-          <div className="p-4 rounded-2xl bg-white/20 text-white backdrop-blur-md shadow-inner"><Wallet size={28} /></div>
+          <div className="p-4 rounded-xl bg-white/20 text-white backdrop-blur-md shadow-inner"><Wallet size={28} /></div>
         </div>
       </div>
 
       {/* TABLE */}
-      <Card className="rounded-3xl border-none shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
         <CardHeader className="border-b border-slate-100 px-8 py-5 bg-slate-50/50">
           <div className="flex justify-between items-center">
             <CardTitle className="text-slate-400 uppercase tracking-widest text-sm flex items-center gap-2 font-black">
@@ -170,7 +170,7 @@ export default function PayrollPage() {
                 {selectedMonth === "all" ? (language === 'th' ? "สรุปทั้งปี" : "Yearly Summary") : getMonthName(Number(selectedMonth), language)} {selectedYear}
               </span>
             </CardTitle>
-            <Badge className="bg-green-100 text-green-700 border-none rounded-lg font-black px-3 py-1 text-[10px] uppercase tracking-widest shadow-sm">
+            <Badge className="bg-green-100 text-green-700 border-none rounded-xl font-black px-3 py-1 text-[10px] uppercase tracking-widest shadow-sm">
               {payrollRecords.length} Records
             </Badge>
           </div>
@@ -200,7 +200,7 @@ export default function PayrollPage() {
                 <TableRow key={r.id} className="group hover:bg-blue-50/30 transition-colors border-slate-50">
                   <TableCell className="py-5 px-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black text-xs shadow-sm">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center font-black text-xs shadow-sm">
                         {r.firstname_th.charAt(0)}
                       </div>
                       <p className="font-black text-slate-900 leading-tight">{r.firstname_th} {r.lastname_th}</p>
@@ -218,7 +218,7 @@ export default function PayrollPage() {
                   <TableCell className="text-right font-black text-slate-700 tracking-tight">{fmt(r.total_income)}</TableCell>
                   <TableCell className="text-right font-black text-red-500 tracking-tight">-{fmt(r.total_deduction)}</TableCell>
                   <TableCell className="text-right">
-                    <span className="text-sm font-black text-blue-600 italic tracking-tighter">฿{fmt(r.net_pay)}</span>
+                    <span className="text-sm font-black text-blue-600  tracking-tighter">฿{fmt(r.net_pay)}</span>
                   </TableCell>
                   <TableCell className="text-center">
                     <Button variant="ghost" size="icon" className="rounded-xl hover:bg-blue-100 hover:shadow-sm text-slate-400 hover:text-blue-600 transition-all active:scale-95" onClick={() => setSelectedPayslip(r)}>
@@ -241,11 +241,11 @@ export default function PayrollPage() {
 
       {/* PAYSLIP DIALOG */}
       <Dialog open={!!selectedPayslip} onOpenChange={() => setSelectedPayslip(null)}>
-        <DialogContent className="max-w-md rounded-[3rem] p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95">
+        <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95">
           <DialogHeader className="p-8 bg-slate-900 text-white">
             <div className="flex justify-between items-start">
               <DialogTitle className="text-2xl uppercase tracking-tighter">{t.titlePayslip || "PAYSLIP"}</DialogTitle>
-              <Badge className="bg-green-500 text-white border-none rounded-lg text-[10px] font-black italic tracking-widest">{t.badgePaid || "PAID"}</Badge>
+              <Badge className="bg-green-500 text-white border-none rounded-xl text-[10px] font-black  tracking-widest">{t.badgePaid || "PAID"}</Badge>
             </div>
             <p className="text-slate-400 text-xs font-bold mt-1 uppercase tracking-widest">
               {t.lblPeriod || "Period:"} {selectedPayslip ? getMonthName(selectedPayslip.payroll_month, language) : ''} {selectedPayslip?.payroll_year}
@@ -253,7 +253,7 @@ export default function PayrollPage() {
           </DialogHeader>
           <div className="p-8 bg-white">
             {selectedPayslip && <PayslipContent record={selectedPayslip} t={t} />}
-            <Button className="w-full mt-8 bg-slate-900 hover:bg-slate-800 text-white font-black py-6 rounded-2xl shadow-xl shadow-slate-200 transition-all active:scale-95 uppercase text-xs tracking-widest">
+            <Button className="w-full mt-8 bg-slate-900 hover:bg-slate-800 text-white font-black py-6 rounded-xl shadow-xl shadow-slate-200 transition-all active:scale-95 uppercase text-xs tracking-widest">
               <Download className="mr-2 h-4 w-4" /> {t.btnDownloadPDF || "Download PDF"}
             </Button>
           </div>
@@ -268,7 +268,7 @@ export default function PayrollPage() {
 // ==========================================
 const PayslipContent = ({ record: r, t }: { record: PayrollRecord, t: any }) => (
   <div className="space-y-5">
-    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-2xl">
+    <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
       <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center font-black text-slate-900 text-xl border border-slate-100">
         {r.firstname_th.charAt(0)}
       </div>
@@ -313,9 +313,9 @@ const PayslipContent = ({ record: r, t }: { record: PayrollRecord, t: any }) => 
     </div>
 
     <div className="pt-4">
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-2xl flex justify-between items-center shadow-xl shadow-blue-200">
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 rounded-xl flex justify-between items-center shadow-xl shadow-blue-200">
         <span className="font-black text-blue-100 text-[10px] uppercase tracking-widest">{t.lblNetSalary || "Net Pay"}</span>
-        <span className="text-3xl font-black text-white italic tracking-tighter">฿{fmt(r.net_pay)}</span>
+        <span className="text-3xl font-black text-white  tracking-tighter">฿{fmt(r.net_pay)}</span>
       </div>
     </div>
   </div>

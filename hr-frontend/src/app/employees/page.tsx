@@ -300,23 +300,7 @@ export default function EmployeesPage() {
         </div>
       </div>
 
-      {/* Footer Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-          <p className="text-sm text-blue-700 font-medium">Total Employees</p>
-          <p className="text-3xl font-bold text-blue-900">{employees.length}</p>
-        </div>
-        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-          <p className="text-sm text-green-700 font-medium">Showing</p>
-          <p className="text-3xl font-bold text-green-900">{filteredEmployees.length}</p>
-        </div>
-        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-          <p className="text-sm text-purple-700 font-medium">Active</p>
-          <p className="text-3xl font-bold text-purple-900">
-            {employees.filter((e) => e.status === "active").length}
-          </p>
-        </div>
-      </div>
+      
       
       {/* Search & Filter Section */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">

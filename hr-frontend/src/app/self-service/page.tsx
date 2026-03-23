@@ -63,7 +63,7 @@ export default function UserPermissionsPage() {
     <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">User & Permissions</h1>
+        <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">User & Permissions</h1>
         <p className="text-slate-500 font-bold ml-1 mt-1">จัดการผู้ใช้งานและกลุ่มสิทธิ์การเข้าถึง (Role Groups)</p>
       </div>
 
@@ -202,7 +202,7 @@ export default function UserPermissionsPage() {
               <table className="w-full text-left">
                 <thead className="bg-slate-900 text-white">
                   <tr>
-                    <th className="py-6 px-8 text-sm font-black uppercase tracking-widest italic flex items-center gap-2"><LayoutGrid size={18}/> Modules / Features</th>
+                    <th className="py-6 px-8 text-sm font-black uppercase tracking-widest  flex items-center gap-2"><LayoutGrid size={18}/> Modules / Features</th>
                     <th className="py-6 px-6 text-center text-[10px] font-black uppercase tracking-widest text-blue-300">Admin / HR (Role 1)</th>
                     <th className="py-6 px-6 text-center text-[10px] font-black uppercase tracking-widest text-slate-300">Employee (Role 4)</th>
                   </tr>
@@ -244,7 +244,7 @@ export default function UserPermissionsPage() {
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowModal(false)} />
           <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tighter italic">
+              <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 uppercase tracking-tighter ">
                 <UserPlus size={24} className="text-blue-600"/> เพิ่มผู้ใช้งาน
               </h3>
               <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-900 bg-white p-2 rounded-xl shadow-sm transition-all"><X size={20}/></button>
@@ -263,7 +263,7 @@ export default function UserPermissionsPage() {
                 <select value={formData.role_id} onChange={(e) => setFormData({...formData, role_id: Number(e.target.value)})} className="w-full mt-2 px-4 py-3 bg-slate-50 border-none rounded-2xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                   {MOCK_ROLE_GROUPS.map(r => <option key={r.id} value={r.id}>{r.name} (Role {r.id})</option>)}
                 </select>
-                <p className="text-[10px] text-blue-500 font-bold mt-2 ml-1 italic">* ระบบจะปรับเปลี่ยนเมนูให้พนักงานโดยอัตโนมัติตามสิทธิ์ที่เลือก</p>
+                <p className="text-[10px] text-blue-500 font-bold mt-2 ml-1 ">* ระบบจะปรับเปลี่ยนเมนูให้พนักงานโดยอัตโนมัติตามสิทธิ์ที่เลือก</p>
               </div>
               
               <div className="flex gap-3 pt-6 border-t border-slate-50 mt-6">

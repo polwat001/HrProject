@@ -189,7 +189,7 @@ export default function LevelPage() {
                                 </span>
                               ))
                             ) : (
-                              <span className="text-slate-400 text-xs italic flex items-center gap-1">
+                              <span className="text-slate-400 text-xs  flex items-center gap-1">
                                 <ShieldAlert size={12}/> ยังไม่มีตำแหน่งในระดับนี้
                               </span>
                             )}

@@ -55,7 +55,7 @@ export default function AdminOvertime() {
     <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase italic">OT Management</h1>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">OT Management</h1>
           <p className="text-slate-500 font-medium">จัดการคำร้องขอล่วงเวลา (Admin)</p>
         </div>
         
@@ -105,7 +105,7 @@ export default function AdminOvertime() {
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -126,7 +126,7 @@ export default function AdminOvertime() {
                   <tr key={req.id} className="hover:bg-slate-50 group transition-all">
                     <td className="py-5 px-8">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
+                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
                           <User size={20} />
                         </div>
                         <div>
@@ -138,7 +138,7 @@ export default function AdminOvertime() {
                     
                     {/* ✅ แสดงชื่อแผนกในตาราง */}
                     <td className="text-left px-4">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold whitespace-nowrap">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold whitespace-nowrap">
                         <Briefcase size={12} /> {req.department_name}
                       </span>
                     </td>
@@ -162,7 +162,7 @@ export default function AdminOvertime() {
                           <button onClick={() => handleAction(req.id, 'rejected')} className="p-2 bg-red-100 text-red-600 hover:bg-red-600 hover:text-white rounded-lg transition-colors" title="ปฏิเสธ"><X size={16} /></button>
                         </div>
                       ) : (
-                        <span className="text-[10px] font-black text-slate-300 uppercase italic">ดำเนินการแล้ว</span>
+                        <span className="text-[10px] font-black text-slate-300 uppercase ">ดำเนินการแล้ว</span>
                       )}
                     </td>
                   </tr>

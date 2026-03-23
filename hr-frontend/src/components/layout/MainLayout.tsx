@@ -80,13 +80,22 @@ export default function MainLayout({
     { name: "OT Management", path: "/overtime", icon: ClockPlus },
     { name: "Leaves Management", path: "/leaves", icon: Calendar },
 
-
     ...(isAdminOrHR
       ? [
           { name: "Contracts Management", path: "/contracts", icon: FileText },
           { name: "Payroll Management", path: "/payroll", icon: Wallet },
           { name: "Reports", path: "/reports", icon: BarChart3 },
-          { name: "User & Permissions", path: "/settings", icon: Shield },
+         
+          { 
+            name: "User & Permissions", 
+            path: "/settings", 
+            icon: Shield,
+            subItems: [
+              { name: "Role Management", path: "/settings/roles" },
+              { name: "User Assignments", path: "/settings/users" },
+              { name: "Transaction Log", path: "/settings/logs" },
+            ]
+          },
         ]
       : []),
   ];
@@ -215,7 +224,6 @@ export default function MainLayout({
                         <Link
                           key={subItem.path}
                           href={subItem.path}
-                          // ✅ ใช้คลาส group เพื่อให้ hover ทำงานประสานกันทั้งบรรทัด
                           className={`group flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
                             isSubActive
                               ? "bg-blue-600/10 font-medium"
@@ -230,7 +238,6 @@ export default function MainLayout({
                                 : "text-slate-500 group-hover:text-blue-300"
                             }
                           />
-                          {/* ✅ บังคับสีข้อความตรงนี้ให้ชัดเจน */}
                           <span 
                             className={
                               isSubActive 

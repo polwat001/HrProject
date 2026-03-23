@@ -75,7 +75,7 @@ export default function AdminAttendance() {
         </div>
       </div>
 
-      <Card className="rounded-[2.5rem] border-2 border-gray-200 shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <table className="w-full">
             <thead className="bg-slate-50 font-black text-lg text-black uppercase tracking-widest border-b-2 border-gray-300">
@@ -93,7 +93,7 @@ export default function AdminAttendance() {
                 <tr key={record.id} className="hover:bg-slate-200 group transition-all">
                   <td className="py-5 px-8 ">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
                         <User size={20} />
                       </div>
                       <div>
@@ -115,9 +115,9 @@ export default function AdminAttendance() {
                   <td className="text-center font-black text-slate-700 font-mono">
                     {formatTime(record.check_out_time)}
                   </td>
-                  <td className="text-center font-black text-red-500">
-                    {record.late_minutes > 0 ? `+${record.late_minutes}` : '-'}
-                  </td>
+                  <td className={`text-center font-black ${record.late_minutes > 0 ? 'text-red-500' : 'text-slate-400'}`}>
+  {record.late_minutes > 0 ? `+${record.late_minutes}` : '-'}
+</td>
                   <td className="text-center px-8">
                     <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter border ${getStatusStyle(record.STATUS)}`}>
                       {translateStatus(record.STATUS, t)}
