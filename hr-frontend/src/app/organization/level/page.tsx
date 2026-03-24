@@ -112,7 +112,7 @@ export default function LevelPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="animate-spin text-purple-600 mx-auto mb-4" size={40} />
+          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
           <p className="text-slate-600 font-medium">Loading levels...</p>
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function LevelPage() {
         </div>
         <button
           onClick={handleOpenModal}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <Plus size={18} />
           Add New Level
@@ -136,7 +136,7 @@ export default function LevelPage() {
       </div>
 
       {/* แถบสีม่วงด้านบนตาราง (ให้เหมือนหน้า Section) */}
-      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-purple-500 text-purple-600 bg-white font-semibold">
+      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-blue-50 font-semibold">
         <Hash size={20} />
         Levels (ระดับพนักงาน)
         <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
@@ -161,7 +161,7 @@ export default function LevelPage() {
                     <th className="py-4 px-6 font-semibold text-slate-600 text-sm w-40">Level Code</th>
                     <th className="py-4 px-6 font-semibold text-slate-600 text-sm w-48">Level Title</th>
                     <th className="py-4 px-6 font-semibold text-slate-600 text-sm w-48">Salary Range</th>
-                    <th className="py-4 px-6 font-semibold text-slate-600 text-sm">Positions (ตำแหน่งที่เกี่ยวข้อง)</th>
+                    <th className="py-4 px-6 font-semibold text-slate-600 text-sm w-48">Positions (ตำแหน่งที่เกี่ยวข้อง)</th>
                     <th className="text-center py-4 px-6 font-semibold text-slate-600 text-sm w-32">Actions</th>
                   </tr>
                 </thead>
@@ -173,7 +173,7 @@ export default function LevelPage() {
                       <tr key={level.id} className="hover:bg-slate-50 transition-colors">
                         <td className="py-4 px-6 text-sm font-semibold text-slate-800">{level.id}</td>
                         <td className="py-4 px-6">
-                          <span className="inline-block px-2.5 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded text-sm font-mono font-medium">
+                          <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded text-sm font-mono font-medium">
                             {level.level_code}
                           </span>
                         </td>
@@ -198,7 +198,7 @@ export default function LevelPage() {
 
                         <td className="py-4 px-6 text-center">
                           <div className="flex items-center justify-center gap-3">
-                            <button onClick={() => handleEditLevel(level)} className="text-purple-500 hover:text-purple-700 transition-colors" title="Edit Level">
+                            <button onClick={() => handleEditLevel(level)} className="text-blue-500 hover:text-blue-700 transition-colors" title="Edit Level">
                               <Edit2 size={16} />
                             </button>
                             <button onClick={() => handleDeleteLevel(level.id)} className="text-red-500 hover:text-red-700 transition-colors" title="Delete Level">
@@ -242,7 +242,7 @@ export default function LevelPage() {
                   value={levelForm.level_code}
                   onChange={(e) => setLevelForm({ ...levelForm, level_code: e.target.value })}
                   placeholder="เช่น M1, S1"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 uppercase"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 uppercase"
                 />
               </div>
 
@@ -255,7 +255,7 @@ export default function LevelPage() {
                   value={levelForm.level_title}
                   onChange={(e) => setLevelForm({ ...levelForm, level_title: e.target.value })}
                   placeholder="เช่น Manager, Staff"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -268,7 +268,7 @@ export default function LevelPage() {
                   value={levelForm.base_salary}
                   onChange={(e) => setLevelForm({ ...levelForm, base_salary: e.target.value })}
                   placeholder="เช่น 30,000 - 50,000"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -277,7 +277,7 @@ export default function LevelPage() {
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
                 {saving ? <Loader size={16} className="animate-spin" /> : "Save"}
               </button>
             </div>

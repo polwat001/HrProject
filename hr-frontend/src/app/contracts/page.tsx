@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { translations } from "@/locales/translations";
 import {
-  Plus, Edit2, Trash2, Loader, AlertTriangle, CheckCircle, Recycle, X, Search, Filter, Briefcase, BadgeCheck
+  Plus, Edit2, Trash2, Loader, AlertTriangle, CheckCircle, Recycle, X, Search, Filter, Briefcase, BadgeCheck, Download, Upload
 } from "lucide-react";
 
 // ✅ Import ข้อมูลจำลองและตัวแปรคงที่จากไฟล์ Mock
@@ -44,6 +44,11 @@ export default function ContractsPage() {
   const [saving, setSaving] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
 
+  // ✅ Export / Import State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const t = translations[language as keyof typeof translations] || translations['en'];
 
   // ================= LOAD MOCK DATA =================
@@ -74,11 +79,32 @@ export default function ContractsPage() {
     }, 500);
   }, [currentCompanyId]);
 
+  // ================= EXPORT & IMPORT LOGIC =================
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+      alert("✅ ส่งออกข้อมูลสัญญาจ้างสำเร็จ! (Demo)\nระบบได้ดาวน์โหลดไฟล์ contracts_export.csv แล้ว");
+    }, 1200);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setTimeout(() => {
+      setIsImporting(false);
+      alert(`✅ นำเข้าข้อมูลจากไฟล์ ${file.name} สำเร็จ! (Demo)`);
+      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+    }, 1500);
+  };
+
   // ================= LOGIC & HELPERS =================
   const getContractStatus = (status: string) => {
     if (status === "terminated") return { type: "terminated", label: t.contractTerminated || "Terminated", icon: AlertTriangle, color: "bg-red-100 text-red-700 border-red-300" };
     if (status === "expiring") return { type: "expiring", label: t.contractExpiring || "Expiring Soon", icon: AlertTriangle, color: "bg-orange-100 text-[#F5A10A] border-orange-300" };
-    if (status === "expired") return { type: "expired", label: t.contractExpired || "Expired", icon: AlertTriangle, color: "bg-slate-100 text-slate-500 border-slate-300" };
+    if (status === "expired") return { type: "expired", label: t.contractExpired || "Expired", icon: AlertTriangle, color: "bg-red-100 text-red-500 border-red-300" };
     if (status === "renewed") return { type: "renewed", label: t.contractRenewed || "Renewed", icon: Recycle, color: "bg-blue-100 text-blue-700 border-blue-300" };
     return { type: "active", label: t.contractActive || "Active", icon: CheckCircle, color: "bg-green-100 text-green-700 border-green-300" };
   };
@@ -167,20 +193,51 @@ export default function ContractsPage() {
   return (
     <div className="p-6 space-y-6 min-h-screen bg-slate-50/50">
       {/* Header */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t.titleContract || "Contracts Management"}</h1>
           <p className="text-slate-500 font-medium text-sm">จัดการข้อมูลสัญญาจ้างพนักงาน</p>
         </div>
-        <button 
-          onClick={() => {
-            setFormData({...EMPTY_FORM, company_id: currentCompanyId?.toString() || ""});
-            setIsModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-sm uppercase tracking-widest"
-        >
-          <Plus size={18} /> {t.btnNewContract || "Add Contract"}
-        </button>
+        
+        {/* ✅ Action Buttons (Import, Export, Add) */}
+        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+          {/* ซ่อน Input รับไฟล์ */}
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleImport} 
+            className="hidden" 
+            accept=".csv, .xlsx, .xls" 
+          />
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
+            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
+            <span className="hidden sm:inline">นำเข้า</span> (Import)
+          </button>
+
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">ส่งออก</span> (Export)
+          </button>
+
+          <button 
+            onClick={() => {
+              setFormData({...EMPTY_FORM, company_id: currentCompanyId?.toString() || ""});
+              setIsModalOpen(true);
+            }}
+            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-xs sm:text-sm uppercase tracking-widest"
+          >
+            <Plus size={18} /> {t.btnNewContract || "Add Contract"}
+          </button>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}
@@ -260,11 +317,11 @@ export default function ContractsPage() {
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100 uppercase text-[10px] tracking-widest font-black text-slate-400">
+              <tr className="bg-slate-50/50 border-b border-slate-100 uppercase text-base tracking-widest text-slate-500">
                 <th className="text-left py-5 px-6">{t.colEmployee || "Employee"}</th>
-                <th className="text-left py-5 px-6">แผนก (Department)</th>
-                <th className="text-left py-5 px-6">ตำแหน่ง (Position)</th>
-                <th className="text-center py-5 px-6">ประเภทสัญญา (Type)</th>
+                <th className="text-left py-5 px-6">แผนก</th>
+                <th className="text-left py-5 px-6">ตำแหน่ง</th>
+                <th className="text-center py-5 px-6">ประเภทสัญญา</th>
                 <th className="text-center py-5 px-6">{t.lblStartDate || "Start Date"}</th>
                 <th className="text-center py-5 px-6">{t.lblEndDate || "End Date"}</th>
                 <th className="text-center py-5 px-6">{t.colStatus || "Status"}</th>
@@ -276,19 +333,18 @@ export default function ContractsPage() {
                 const status = getContractStatus(contract.status);
                 const StatusIcon = status.icon;
                 return (
-                  <tr key={contract.id} className="hover:bg-blue-50/30 transition-colors group">
+                  <tr key={contract.id} className="hover:bg-blue-50/30 transition-colors group ">
                     <td className="py-4 px-6">
-                      <p className="font-black text-slate-900 leading-tight">{contract.employee_name}</p>
-                      <p className="text-[10px] font-bold text-slate-400 mt-0.5">{contract.employee_code}</p>
+                      <p className="font-black text-slate-900 text-base leading-tight">{contract.employee_name}</p>
                     </td>
                     <td className="py-4 px-6">
-                      <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-xl">
-                        <Briefcase size={12} /> {contract.department_name}
-                      </span>
+                      <p className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-xl">
+                       {contract.department_name}
+                      </p>
                     </td>
                     <td className="py-4 px-6">
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-xl">
-                        <BadgeCheck size={12} /> {contract.position_name}
+                       {contract.position_name}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center">
@@ -300,13 +356,13 @@ export default function ContractsPage() {
                     <td className="py-4 px-6 text-center font-bold text-sm text-slate-600">
                       {contract.end_date ? new Date(contract.end_date).toLocaleDateString(language === 'th' ? "th-TH" : "en-GB") : "-"}
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-6 text-center ">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${status.color}`}>
                         <StatusIcon size={14} /> {status.label}
                       </span>
                     </td>
                     <td className="py-4 px-6 text-center">
-                      <div className="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center justify-center gap-2 ">
                         <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"><Edit2 size={16} /></button>
                         <button onClick={() => handleDelete(Number(contract.id))} className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"><Trash2 size={16} /></button>
                       </div>

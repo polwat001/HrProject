@@ -108,14 +108,14 @@ export default function SectionPage() {
         <h1 className="text-3xl font-bold text-slate-900">Sections Management</h1>
         <button
           onClick={handleOpenModal}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <Plus size={18} /> Add New Section
         </button>
       </div>
 
       {/* แถบสีม่วงด้านบนตาราง (เหมือนในรูป) */}
-      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-purple-500 text-purple-600 bg-white font-semibold">
+      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-white font-semibold">
         <Map size={20} />
         Sections (ส่วนงาน)
         <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
@@ -132,7 +132,7 @@ export default function SectionPage() {
         <select
           value={filterDivision}
           onChange={(e) => setFilterDivision(e.target.value)}
-          className="flex-1 max-w-md border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500 transition-all text-slate-700"
+          className="flex-1 max-w-md border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all text-slate-700"
         >
           <option value="all">All Divisions</option>
           {MOCK_DIVISIONS.map((div) => (
@@ -163,11 +163,11 @@ export default function SectionPage() {
             {filteredSections.map((section) => (
               <tr key={section.id} className="hover:bg-slate-50 transition-colors">
                 <td className="py-4 px-6 text-sm font-semibold text-slate-800">{section.id}</td>
-                <td className="py-4 px-6 text-sm font-mono text-purple-600 font-medium">{section.code}</td>
+                <td className="py-4 px-6 text-sm font-mono text-blue-600 font-medium">{section.code}</td>
                 <td className="py-4 px-6 text-sm font-medium text-slate-800">{section.name}</td>
                 <td className="py-4 px-6 text-sm">
                   {/* Badge สีม่วงแบบในรูปเป๊ะๆ */}
-                  <span className="inline-block px-3 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded-full text-xs font-medium">
+                  <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-xs font-medium">
                     {section.divisionName}
                   </span>
                 </td>
@@ -188,7 +188,7 @@ export default function SectionPage() {
                 <td className="py-4 px-6 text-center">
                   {/* ไอคอน Edit/Delete สีม่วง/แดง แบบในรูป */}
                   <div className="flex items-center justify-center gap-3">
-                    <button onClick={() => handleEdit(section)} className="text-purple-500 hover:text-purple-700 transition-colors">
+                    <button onClick={() => handleEdit(section)} className="text-blue-500 hover:text-blue-700 transition-colors">
                       <Edit2 size={16} />
                     </button>
                     <button onClick={() => handleDelete(section.id)} className="text-red-500 hover:text-red-700 transition-colors">
@@ -236,7 +236,7 @@ export default function SectionPage() {
                   type="text"
                   value={formData.code}
                   onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 uppercase"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 uppercase"
                   placeholder="SEC-01"
                 />
               </div>
@@ -247,7 +247,7 @@ export default function SectionPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   placeholder="เช่น ส่วนงานผลิต"
                 />
               </div>
@@ -257,7 +257,7 @@ export default function SectionPage() {
                 <select
                   value={formData.divisionId}
                   onChange={(e) => setFormData({ ...formData, divisionId: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="">-- เลือกฝ่ายต้นสังกัด --</option>
                   {MOCK_DIVISIONS.map((div) => (
@@ -272,7 +272,7 @@ export default function SectionPage() {
                   type="text"
                   value={formData.managerName}
                   onChange={(e) => setFormData({ ...formData, managerName: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                   placeholder="ชื่อผู้จัดการ (ถ้ามี)"
                 />
               </div>
@@ -282,7 +282,7 @@ export default function SectionPage() {
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="active">Active (ใช้งาน)</option>
                   <option value="inactive">Inactive (ระงับ)</option>
@@ -297,7 +297,7 @@ export default function SectionPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50"
               >
                 {saving ? <Loader size={16} className="animate-spin" /> : "Save"}
               </button>

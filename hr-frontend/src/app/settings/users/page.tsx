@@ -9,31 +9,46 @@ export default function UsersPage() {
   const [users, setUsers] = useState<any[]>([]);
 
   useEffect(() => {
-    // จำลองการดึงข้อมูล Users
-    setTimeout(() => {
-      setUsers([
-        { id: 1, username: "admin", firstname_th: "สมชาย", lastname_th: "แอดมิน", role_name: "Super Admin", user_status: "active", is_super_admin: true },
-        { id: 2, username: "hr_user", firstname_th: "สมหญิง", lastname_th: "ใจดี", role_name: "HR Manager", user_status: "active", is_super_admin: false },
-        { id: 3, username: "employee01", firstname_th: "มานะ", lastname_th: "ขยัน", role_name: "Employee", user_status: "active", is_super_admin: false },
-      ]);
+    const loadUsers = () => {
+      const mockUsers = [
+        { 
+          id: 1, 
+          username: "superadmin", 
+          firstname_th: "ผู้ดูแลระบบ", 
+          lastname_th: "", 
+          role_name: "Super Admin", 
+          user_status: "active", 
+          email: "admin@gmail.com" 
+        },
+        { 
+          id: 2, 
+          username: "nadech", 
+          firstname_th: "สมชาย", 
+          lastname_th: "มั่นคง", 
+          role_name: "Employee", 
+          user_status: "active", 
+          email: "somchai@gmail.com" 
+        },
+      ];
+      
+      setUsers(mockUsers);
       setLoading(false);
-    }, 500);
+    };
+
+    const timer = setTimeout(loadUsers, 500);
+    return () => clearTimeout(timer);
   }, []);
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader className="animate-spin text-blue-600" size={40} />
+      <div className="flex justify-center items-center h-[60vh]">
+        <Loader className="animate-spin text-indigo-600" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">User Assignments</h1>
-        <p className="text-slate-500 mt-1 text-sm font-medium">จัดการบัญชีผู้ใช้งานระบบและกำหนด Role</p>
-      </div>
+    <div className="p-6">
       <UserAssignments users={users} />
     </div>
   );

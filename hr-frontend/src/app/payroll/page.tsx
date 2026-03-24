@@ -135,34 +135,34 @@ export default function PayrollPage() {
 
       {/* SUMMARY WIDGETS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
+        <div className="bg p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblTotalInc || "รวมรายได้ (Total Income)"}</p>
-            <p className="text-3xl font-black mt-1 text-green-600 tracking-tighter">฿{fmt(totals.income)}</p>
+            <p className="text-lg font-black text-slate-400 uppercase tracking-widest">{t.lblTotalInc || "รวมรายได้ (Total Income)"}</p>
+            <p className="text-3xl font-black mt-1 text-green-600 tracking-tighter">฿ {fmt(totals.income)}</p>
           </div>
-          <div className="p-4 rounded-xl bg-green-50 text-green-500 shadow-inner"><TrendingUp size={28} /></div>
+          {/* <div className="p-4 rounded-xl bg-green-50 text-green-500 shadow-inner"><TrendingUp size={28} /></div> */}
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblTotalDed || "รวมรายการหัก (Total Deductions)"}</p>
-            <p className="text-3xl font-black mt-1 text-red-500 tracking-tighter">฿{fmt(totals.deduction)}</p>
+            <p className="text-lg font-black text-slate-400 uppercase tracking-widest">{t.lblTotalDed || "รวมรายการหัก (Total Deductions)"}</p>
+            <p className="text-3xl font-black mt-1 text-red-500 tracking-tighter">฿ {fmt(totals.deduction)}</p>
           </div>
-          <div className="p-4 rounded-xl bg-red-50 text-red-500 shadow-inner"><TrendingDown size={28} /></div>
+          {/* <div className="p-4 rounded-xl bg-red-50 text-red-500 shadow-inner"><TrendingDown size={28} /></div> */}
         </div>
 
-        <div className="bg-gradient-to-br from-blue-600 to-indigo-600 p-6 rounded-xl border border-blue-500 shadow-lg shadow-blue-200 flex justify-between items-center transition-all hover:shadow-xl hover:scale-[1.01]">
+        <div className="bg- p-6 rounded-xl border border-blue-500  flex justify-between items-center transition-all hover:shadow-xl hover:scale-[1.01]">
           <div>
-            <p className="text-[10px] font-black text-blue-200 uppercase tracking-widest">{t.lblNetSalary || "ยอดเงินสุทธิ (Net Pay)"}</p>
-            <p className="text-3xl font-black mt-1 text-white tracking-tighter ">฿{fmt(totals.net)}</p>
+            <p className="text-lg font-black text-blue-200 uppercase tracking-widest">{t.lblNetSalary || "ยอดเงินสุทธิ (Net Pay)"}</p>
+            <p className="text-3xl font-black mt-1 text-white tracking-tighter ">฿ {fmt(totals.net)}</p>
           </div>
           <div className="p-4 rounded-xl bg-white/20 text-white backdrop-blur-md shadow-inner"><Wallet size={28} /></div>
         </div>
       </div>
 
       {/* TABLE */}
-      <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
-        <CardHeader className="border-b border-slate-100 px-8 py-5 bg-slate-50/50">
+      <Card className="rounded-xl border-2 border-slate-200 shadow-sm overflow-hidden bg-white">
+        <CardHeader className="border-b-2 border-slate-200 px-8 py-5 bg-slate-50/50">
           <div className="flex justify-between items-center">
             <CardTitle className="text-slate-400 uppercase tracking-widest text-sm flex items-center gap-2 font-black">
               <DollarSign size={16}/> {t.payrollRecords || "Payroll Records"}: 

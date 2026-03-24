@@ -25,6 +25,9 @@ import {
   Shield,
   Circle,
   ClockPlus,
+  CalendarClock,
+  Trees,
+  Palmtree, // ✅ เพิ่ม Import Icon สำหรับ Shift
 } from "lucide-react";
 import { authAPI } from "@/services/api";
 
@@ -77,15 +80,17 @@ export default function MainLayout({
       : []),
 
     { name: "Attendance Logs", path: "/attendance", icon: Clock },
+    { name: "Shift Management", path: "/shift", icon: CalendarClock }, 
     { name: "OT Management", path: "/overtime", icon: ClockPlus },
     { name: "Leaves Management", path: "/leaves", icon: Calendar },
 
     ...(isAdminOrHR
       ? [
+        { name: "Holidays", path: "/holiday", icon: Palmtree },
           { name: "Contracts Management", path: "/contracts", icon: FileText },
           { name: "Payroll Management", path: "/payroll", icon: Wallet },
           { name: "Reports", path: "/reports", icon: BarChart3 },
-         
+          
           { 
             name: "User & Permissions", 
             path: "/settings", 

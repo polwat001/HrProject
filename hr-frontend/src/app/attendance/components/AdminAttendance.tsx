@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations'; 
-import { Calendar, Loader, User, XCircle, Search } from 'lucide-react';
+import { Calendar, Loader, User, XCircle, Search, Download, Upload } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MOCK_ATTENDANCE_LOGS, getStatusStyle, translateStatus, formatTime } from '@/mocks/attendanceData';
 
@@ -13,6 +13,11 @@ export default function AdminAttendance() {
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // ✅ Export / Import State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const t = translations[language as keyof typeof translations] || translations['en'];
 
@@ -28,6 +33,7 @@ export default function AdminAttendance() {
     }, 500);
   }, [currentCompanyId]);
 
+  // ✅ filter ที่ใช้แสดง + export
   const displayedLogs = useMemo(() => {
     return attendanceLogs.filter(log => {
       const matchDate = selectedDate ? log.date === selectedDate : true;
@@ -38,99 +44,230 @@ export default function AdminAttendance() {
     });
   }, [attendanceLogs, selectedDate, searchQuery]);
 
-  if (loading) return <div className="flex justify-center py-20"><Loader className="animate-spin text-blue-600" size={40} /></div>;
+  // ✅ EXPORT CSV (ตาม filter ล่าสุด)
+  const handleExport = () => {
+    if (displayedLogs.length === 0) {
+      alert("ไม่มีข้อมูลสำหรับส่งออก");
+      return;
+    }
+
+    setIsExporting(true);
+
+    // จำลองเวลาโหลดนิดหน่อยให้ UI ดู Smooth เหมือนหน้าอื่น
+    setTimeout(() => {
+      const headers = [
+        "employee_code",
+        "firstname_th",
+        "lastname_th",
+        "date",
+        "check_in_time",
+        "check_out_time",
+        "late_minutes",
+        "STATUS"
+      ];
+
+      const rows = displayedLogs.map(log => [
+        log.employee_code,
+        log.firstname_th,
+        log.lastname_th,
+        log.date,
+        log.check_in_time,
+        log.check_out_time,
+        log.late_minutes,
+        log.STATUS
+      ]);
+
+      const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", "attendance_logs.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setIsExporting(false);
+    }, 800);
+  };
+
+  // ✅ IMPORT CSV
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      // หน่วงเวลาให้เห็น Spinner โหลดนิดหน่อย
+      setTimeout(() => {
+        const text = event.target?.result as string;
+        const lines = text.split("\n").filter(line => line.trim() !== "");
+        const headers = lines[0].split(",");
+
+        const data = lines.slice(1).map((line, index) => {
+          const values = line.split(",");
+          const obj: any = {};
+          headers.forEach((header, i) => {
+            obj[header.trim()] = values[i];
+          });
+
+          return {
+            id: Date.now() + index,
+            ...obj,
+            late_minutes: Number(obj.late_minutes || 0),
+            company_id: currentCompanyId,
+          };
+        });
+
+        setAttendanceLogs(data);
+        setIsImporting(false);
+        if (fileInputRef.current) fileInputRef.current.value = ""; // รีเซ็ต Input
+        alert(`✅ นำเข้าข้อมูลการเข้างานสำเร็จ!`);
+      }, 1000);
+    };
+
+    reader.readAsText(file);
+  };
+
+  if (loading) return (
+    <div className="flex justify-center py-20">
+      <Loader className="animate-spin text-blue-600" size={40} />
+    </div>
+  );
 
   return (
-    <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-screen">
+      
+      {/* ✅ Header & Export/Import Buttons ปรับดีไซน์ใหม่ */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">{t.title}</h1>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">
+            {t.title || "Attendance Logs"}
+          </h1>
+          <p className="text-slate-500 font-medium text-sm mt-1">จัดการข้อมูลการเข้างาน (Admin)</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search employee..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm w-64"
-            />
-          </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".csv" />
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
+            <span className="hidden sm:inline">นำเข้า</span> (Import)
+          </button>
 
-          <div className="relative">
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
-            />
-            {selectedDate && (
-              <button onClick={() => setSelectedDate("")} className="absolute right-10 top-2.5 text-slate-300 hover:text-red-500 transition-colors">
-                <XCircle size={16} />
-              </button>
-            )}
-          </div>
+          <button 
+            onClick={handleExport} disabled={isExporting || displayedLogs.length === 0}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">ส่งออก</span> (Export)
+          </button>
         </div>
       </div>
 
-      <Card className="rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden bg-white">
+      {/* ✅ Filters Area */}
+      <div className="flex flex-col sm:flex-row items-center gap-4">
+        {/* 🔍 Search */}
+        <div className="relative flex-1 w-full max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="ค้นหารหัส หรือชื่อพนักงาน..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+          />
+        </div>
+
+        {/* 📅 Date */}
+        <div className="relative w-full sm:w-auto">
+          <input 
+            type="date" 
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm text-slate-600"
+          />
+          {selectedDate && (
+            <button 
+              onClick={() => setSelectedDate("")}
+              className="absolute right-10 top-3.5 text-slate-300 hover:text-red-500 transition-colors"
+            >
+              <XCircle size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <Card className="rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
-          <table className="w-full">
-            <thead className="bg-slate-50 font-black text-lg text-black uppercase tracking-widest border-b-2 border-gray-300">
-              <tr>
-                <th className="py-6 px-8 text-left pl-12">{t.colEmployee}</th>
-                <th className="text-center">{language === 'th' ? 'วันที่' : 'Date'}</th> 
-                <th className="text-center">{t.colCheckIn}</th>
-                <th className="text-center">{t.colCheckOut}</th>
-                <th className="text-center">{t.colLate}</th>
-                <th className="text-center">{t.colStatus}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {displayedLogs.map((record) => (
-                <tr key={record.id} className="hover:bg-slate-200 group transition-all">
-                  <td className="py-5 px-8 ">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400">
-                        <User size={20} />
-                      </div>
-                      <div>
-                        <p className="font-black text-slate-900 leading-tight">
-                          {record.firstname_th} {record.lastname_th}
-                        </p>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          {record.employee_code}
-                        </p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="text-center font-bold text-slate-600 text-sm">
-                    {new Date(record.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-GB')}
-                  </td>
-                  <td className="text-center font-black text-slate-700 font-mono">
-                    {formatTime(record.check_in_time)}
-                  </td>
-                  <td className="text-center font-black text-slate-700 font-mono">
-                    {formatTime(record.check_out_time)}
-                  </td>
-                  <td className={`text-center font-black ${record.late_minutes > 0 ? 'text-red-500' : 'text-slate-400'}`}>
-  {record.late_minutes > 0 ? `+${record.late_minutes}` : '-'}
-</td>
-                  <td className="text-center px-8">
-                    <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter border ${getStatusStyle(record.STATUS)}`}>
-                      {translateStatus(record.STATUS, t)}
-                    </span>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-slate-50 font-black text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
+                <tr>
+                  <th className="py-6 px-8 text-left">{t.colEmployee || "พนักงาน"}</th>
+                  <th className="text-center px-4">{language === 'th' ? 'วันที่' : 'Date'}</th> 
+                  <th className="text-center px-4">{t.colCheckIn || "เวลาเข้า"}</th>
+                  <th className="text-center px-4">{t.colCheckOut || "เวลาออก"}</th>
+                  <th className="text-center px-4">{t.colLate || "สาย (นาที)"}</th>
+                  <th className="text-center px-8">{t.colStatus || "สถานะ"}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-50 text-sm">
+                {displayedLogs.map((record) => (
+                  <tr key={record.id} className="hover:bg-slate-50 transition-colors group">
+                    <td className="py-5 px-8">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400 shrink-0">
+                          <User size={20} />
+                        </div>
+                        <div>
+                          <p className="font-black text-slate-900 leading-tight">
+                            {record.firstname_th} {record.lastname_th}
+                          </p>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                            {record.employee_code}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="text-center font-bold text-slate-600 py-4 px-4 whitespace-nowrap">
+                      {new Date(record.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}
+                    </td>
+
+                    <td className="text-center font-black font-mono text-slate-800 py-4 px-4">
+                      {formatTime(record.check_in_time)}
+                    </td>
+
+                    <td className="text-center font-black font-mono text-slate-800 py-4 px-4">
+                      {formatTime(record.check_out_time)}
+                    </td>
+
+                    <td className={`text-center font-black py-4 px-4 ${record.late_minutes > 0 ? 'text-red-500' : 'text-slate-400'}`}>
+                      {record.late_minutes > 0 ? `+${record.late_minutes}` : '-'}
+                    </td>
+
+                    <td className="text-center px-8 py-4">
+                      <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(record.STATUS)}`}>
+                        {translateStatus(record.STATUS, t)}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
           {displayedLogs.length === 0 && (
             <div className="py-20 text-center space-y-4">
               <Calendar className="mx-auto text-slate-200" size={64} />
-              <p className="text-slate-300 font-black uppercase tracking-widest">{t.noRecords}</p>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">{t.noRecords || "ไม่พบข้อมูลการลงเวลา"}</p>
             </div>
           )}
         </CardContent>

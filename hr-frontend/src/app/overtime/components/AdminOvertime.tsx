@@ -1,9 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations';
-import { Loader, Search, XCircle, User, Check, X, ClockPlus, Briefcase } from 'lucide-react';
+import { 
+  Loader, Search, XCircle, User, Check, X, 
+  ClockPlus, Briefcase, Download, Upload 
+} from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MOCK_OT_REQUESTS, MOCK_DEPARTMENTS_OT } from '@/mocks/otData';
 import { StatusBadge } from './Shared';
@@ -18,6 +21,11 @@ export default function AdminOvertime() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState<number | "">("");
 
+  // ✅ Export / Import State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const t = translations[language as keyof typeof translations] || translations['en'];
 
   useEffect(() => {
@@ -31,6 +39,27 @@ export default function AdminOvertime() {
       setLoading(false);
     }, 500);
   }, [currentCompanyId]);
+
+  // ✅ ฟังก์ชัน Export & Import
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+      alert("✅ ส่งออกข้อมูล OT สำเร็จ! (Demo)\nระบบได้ดาวน์โหลดไฟล์ ot_records.csv แล้ว");
+    }, 1200);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setTimeout(() => {
+      setIsImporting(false);
+      alert(`✅ นำเข้าข้อมูล OT จากไฟล์ ${file.name} สำเร็จ! (Demo)`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }, 1500);
+  };
 
   // ประมวลผลตัวกรองข้อมูล
   const displayedRequests = useMemo(() => {
@@ -53,58 +82,78 @@ export default function AdminOvertime() {
 
   return (
     <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4">
+      
+      {/* ✅ Header พร้อมปุ่ม Export/Import */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">OT Management</h1>
           <p className="text-slate-500 font-medium">จัดการคำร้องขอล่วงเวลา (Admin)</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".csv, .xlsx, .xls" />
           
-          {/* 1. ตัวกรองแผนก (เพิ่มเข้ามาใหม่) */}
-          <div className="relative">
-            <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={18} />
-            <select
-              value={filterDepartment}
-              onChange={(e) => setFilterDepartment(e.target.value ? Number(e.target.value) : "")}
-              className="pl-10 pr-8 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm appearance-none min-w-[200px] cursor-pointer"
-            >
-              <option value="">ทุกแผนก (All Departments)</option>
-              {MOCK_DEPARTMENTS_OT.map(dept => (
-                <option key={dept.id} value={dept.id}>{dept.name}</option>
-              ))}
-            </select>
-          </div>
+          <button 
+            onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
+            <span className="hidden sm:inline">นำเข้า</span> (Import)
+          </button>
 
-          {/* 2. ช่องค้นหาชื่อ/รหัสพนักงาน */}
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search employee..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm w-56"
-            />
-          </div>
-
-          {/* 3. ตัวกรองวันที่ */}
-          <div className="relative">
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
-            />
-            {selectedDate && (
-              <button onClick={() => setSelectedDate("")} className="absolute right-10 top-2.5 text-slate-300 hover:text-red-500 transition-colors">
-                <XCircle size={16} />
-              </button>
-            )}
-          </div>
+          <button 
+            onClick={handleExport} disabled={isExporting}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">ส่งออก</span> (Export)
+          </button>
         </div>
       </div>
 
+      {/* แถบ Filters */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={18} />
+          <select
+            value={filterDepartment}
+            onChange={(e) => setFilterDepartment(e.target.value ? Number(e.target.value) : "")}
+            className="pl-10 pr-8 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm appearance-none min-w-[200px] cursor-pointer"
+          >
+            <option value="">ทุกแผนก (All Departments)</option>
+            {MOCK_DEPARTMENTS_OT.map(dept => (
+              <option key={dept.id} value={dept.id}>{dept.name}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-2.5 text-slate-400" size={18} />
+          <input 
+            type="text" 
+            placeholder="Search employee..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-sm"
+          />
+        </div>
+
+        <div className="relative">
+          <input 
+            type="date" 
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm"
+          />
+          {selectedDate && (
+            <button onClick={() => setSelectedDate("")} className="absolute right-10 top-2.5 text-slate-300 hover:text-red-500 transition-colors">
+              <XCircle size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ตารางข้อมูล */}
       <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -112,7 +161,6 @@ export default function AdminOvertime() {
               <thead className="bg-slate-50 font-black text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 <tr>
                   <th className="py-6 px-8 text-left">{t.colEmployee || "พนักงาน"}</th>
-                  {/* ✅ เพิ่มหัวตารางคอลัมน์แผนก */}
                   <th className="text-left px-4">แผนก (Department)</th> 
                   <th className="text-center">{t.colDate || "วันที่ขอ OT"}</th>
                   <th className="text-center">{t.colOTHours || "จำนวน (ชม.)"}</th>
@@ -135,14 +183,11 @@ export default function AdminOvertime() {
                         </div>
                       </div>
                     </td>
-                    
-                    {/* ✅ แสดงชื่อแผนกในตาราง */}
                     <td className="text-left px-4">
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 rounded-xl text-xs font-bold whitespace-nowrap">
                         <Briefcase size={12} /> {req.department_name}
                       </span>
                     </td>
-
                     <td className="text-center font-bold text-slate-600 text-sm whitespace-nowrap">
                       {new Date(req.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-GB')}
                     </td>

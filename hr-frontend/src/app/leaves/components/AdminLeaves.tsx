@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   CalendarHeart, Clock, CheckCircle, XCircle, Loader, 
-  Search, AlertCircle, MessageSquare, FileText, Filter, X, CalendarDays, User
+  Search, AlertCircle, FileText, Filter, X, CalendarDays, 
+  User, Download, Upload, Briefcase, BadgeCheck
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { translations } from '@/locales/translations'; 
@@ -14,17 +15,23 @@ export default function AdminLeaves() {
   const { currentCompanyId, language } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterYear, setFilterYear] = useState<string>("all"); // ✅ ตัวกรองปี
   const [saving, setSaving] = useState(false);
 
   const t = translations[language as keyof typeof translations] || translations['en'];
 
   const [confirmData, setConfirmData] = useState<{ show: boolean; id: number; status: "approved" | "rejected"; reason: string; }>({ show: false, id: 0, status: "approved", reason: "" });
   const [notif, setNotif] = useState({ show: false, type: "success" as "success" | "error", message: "" });
-  
-  // ✅ State สำหรับเก็บข้อมูล Modal รายละเอียดการลา
   const [selectedLeaveDetail, setSelectedLeaveDetail] = useState<any | null>(null);
+
+  // ✅ Export / Import State
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const showNotification = (type: "success" | "error", message: string) => {
     setNotif({ show: true, type, message });
@@ -39,9 +46,35 @@ export default function AdminLeaves() {
         filteredData = filteredData.filter(log => log.company_id === currentCompanyId);
       }
       setLeaveRequests(filteredData);
+      
+      // หาปีล่าสุดที่มีในข้อมูลมาตั้งเป็นค่าเริ่มต้น
+      const years = Array.from(new Set(filteredData.map(r => r.startDate?.substring(0, 4)))).sort().reverse();
+      if (years.length > 0) setFilterYear(years[0] as string);
+
       setLoading(false);
     }, 500);
   }, [currentCompanyId]);
+
+  // ✅ ฟังก์ชัน Export & Import
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+      alert(`✅ ส่งออกข้อมูลการลาปี ${filterYear === 'all' ? 'ทั้งหมด' : filterYear} สำเร็จ!\nระบบได้ดาวน์โหลดไฟล์ leaves_records.csv แล้ว (Demo)`);
+    }, 1200);
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setTimeout(() => {
+      setIsImporting(false);
+      alert(`✅ นำเข้าข้อมูลการลาจากไฟล์ ${file.name} สำเร็จ! (Demo)`);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }, 1500);
+  };
 
   const processStatusUpdate = () => {
     if (confirmData.status === "rejected" && !confirmData.reason.trim()) {
@@ -52,7 +85,6 @@ export default function AdminLeaves() {
     setTimeout(() => {
       setLeaveRequests(prev => prev.map(req => req.id === confirmData.id ? { ...req, status: confirmData.status, rejectReason: confirmData.reason } : req));
       
-      // ✅ ถ้าเปิด Modal รายละเอียดอยู่ ให้ซิงค์สถานะใหม่เข้าไปด้วย
       if (selectedLeaveDetail && selectedLeaveDetail.id === confirmData.id) {
         setSelectedLeaveDetail({ ...selectedLeaveDetail, status: confirmData.status, rejectReason: confirmData.reason });
       }
@@ -63,10 +95,36 @@ export default function AdminLeaves() {
     }, 400);
   };
 
-  const filteredLeaves = leaveRequests.filter(req => 
+  // ✅ ดึงรายการปีทั้งหมดจากข้อมูล
+  const availableYears = useMemo(() => {
+    return Array.from(new Set(leaveRequests.map(r => r.startDate?.substring(0, 4)))).filter(Boolean).sort().reverse();
+  }, [leaveRequests]);
+
+  // ✅ กรองข้อมูลตามปี
+  const yearFilteredLeaves = useMemo(() => {
+    return leaveRequests.filter(req => filterYear === "all" || req.startDate?.startsWith(filterYear));
+  }, [leaveRequests, filterYear]);
+
+  // ✅ กรองข้อมูลตามปี + สถานะ + ค้นหา (สำหรับแสดงในตาราง)
+  const filteredLeaves = yearFilteredLeaves.filter(req => 
     (filterStatus === "all" || req.status === filterStatus) &&
-    (req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || req.employeeCode.toLowerCase().includes(searchTerm.toLowerCase()))
+    (req.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) || (req.departmentName || "").toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  // ✅ คำนวณสถิติ (อ้างอิงจากข้อมูลในปีที่เลือก)
+  const stats = useMemo(() => {
+    const total = yearFilteredLeaves.length;
+    const pending = yearFilteredLeaves.filter(r => r.status === 'pending').length;
+    const approved = yearFilteredLeaves.filter(r => r.status === 'approved').length;
+    const rejected = yearFilteredLeaves.filter(r => r.status === 'rejected').length;
+
+    return {
+      total, pending, approved, rejected,
+      pendingPct: total ? Math.round((pending / total) * 100) : 0,
+      approvedPct: total ? Math.round((approved / total) * 100) : 0,
+      rejectedPct: total ? Math.round((rejected / total) * 100) : 0,
+    };
+  }, [yearFilteredLeaves]);
 
   if (loading) return <div className="flex justify-center py-20"><Loader className="animate-spin text-purple-600" size={40} /></div>;
 
@@ -81,63 +139,108 @@ export default function AdminLeaves() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      {/* ✅ Header & Export/Import Buttons */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3  uppercase tracking-tighter">
+          <h1 className="text-3xl font-black text-slate-900 flex items-center gap-3 uppercase tracking-tighter">
              Leaves Management
           </h1>
           <p className="text-slate-500 font-medium text-sm">จัดการคำร้องขอลางาน (Admin)</p>
         </div>
+        
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".csv, .xlsx, .xls" />
+          
+          <button 
+            onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
+            <span className="hidden sm:inline">นำเข้า</span> (Import)
+          </button>
+
+          <button 
+            onClick={handleExport} disabled={isExporting}
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
+          >
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">ส่งออก</span> (Export)
+          </button>
+        </div>
       </div>
 
-      {/* Stats Widgets */}
+      {/* ✅ Stats Widgets (เพิ่ม % ใต้ตัวเลข) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statPending || "รอตรวจสอบ"}</p>
-              <p className="text-3xl font-black mt-1 text-yellow-600">{leaveRequests.filter(r => r.status === 'pending').length}</p>
+              <div className="flex items-end gap-2 mt-1">
+                <p className="text-3xl font-black text-yellow-600 leading-none">{stats.pending}</p>
+                <span className="text-xs font-black text-yellow-600/50 mb-1">({stats.pendingPct}%)</span>
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-yellow-50"><Clock className="text-yellow-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statApproved || "อนุมัติแล้ว"}</p>
-              <p className="text-3xl font-black mt-1 text-green-600">{leaveRequests.filter(r => r.status === 'approved').length}</p>
+              <div className="flex items-end gap-2 mt-1">
+                <p className="text-3xl font-black text-green-600 leading-none">{stats.approved}</p>
+                <span className="text-xs font-black text-green-600/50 mb-1">({stats.approvedPct}%)</span>
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-green-50"><CheckCircle className="text-green-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statRejected || "ไม่อนุมัติ"}</p>
-              <p className="text-3xl font-black mt-1 text-red-600">{leaveRequests.filter(r => r.status === 'rejected').length}</p>
+              <div className="flex items-end gap-2 mt-1">
+                <p className="text-3xl font-black text-red-600 leading-none">{stats.rejected}</p>
+                <span className="text-xs font-black text-red-600/50 mb-1">({stats.rejectedPct}%)</span>
+              </div>
             </div>
             <div className="p-3 rounded-xl bg-red-50"><XCircle className="text-red-600" size={28} /></div>
           </div>
           <div className="bg-white p-5 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.statAll || "ทั้งหมด"}</p>
-              <p className="text-3xl font-black mt-1 text-slate-900">{leaveRequests.length}</p>
+              <p className="text-3xl font-black mt-1 text-slate-900 leading-none">{stats.total}</p>
             </div>
             <div className="p-3 rounded-xl bg-slate-100"><CalendarHeart className="text-slate-900" size={28} /></div>
           </div>
       </div>
 
+      {/* ✅ Filters (เพิ่ม Filter ปี) */}
       <div className="flex flex-wrap md:flex-nowrap gap-4 bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-          <input type="text" placeholder={t.searchEmployee || "ค้นหาพนักงาน..."} value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium" />
+          <input type="text" placeholder="ค้นหาชื่อพนักงาน หรือ แผนก..." value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} className="w-full pl-12 pr-4 py-3 bg-slate-50 border-none rounded-xl outline-none focus:ring-2 focus:ring-purple-500 text-sm font-medium" />
         </div>
-        <div className="flex items-center gap-2">
-            <Filter size={18} className="text-slate-400" />
-            <select value={filterStatus} onChange={(e)=>setFilterStatus(e.target.value)} className="px-6 py-3 bg-slate-50 border-none rounded-xl font-bold text-sm outline-none text-slate-700 cursor-pointer">
-                <option value="all">{t.filterStatusAll || "ทุกสถานะ"}</option>
-                <option value="pending">⏳ {t.statPending || "รอตรวจสอบ"}</option>
-                <option value="approved">✅ {t.statApproved || "อนุมัติแล้ว"}</option>
-                <option value="rejected">❌ {t.statRejected || "ไม่อนุมัติ"}</option>
-            </select>
+        
+        <div className="flex items-center gap-3">
+            {/* Filter ปี */}
+            <div className="flex items-center bg-slate-50 rounded-xl px-2">
+              <CalendarDays size={16} className="text-slate-400 ml-2" />
+              <select value={filterYear} onChange={(e)=>setFilterYear(e.target.value)} className="px-3 py-3 bg-transparent border-none font-bold text-sm outline-none text-slate-700 cursor-pointer">
+                  <option value="all">ทุกปี</option>
+                  {availableYears.map((year: any) => <option key={year} value={year}>ปี {year}</option>)}
+              </select>
+            </div>
+
+            {/* Filter สถานะ */}
+            <div className="flex items-center bg-slate-50 rounded-xl px-2">
+              <Filter size={16} className="text-slate-400 ml-2" />
+              <select value={filterStatus} onChange={(e)=>setFilterStatus(e.target.value)} className="px-3 py-3 bg-transparent border-none font-bold text-sm outline-none text-slate-700 cursor-pointer">
+                  <option value="all">{t.filterStatusAll || "ทุกสถานะ"}</option>
+                  <option value="pending">⏳ {t.statPending || "รอตรวจสอบ"}</option>
+                  <option value="approved">✅ {t.statApproved || "อนุมัติแล้ว"}</option>
+                  <option value="rejected">❌ {t.statRejected || "ไม่อนุมัติ"}</option>
+              </select>
+            </div>
         </div>
       </div>
 
+      {/* ตารางข้อมูล */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -156,16 +259,21 @@ export default function AdminLeaves() {
                 <tr 
                   key={req.id} 
                   className="hover:bg-purple-50/30 transition-all group cursor-pointer"
-                  onClick={() => setSelectedLeaveDetail(req)} // ✅ คลิกที่แถวเพื่อเปิด Detail
+                  onClick={() => setSelectedLeaveDetail(req)} 
                 >
+                  {/* ✅ ข้อมูลพนักงาน: นำรหัสพนักงานออก แทนที่ด้วย แผนกและตำแหน่ง */}
                   <td className="py-5 px-8">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-purple-200">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-black text-xs shadow-lg shadow-purple-200 shrink-0">
                             {req.employeeName.charAt(0)}
                         </div>
                         <div>
                             <p className="font-black text-slate-900 leading-none group-hover:text-purple-700 transition-colors">{req.employeeName}</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-1 tracking-wider">{req.employeeCode}</p>
+                            <p className="text-[10px] text-slate-500 font-bold mt-1.5 flex items-center gap-1.5 line-clamp-1">
+                               <Briefcase size={10} className="text-purple-400"/> {req.departmentName || "ทั่วไป"} 
+                               <span className="text-slate-300">•</span>
+                               <BadgeCheck size={10} className="text-purple-400"/> {req.positionName || "พนักงาน"}
+                            </p>
                         </div>
                     </div>
                   </td>
@@ -173,11 +281,19 @@ export default function AdminLeaves() {
                     <p className="font-bold text-slate-700">{req.leaveType}</p>
                     <p className="text-slate-400 text-xs line-clamp-1 max-w-[200px]">"{req.reason || '-'}"</p>
                   </td>
+                  
+                  {/* ✅ วันที่ลา: รองรับแสดงผลลางานครึ่งวัน */}
                   <td className="py-5 px-6 text-center">
-                    <span className="inline-block px-2.5 py-1 bg-purple-50 text-purple-700 rounded-xl font-black text-[10px] border border-purple-100">
-                      {req.startDate} — {req.endDate}
-                    </span>
+                    <div className="flex flex-col items-center">
+                      <span className="inline-block px-2.5 py-1 bg-purple-50 text-purple-700 rounded-lg font-black text-[10px] border border-purple-100 whitespace-nowrap">
+                        {req.startDate} {req.startDate !== req.endDate ? `— ${req.endDate}` : ''}
+                      </span>
+                      <span className={`text-[10px] font-black mt-1 ${req.leave_days === 0.5 ? 'text-orange-500' : 'text-slate-400'}`}>
+                        {req.leave_days === 0.5 ? "ลาครึ่งวัน (Half Day)" : `${req.leave_days || 1} วัน`}
+                      </span>
+                    </div>
                   </td>
+
                   <td className="py-5 px-6 text-center" onClick={(e) => e.stopPropagation()}>
                     {req.attachment_file ? (
                         <span className="inline-flex items-center gap-1.5 text-blue-600 font-black text-[10px] uppercase hover:underline transition-colors cursor-pointer">
@@ -188,7 +304,7 @@ export default function AdminLeaves() {
                     )}
                   </td>
                   <td className="py-5 px-6 text-center">{getStatusBadge(req.status, t)}</td>
-                  <td className="py-5 px-8 text-center" onClick={(e) => e.stopPropagation()}> {/* ✅ หยุด propagation เพื่อไม่ให้ trigger row click */}
+                  <td className="py-5 px-8 text-center" onClick={(e) => e.stopPropagation()}>
                     {req.status === 'pending' ? (
                       <div className="flex justify-center gap-2">
                         <button onClick={() => setConfirmData({ show: true, id: req.id, status: 'approved', reason: '' })} className="p-2 bg-green-50 text-green-600 hover:bg-green-600 hover:text-white rounded-xl border border-green-200 transition-all shadow-sm active:scale-90" title="Approve"><CheckCircle size={18}/></button>
@@ -210,7 +326,7 @@ export default function AdminLeaves() {
         </div>
       </div>
 
-      {/* ✅ Modal: Leave Detail */}
+      {/* ✅ Modal: Leave Detail (ปรับข้อมูลพนักงานเหมือนตาราง) */}
       {selectedLeaveDetail && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedLeaveDetail(null)} />
@@ -225,15 +341,16 @@ export default function AdminLeaves() {
             </div>
             
             <div className="p-6 space-y-5">
-              {/* Employee Info */}
               <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg">
                   {selectedLeaveDetail.employeeName.charAt(0)}
                 </div>
                 <div>
-                  <h4 className="font-black text-slate-900 text-base">{selectedLeaveDetail.employeeName}</h4>
-                  <p className="text-xs font-bold text-slate-500 flex items-center gap-1 mt-0.5">
-                    <User size={12} /> {selectedLeaveDetail.employeeCode}
+                  <h4 className="font-black text-slate-900 text-base leading-none">{selectedLeaveDetail.employeeName}</h4>
+                  <p className="text-xs font-bold text-slate-500 flex items-center gap-1.5 mt-1.5">
+                    <Briefcase size={12} /> {selectedLeaveDetail.departmentName || "ทั่วไป"} 
+                    <span className="text-slate-300">•</span>
+                    {selectedLeaveDetail.positionName || "พนักงาน"}
                   </p>
                 </div>
                 <div className="ml-auto">
@@ -241,7 +358,6 @@ export default function AdminLeaves() {
                 </div>
               </div>
 
-              {/* Leave Info Grid */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ประเภทการลา (Leave Type)</p>
@@ -253,7 +369,10 @@ export default function AdminLeaves() {
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">วันที่ลา (Duration)</p>
                   <p className="font-bold text-slate-800 text-sm flex items-center gap-2">
                     <CalendarDays size={16} className="text-slate-400" />
-                    {selectedLeaveDetail.startDate} ถึง {selectedLeaveDetail.endDate}
+                    {selectedLeaveDetail.startDate} {selectedLeaveDetail.startDate !== selectedLeaveDetail.endDate ? `— ${selectedLeaveDetail.endDate}` : ''}
+                  </p>
+                  <p className={`text-[10px] font-black ${selectedLeaveDetail.leave_days === 0.5 ? 'text-orange-500' : 'text-slate-500'} ml-6`}>
+                     รวม: {selectedLeaveDetail.leave_days === 0.5 ? "ลาครึ่งวัน" : `${selectedLeaveDetail.leave_days || 1} วัน`}
                   </p>
                 </div>
               </div>
@@ -281,7 +400,6 @@ export default function AdminLeaves() {
                 )}
               </div>
 
-              {/* Show Reject Reason if status is rejected */}
               {selectedLeaveDetail.status === 'rejected' && selectedLeaveDetail.rejectReason && (
                 <div className="space-y-1 pt-2">
                   <p className="text-[10px] font-black text-red-500 uppercase tracking-widest flex items-center gap-1">
@@ -294,7 +412,6 @@ export default function AdminLeaves() {
               )}
             </div>
 
-            {/* Action Footer (Only if Pending) */}
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-end gap-3">
               {selectedLeaveDetail.status === 'pending' && (
                 <>

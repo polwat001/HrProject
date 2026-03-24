@@ -133,7 +133,7 @@ export default function PositionPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="animate-spin text-purple-600 mx-auto mb-4" size={40} />
+          <Loader className="animate-spin text-blue-600 mx-auto mb-4" size={40} />
           <p className="text-slate-600 font-medium">Loading positions...</p>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function PositionPage() {
         </div>
         <button
           onClick={handleOpenModal}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <Plus size={18} />
           Add New Position
@@ -157,7 +157,7 @@ export default function PositionPage() {
       </div>
 
       {/* แถบสีม่วงด้านบนตาราง */}
-      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-purple-500 text-purple-600 bg-white font-semibold">
+      <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-white font-semibold">
         <Briefcase size={20} />
         Positions (ตำแหน่งงาน)
         <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full text-xs font-bold border border-slate-200">
@@ -206,7 +206,7 @@ export default function PositionPage() {
                         {pos.id}
                       </td>
                       <td className="py-4 px-6">
-                        <span className="font-mono text-sm text-purple-600 font-medium">
+                        <span className="font-mono text-sm text-blue-600 font-medium">
                           {pos.code}
                         </span>
                       </td>
@@ -214,7 +214,7 @@ export default function PositionPage() {
                         {pos.title_th}
                       </td>
                       <td className="py-4 px-6">
-                        <span className="inline-block px-2.5 py-1 bg-purple-50 text-purple-600 border border-purple-100 rounded text-xs font-semibold">
+                        <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded text-xs font-semibold">
                           {matchedLevel ? `${matchedLevel.level_code} - ${matchedLevel.level_title}` : "No Level"}
                         </span>
                       </td>
@@ -239,7 +239,7 @@ export default function PositionPage() {
                       </td>
                       <td className="py-4 px-6 text-center">
                         <div className="flex items-center justify-center gap-3">
-                          <button onClick={() => handleEditPosition(pos)} className="text-purple-500 hover:text-purple-700 transition-colors">
+                          <button onClick={() => handleEditPosition(pos)} className="text-blue-500 hover:text-blue-700 transition-colors">
                             <Edit2 size={16} />
                           </button>
                           <button onClick={() => handleDeletePosition(pos.id)} className="text-red-500 hover:text-red-700 transition-colors">
@@ -282,7 +282,7 @@ export default function PositionPage() {
                   value={posForm.code}
                   onChange={(e) => setPosForm({ ...posForm, code: e.target.value })}
                   placeholder="เช่น POS-01"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 uppercase"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 uppercase"
                 />
               </div>
 
@@ -295,7 +295,7 @@ export default function PositionPage() {
                   value={posForm.title_th}
                   onChange={(e) => setPosForm({ ...posForm, title_th: e.target.value })}
                   placeholder="เช่น ผู้จัดการแผนกไอที"
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
               
@@ -306,7 +306,7 @@ export default function PositionPage() {
                 <select
                   value={posForm.level_id}
                   onChange={(e) => setPosForm({ ...posForm, level_id: Number(e.target.value) })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value={0}>-- เลือกระดับ --</option>
                   {levels.map((lvl) => (
@@ -324,7 +324,7 @@ export default function PositionPage() {
                 <select
                   value={posForm.department_id}
                   onChange={(e) => setPosForm({ ...posForm, department_id: Number(e.target.value) })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value={0}>-- เลือกแผนก --</option>
                   {departments.map((dept) => (
@@ -344,7 +344,7 @@ export default function PositionPage() {
                   min="1"
                   value={posForm.budget_headcount}
                   onChange={(e) => setPosForm({ ...posForm, budget_headcount: Number(e.target.value) })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 />
               </div>
 
@@ -355,7 +355,7 @@ export default function PositionPage() {
                 <select
                   value={posForm.isActive}
                   onChange={(e) => setPosForm({ ...posForm, isActive: e.target.value })}
-                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+                  className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                 >
                   <option value="true">Active (ใช้งาน)</option>
                   <option value="false">Inactive (ระงับ)</option>
@@ -367,7 +367,7 @@ export default function PositionPage() {
               <button onClick={() => setShowModal(false)} className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
+              <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50">
                 {saving ? <Loader size={16} className="animate-spin" /> : "Save"}
               </button>
             </div>

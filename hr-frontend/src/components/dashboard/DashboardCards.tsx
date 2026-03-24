@@ -10,7 +10,7 @@ export function AdminStatCard({ title, value, icon: Icon, color, highlightValue 
     red: "bg-red-50 text-red-600",
   };
   return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-100 flex justify-between items-center group hover:shadow-md transition-all">
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 flex justify-between items-center group hover:shadow-md transition-all">
       <div>
         <p className="text-[12px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
         <h3 className={`text-3xl font-black ${highlightValue ? "text-red-600" : "text-slate-900"}`}>{value}</h3>
