@@ -5,10 +5,21 @@ import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations'; 
 import { Calendar, Loader, XCircle } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { MOCK_ATTENDANCE_LOGS, getStatusStyle, translateStatus, formatTime } from '@/mocks/attendanceData';
+import { getStatusStyle, translateStatus, formatTime } from '@/mocks/attendanceData';
+
+// ==========================================
+// 🚀 INLINE MOCK DATA: ประวัติการเข้างาน
+// ==========================================
+const INLINE_MOCK_ATTENDANCE = [
+  { id: 1, date: "2026-03-24", check_in_time: "08:25:00", check_out_time: "17:35:00", late_minutes: 0, STATUS: "present" },
+  { id: 2, date: "2026-03-23", check_in_time: "08:45:00", check_out_time: "18:00:00", late_minutes: 15, STATUS: "late" },
+  { id: 3, date: "2026-03-22", check_in_time: "08:15:00", check_out_time: "17:15:00", late_minutes: 0, STATUS: "present" },
+  { id: 4, date: "2026-03-21", check_in_time: null, check_out_time: null, late_minutes: 0, STATUS: "absent" },
+  { id: 5, date: "2026-03-20", check_in_time: "08:28:00", check_out_time: "19:30:00", late_minutes: 0, STATUS: "present" },
+];
 
 export default function EmployeeAttendance() {
-  const { user, language } = useAppStore();
+  const { language } = useAppStore();
   const [loading, setLoading] = useState(true);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState("");
@@ -18,11 +29,11 @@ export default function EmployeeAttendance() {
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      const myLogs = MOCK_ATTENDANCE_LOGS.filter(log => Number(log.user_id) === Number(user?.id || 4));
-      setAttendanceLogs(myLogs);
+      // ✅ ใช้ Mock Data ในไฟล์นี้เลย เพื่อให้แสดงผล 100%
+      setAttendanceLogs(INLINE_MOCK_ATTENDANCE);
       setLoading(false);
     }, 500);
-  }, [user]);
+  }, []);
 
   const displayedLogs = useMemo(() => {
     return selectedDate ? attendanceLogs.filter(log => log.date === selectedDate) : attendanceLogs;

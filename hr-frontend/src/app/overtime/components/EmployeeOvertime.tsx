@@ -7,9 +7,49 @@ import {
   Loader, Search, ClockPlus, CalendarDays, Plus, X 
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { MOCK_OT_REQUESTS } from '@/mocks/otData';
-import { MOCK_EMPLOYEES } from '@/mocks/dashboardData'; 
 import { StatusBadge } from './Shared'; // ตรวจสอบ path ของ StatusBadge ด้วยนะครับ
+
+// ==========================================
+// 🚀 INLINE MOCK DATA: จำลองข้อมูล OT ของฉัน
+// ==========================================
+const INLINE_MOCK_OT_REQUESTS = [
+  {
+    id: 1,
+    employee_id: 999, 
+    company_id: 1,
+    date: "2026-03-20",
+    hours: 3,
+    reason: "เคลียร์เอกสารปิดงบประจำเดือน",
+    status: "approved",
+  },
+  {
+    id: 2,
+    employee_id: 999,
+    company_id: 1,
+    date: "2026-03-25",
+    hours: 2.5,
+    reason: "ประชุมทีมต่างประเทศ (Timezone อเมริกา)",
+    status: "pending",
+  },
+  {
+    id: 3,
+    employee_id: 999,
+    company_id: 1,
+    date: "2026-04-02",
+    hours: 4,
+    reason: "Deploy ระบบขึ้น Production นอกเวลางาน",
+    status: "rejected",
+  },
+  {
+    id: 4,
+    employee_id: 999,
+    company_id: 1,
+    date: "2026-04-10",
+    hours: 2,
+    reason: "ทำสรุปรายงานการประชุมด่วนให้ผู้บริหาร",
+    status: "approved",
+  }
+];
 
 export default function EmployeeOvertime() {
   const { currentCompanyId, language, user } = useAppStore();
@@ -29,21 +69,11 @@ export default function EmployeeOvertime() {
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      // 1. หา ID ของพนักงานที่กำลังล็อกอิน
-      const currentEmp = MOCK_EMPLOYEES.find(e => Number(e.user_id) === Number(user?.id));
-      const empIdToMatch = currentEmp ? currentEmp.id : user?.id;
-
-      // 2. ดึงเฉพาะคำขอ OT ของพนักงานคนนี้
-      let filteredData = MOCK_OT_REQUESTS.filter(log => log.employee_id === empIdToMatch);
-      
-      if (currentCompanyId) {
-        filteredData = filteredData.filter(log => log.company_id === currentCompanyId);
-      }
-
-      setMyRequests(filteredData);
+      // ✅ ใช้ Mock Data ที่ฝังไว้ในไฟล์ โยนเข้า State โดยตรงเพื่อให้แสดงผลทันที
+      setMyRequests(INLINE_MOCK_OT_REQUESTS);
       setLoading(false);
     }, 500);
-  }, [currentCompanyId, user]);
+  }, []); // นำ dependencies ออกชั่วคราวเพื่อไม่ให้มันรีเฟรชข้อมูลทิ้ง
 
   const displayedRequests = useMemo(() => {
     return myRequests.filter(r => {
@@ -60,14 +90,13 @@ export default function EmployeeOvertime() {
     // จำลองการเพิ่มคำขอ OT ใหม่
     const newRequest = {
       id: Date.now(),
-      employee_id: user?.id,
+      employee_id: user?.id || 999,
       company_id: currentCompanyId,
       date: requestForm.date,
       hours: Number(requestForm.hours),
       reason: requestForm.reason || "-",
       status: "pending",
-      // ดึงชื่อมาโชว์ขำๆ
-      employee_name: user?.firstName || user?.username,
+      employee_name: user?.firstName || user?.username || "คุณ",
       employee_code: "EMP-NEW"
     };
 
@@ -85,8 +114,7 @@ export default function EmployeeOvertime() {
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase ">My Overtime</h1>
-          <p className="text-slate-500 font-medium">ประวัติการขอทำล่วงเวลาของคุณ</p>
+          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase ">ประวัติการทำ OT</h1>
         </div>
         
         <button 
@@ -159,7 +187,7 @@ export default function EmployeeOvertime() {
           {displayedRequests.length === 0 && (
             <div className="py-20 text-center space-y-4">
               <ClockPlus className="mx-auto text-slate-200" size={64} />
-              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">คุณยังไม่มีประวัติการขอ OT ในเดือนนี้</p>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">คุณยังไม่มีประวัติการขอ OT</p>
             </div>
           )}
         </CardContent>

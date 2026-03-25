@@ -1,7 +1,13 @@
 import { create } from 'zustand';
-import type {
-  User, Company, UserAssignment, Permission, LeaveQuota
-} from '@/types';
+import type { User, Company, UserAssignment, Permission, LeaveQuota } from '@/types';
+
+// ✅ นำเข้า Mock Data ของคุณ (เช็ค Path ให้ตรงกับโฟลเดอร์ของคุณนะครับ)
+// สมมติว่าไฟล์ Mock ของคุณอยู่ในโฟลเดอร์ @/mocks/...
+import { MOCK_DIVISIONS } from '@/mocks/shiftData'; 
+import { INITIAL_MOCK_SECTIONS as MOCK_SECTIONS, Section } from '@/mocks/sectionData';
+import { INITIAL_MOCK_DEPARTMENTS as MOCK_DEPARTMENTS, Department } from '@/mocks/departmentData';
+import { INITIAL_MOCK_LEVELS as MOCK_LEVELS, LevelMock } from '@/mocks/levelData';
+import { INITIAL_MOCK_POSITIONS as MOCK_POSITIONS, PositionMock } from '@/mocks/positionData';
 
 interface AppState {
   // Auth
@@ -22,7 +28,6 @@ interface AppState {
   permissions: Permission[];
   setPermissions: (permissions: Permission[]) => void;
 
-  // Check permissions
   hasPermission: (permission: Permission) => boolean;
   hasPermissionInCompany: (permission: Permission, companyId: number) => boolean;
 
@@ -34,9 +39,25 @@ interface AppState {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
 
-  // ✅ 1. เพิ่ม Type สำหรับ Language
+  // Language
   language: 'th' | 'en';
   setLanguage: (lang: 'th' | 'en') => void;
+
+  // ==========================================
+  // 🟢 State สำหรับโครงสร้างองค์กร (Organization)
+  // ==========================================
+  divisions: any[];
+  sections: Section[];
+  departments: Department[];
+  levels: LevelMock[];
+  positions: PositionMock[];
+
+  // ==========================================
+  // 🟢 State สำหรับกะทำงาน (Shift Management)
+  // ==========================================
+  shifts: any[];
+  addShifts: (newShifts: any[]) => void;
+  deleteShift: (id: number) => void;
 
   // Logout
   logout: () => void;
@@ -44,7 +65,16 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Auth State
-  user: null,
+ user: {
+    id: 999,
+    username: "emp_test",
+    firstName: "สมชาย",
+    lastName: "ใจดี",
+    role_id: 4, // 🔴 เลข 4 คือสิทธิ์พนักงาน
+    is_super_admin: false,
+    department_name: "แผนกพัฒนาซอฟต์แวร์" // ให้ตรงกับ mock department ที่มี
+  } as any, // ใส่ as any ไว้ก่อนกัน Type error (ถ้ามีการบังคับฟิลด์อื่นๆใน Type User)
+  
   setUser: (userData) => set({ user: userData }),
   token: null,
   setToken: (token) => set({ token }),
@@ -69,17 +99,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   hasPermissionInCompany: (permission: Permission, companyId: number) => {
     const { userAssignments, permissions } = get();
-    
-    // Check if user has this permission
     if (!permissions.includes(permission)) return false;
-
-    // Check if user has access to this company
     const hasCompanyAccess = userAssignments.some(
       (assignment) =>
         assignment.scope === 'all' ||
         (assignment.scope === 'company' && assignment.scopeValue === companyId)
     );
-
     return hasCompanyAccess;
   },
 
@@ -91,9 +116,38 @@ export const useAppStore = create<AppState>((set, get) => ({
   sidebarOpen: true,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
 
-  // ✅ 2. กำหนดค่าเริ่มต้นเป็นภาษาไทย (หรือ 'en' ถ้าอยากให้เริ่มเป็นอังกฤษ)
+  // Language
   language: 'th',
   setLanguage: (lang) => set({ language: lang }),
+
+  // ==========================================
+  // 🟢 กำหนดค่าตั้งต้นให้ Organization (จาก Mock Data)
+  // ==========================================
+  divisions: MOCK_DIVISIONS || [],
+  sections: MOCK_SECTIONS || [],
+  departments: MOCK_DEPARTMENTS || [],
+  levels: MOCK_LEVELS || [],
+  positions: MOCK_POSITIONS || [],
+  
+
+  // ==========================================
+  // 🟢 กำหนดค่าตั้งต้นให้กะการทำงาน (Shifts)
+  // ==========================================
+  // ใส่ข้อมูลกะตัวอย่างเริ่มต้น เพื่อให้เปิดมาแล้วมีข้อมูลเลย
+  shifts: [
+    { 
+      id: 1, 
+      department: "แผนกพัฒนาซอฟต์แวร์", 
+      name: "กะปกติ", 
+      startDate: "2026-04-01", 
+      endDate: "2026-04-30", 
+      startTime: "09:00", 
+      endTime: "18:00", 
+      employeeIds: [1, 2, 3] 
+    }
+  ],
+  addShifts: (newShifts) => set((state) => ({ shifts: [...newShifts, ...state.shifts] })),
+  deleteShift: (id) => set((state) => ({ shifts: state.shifts.filter(s => s.id !== id) })),
 
   // Logout
   logout: () => set((state) => ({
@@ -104,6 +158,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     userAssignments: [],
     permissions: [],
     leaveQuotas: [],
-    // 💡 หมายเหตุ: เราไม่รีเซ็ต language ตอน logout เพื่อให้จำภาษาที่ผู้ใช้เลือกไว้
+    shifts: []
   })),
 }));
+

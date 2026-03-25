@@ -90,3 +90,46 @@ export const MOCK_EMPLOYEES = [
     STATUS: "probation",
   }
 ];
+
+// ==========================================
+// 🧑‍💼 MOCK DATA: Employee (ข้อมูลพนักงาน)
+// ==========================================
+
+export type EmployeeMock = {
+  id: number;
+  code: string;
+  prefix: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  department: string;
+  position: string;
+  status: "active" | "inactive";
+};
+
+// ฟังก์ชันสร้างพนักงานจำลอง 50 คนแบบด่วนๆ
+const generateEmployees = (): EmployeeMock[] => {
+  const departments = ["แผนกพัฒนาซอฟต์แวร์", "แผนกสรรหาบุคลากร", "แผนกบัญชีทั่วไป", "แผนกการตลาด", "แผนกคลังสินค้า"];
+  const positions = ["Manager", "Supervisor", "Senior Staff", "Staff", "Operator"];
+
+  return Array.from({ length: 50 }).map((_, index) => {
+    const id = index + 1;
+    const isFemale = id % 2 === 0;
+    
+    return {
+      id: id,
+      code: `EMP-${String(id).padStart(3, '0')}`,
+      prefix: isFemale ? "นางสาว" : "นาย",
+      firstName: `พนักงาน${id}`,
+      lastName: `ทดสอบระบบ`,
+      email: `employee${id}@company.com`,
+      phone: `080-${String(id).padStart(3, '0')}-${String(id + 1000).padStart(4, '0')}`,
+      department: departments[id % departments.length], 
+      position: positions[id % positions.length],       
+      status: id % 10 === 0 ? "inactive" : "active"     
+    };
+  });
+};
+
+export const INITIAL_MOCK_EMPLOYEES = generateEmployees();

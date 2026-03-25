@@ -64,7 +64,7 @@ export default function RoleManagement({ roles = [] }: { roles: Role[] }) {
             </div>
             <button 
               onClick={() => setView('add')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-105 active:scale-95 transition-all font-black text-sm uppercase tracking-widest"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-red-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-sm uppercase tracking-widest"
             >
               <Plus size={18} /> เพิ่ม Role
             </button>
@@ -86,8 +86,8 @@ export default function RoleManagement({ roles = [] }: { roles: Role[] }) {
               {filteredRoles.length > 0 ? (
                 filteredRoles.map((r) => (
                   <tr key={r.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="px-6 py-4 text-slate-600 font-mono text-xs italic">{r.name.toLowerCase().replace(/\s/g, '_')}</td>
-                    <td className="px-6 py-4 text-slate-700 font-bold">{r.name}</td>
+                    <td className="px-6 py-4 text-slate-600 text-[14px] ">{r.name.toLowerCase().replace(/\s/g, '_')}</td>
+                    <td className="px-6 py-4 text-slate-700 ">{r.name}</td>
                     <td className="px-6 py-4 flex justify-center gap-4">
                       <button 
                         onClick={() => handleEdit(r)} 
@@ -100,7 +100,7 @@ export default function RoleManagement({ roles = [] }: { roles: Role[] }) {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={3} className="px-6 py-20 text-center text-slate-400 font-medium italic">
+                  <td colSpan={3} className="px-6 py-20 text-center text-slate-400 font-medium ">
                     ไม่พบข้อมูลบทบาทที่คุณค้นหา
                   </td>
                 </tr>
