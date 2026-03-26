@@ -24,13 +24,13 @@ export default function ReportsPage() {
 
   return (
     <div className="p-8 space-y-8 bg-slate-50/50 min-h-screen">
-      {/* Header */}
+      
       <div>
         <h1 className="text-4xl font-black text-slate-900  tracking-tighter uppercase">Report Center</h1>
         <p className="text-slate-500 font-bold mt-1">ศูนย์รวมรายงาน สร้างและดาวน์โหลดข้อมูล (Mock Data)</p>
       </div>
 
-      {/* Data Scope Notice */}
+      
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-6 flex items-start gap-4 shadow-sm">
         <div className="p-3 bg-blue-100 text-blue-600 rounded-xl"><AlertCircle size={24} /></div>
         <div>
@@ -44,12 +44,12 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {/* Reports Grid */}
+      
       <div className="space-y-10">
         {(Object.entries(reportsByCategory) as Array<[keyof typeof reportsByCategory, ReportConfig[]]>).map(
           ([category, categoryReports]) => (
             <div key={category} className="space-y-6">
-              {/* Category Header */}
+              
               <div className="flex items-center gap-3 pb-3 border-b-2 border-slate-200/60">
                 <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100">
                     {categoryIcons[category].icon}
@@ -57,7 +57,7 @@ export default function ReportsPage() {
                 <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">{categoryIcons[category].label}</h2>
               </div>
 
-              {/* Category Reports Grid */}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {categoryReports.map((report) => (
                   <div
@@ -83,7 +83,7 @@ export default function ReportsPage() {
         )}
       </div>
 
-      {/* Filter Modal */}
+      
       {selectedReport && (
         <ReportFilterModal 
           report={selectedReport} 

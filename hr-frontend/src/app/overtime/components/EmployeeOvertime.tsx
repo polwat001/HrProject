@@ -7,11 +7,8 @@ import {
   Loader, Search, ClockPlus, CalendarDays, Plus, X 
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge } from './Shared'; // ตรวจสอบ path ของ StatusBadge ด้วยนะครับ
+import { StatusBadge } from './Shared'; 
 
-// ==========================================
-// 🚀 INLINE MOCK DATA: จำลองข้อมูล OT ของฉัน
-// ==========================================
 const INLINE_MOCK_OT_REQUESTS = [
   {
     id: 1,
@@ -56,11 +53,11 @@ export default function EmployeeOvertime() {
   const [loading, setLoading] = useState(true);
   const [myRequests, setMyRequests] = useState<any[]>([]);
   
-  // States
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [filterMonth, setFilterMonth] = useState<string>("all");
   
-  // Modal ขอ OT
+  
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const [requestForm, setRequestForm] = useState({ date: "", hours: "", reason: "" });
 
@@ -69,11 +66,11 @@ export default function EmployeeOvertime() {
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
-      // ✅ ใช้ Mock Data ที่ฝังไว้ในไฟล์ โยนเข้า State โดยตรงเพื่อให้แสดงผลทันที
+      
       setMyRequests(INLINE_MOCK_OT_REQUESTS);
       setLoading(false);
     }, 500);
-  }, []); // นำ dependencies ออกชั่วคราวเพื่อไม่ให้มันรีเฟรชข้อมูลทิ้ง
+  }, []); 
 
   const displayedRequests = useMemo(() => {
     return myRequests.filter(r => {
@@ -87,7 +84,7 @@ export default function EmployeeOvertime() {
     e.preventDefault();
     if (!requestForm.date || !requestForm.hours) return;
     
-    // จำลองการเพิ่มคำขอ OT ใหม่
+    
     const newRequest = {
       id: Date.now(),
       employee_id: user?.id || 999,
@@ -109,12 +106,14 @@ export default function EmployeeOvertime() {
   if (loading) return <div className="flex justify-center py-20"><Loader className="animate-spin text-blue-600" size={40} /></div>;
 
   return (
-    <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-screen animate-in fade-in">
+    
+    <div className="p-4 md:p-8 space-y-4 md:space-y-6 bg-slate-50 min-h-screen animate-in fade-in">
       
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
+      
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-4 md:pb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase ">ประวัติการทำ OT</h1>
+          <h1 className="text-2xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase ">ประวัติการทำ OT</h1>
         </div>
         
         <button 
@@ -125,7 +124,7 @@ export default function EmployeeOvertime() {
         </button>
       </div>
 
-      {/* Filters */}
+      
       <div className="flex flex-col sm:flex-row items-center gap-3">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -148,35 +147,39 @@ export default function EmployeeOvertime() {
         </div>
       </div>
 
-      {/* ตารางข้อมูล */}
-      <Card className="rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+      
+      <Card className="rounded-xl md:rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
+          
+          
           <div className="overflow-x-auto">
-            <table className="w-full">
+            
+            <table className="w-full whitespace-nowrap">
               <thead className="bg-slate-50/80 font-black text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 <tr>
-                  <th className="text-left py-5 px-8">{t.colDate || "วันที่ขอ OT"}</th>
+                  <th className="text-left py-4 md:py-5 px-4 md:px-8">{t.colDate || "วันที่ขอ OT"}</th>
                   <th className="text-center px-4">{t.colOTHours || "จำนวน (ชม.)"}</th>
                   <th className="text-left px-4">เหตุผล</th>
-                  <th className="text-center px-8">{t.colStatus || "สถานะ"}</th>
+                  <th className="text-center px-4 md:px-8">{t.colStatus || "สถานะ"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm">
                 {displayedRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-blue-50/30 transition-colors group">
-                    <td className="py-4 px-8 font-bold text-slate-700">
+                    <td className="py-4 px-4 md:px-8 font-bold text-slate-700">
                       <div className="flex items-center gap-2">
-                        <CalendarDays size={16} className="text-blue-500" />
+                        <CalendarDays size={16} className="text-blue-500 shrink-0" />
                         {new Date(req.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-GB', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
                       </div>
                     </td>
                     <td className="text-center font-black text-blue-600 text-lg py-4 px-4">
                       {req.hours} <span className="text-[10px] text-slate-400">{t.hrs || "ชม."}</span>
                     </td>
-                    <td className="text-left text-slate-600 max-w-[300px] truncate py-4 px-4" title={req.reason}>
+                    
+                    <td className="text-left text-slate-600 max-w-[200px] md:max-w-[300px] truncate py-4 px-4" title={req.reason}>
                       {req.reason}
                     </td>
-                    <td className="text-center py-4 px-8">
+                    <td className="text-center py-4 px-4 md:px-8">
                       <StatusBadge status={req.status} t={t} />
                     </td>
                   </tr>
@@ -184,28 +187,30 @@ export default function EmployeeOvertime() {
               </tbody>
             </table>
           </div>
+
+          
           {displayedRequests.length === 0 && (
-            <div className="py-20 text-center space-y-4">
-              <ClockPlus className="mx-auto text-slate-200" size={64} />
-              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">คุณยังไม่มีประวัติการขอ OT</p>
+            <div className="py-16 md:py-20 text-center space-y-4">
+              <ClockPlus className="mx-auto text-slate-200" size={48} />
+              <p className="text-slate-400 font-black uppercase tracking-widest text-xs md:text-sm">คุณยังไม่มีประวัติการขอ OT ในเดือนนี้</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* ✅ MODAL: ยื่นคำขอ OT */}
+      
       {isRequestModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsRequestModalOpen(false)} />
           <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95">
-            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-              <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+            <div className="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <h3 className="text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
                 <ClockPlus className="text-blue-600"/> ยื่นคำขอ OT
               </h3>
               <button onClick={() => setIsRequestModalOpen(false)} className="p-2 bg-white hover:bg-slate-200 rounded-xl text-slate-400 transition-colors shadow-sm"><X size={20}/></button>
             </div>
             
-            <form onSubmit={handleRequestOT} className="p-6 space-y-5">
+            <form onSubmit={handleRequestOT} className="p-4 md:p-6 space-y-4 md:space-y-5">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">วันที่ต้องการทำ OT <span className="text-red-500">*</span></label>
                 <input 
@@ -231,7 +236,7 @@ export default function EmployeeOvertime() {
                 />
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 md:gap-4 pt-4">
                 <button type="button" onClick={() => setIsRequestModalOpen(false)} className="flex-1 py-3 text-slate-500 font-black tracking-widest uppercase text-xs hover:bg-slate-100 rounded-xl transition-all">ยกเลิก</button>
                 <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-black tracking-widest uppercase text-xs rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">
                   ส่งคำขอ OT

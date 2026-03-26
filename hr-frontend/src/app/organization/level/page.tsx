@@ -121,7 +121,7 @@ export default function LevelPage() {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Levels Management</h1>
@@ -135,7 +135,7 @@ export default function LevelPage() {
         </button>
       </div>
 
-      {/* แถบสีม่วงด้านบนตาราง (ให้เหมือนหน้า Section) */}
+      
       <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-blue-50 font-semibold">
         <Hash size={20} />
         Levels (ระดับพนักงาน)
@@ -216,7 +216,7 @@ export default function LevelPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />

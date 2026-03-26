@@ -154,7 +154,7 @@ export default function DepartmentPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
@@ -170,10 +170,10 @@ export default function DepartmentPage() {
         </button>
       </div>
 
-      {/* Content */}
+      
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         
-        {/* แถบเมนูหัวส่วนเนื้อหา Departments */}
+        
         <div className="flex border-b border-slate-200">
           <div className="flex items-center justify-center w-full gap-2 py-4 px-6 font-semibold border-b-2 border-blue-600 text-blue-600 bg-blue-50">
             <Briefcase size={20} />
@@ -262,18 +262,18 @@ export default function DepartmentPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          {/* Backdrop */}
+          
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => setShowModal(false)}
           />
 
-          {/* Modal Box */}
+          
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 overflow-hidden">
-            {/* Modal Header */}
+            
             <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-blue-50 to-slate-50">
               <div className="flex items-center gap-3">
                 <Briefcase size={20} className="text-blue-600" />
@@ -289,7 +289,7 @@ export default function DepartmentPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            
             <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
               {formError && (
                 <div className="bg-red-50 border-l-4 border-red-500 px-4 py-3 rounded text-sm text-red-700">
@@ -297,7 +297,7 @@ export default function DepartmentPage() {
                 </div>
               )}
 
-              {/* Department Form */}
+              
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-1">
                   รหัสแผนก <span className="text-red-500">*</span>
@@ -370,7 +370,7 @@ export default function DepartmentPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
+            
             <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
               <button
                 onClick={() => setShowModal(false)}

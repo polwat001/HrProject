@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation"; // 🔴 Import useRouter เพิ่มเข้ามา
 import { useAppStore } from "@/store/useAppStore";
 import {
   Users, UserPlus, FileWarning, Wallet, Clock, TrendingUp, AlertTriangle,
@@ -24,6 +25,7 @@ import { AdminStatCard } from "@/components/dashboard/DashboardCards";
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, ChartJSTooltip, Legend);
 
 export default function AdminDashboard({ user }: { user: any }) {
+  const router = useRouter(); // 🔴 ประกาศใช้งาน router
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +33,16 @@ export default function AdminDashboard({ user }: { user: any }) {
   const [deptHeadcount, setDeptHeadcount] = useState<any[]>([]);
   const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0, late: 0, onLeave: 0 });
   const [pendingApprovals, setPendingApprovals] = useState({ ot: 0, leave: 0, contracts: 0 });
-  const [financialStats, setFinancialStats] = useState({ totalPayroll: 0, totalOtCost: 0, costTrend: 0, otExceed: false });
+  
+  // 🔴 อัปเดต State Financial ให้มี cost ของ 2 เดือน
+  const [financialStats, setFinancialStats] = useState({ totalPayroll: 0, totalOtCost: 0, costTrend: 0, otExceed: false, currentMonthCost: 0, prevMonthCost: 0 });
+  
   const [otCostHistory, setOtCostHistory] = useState<any[]>([]);
   const [expenseHistory, setExpenseHistory] = useState<any[]>([]);
   const [topCostCenters, setTopCostCenters] = useState<any[]>([]);
+  
+  // 🔴 State ใหม่สำหรับ Contract Stats แบบแยกตามแผนก
+  const [contractStats, setContractStats] = useState<any[]>([]);
 
   const [attendanceTimeframe, setAttendanceTimeframe] = useState("daily");
   const [leaveTimeframe, setLeaveTimeframe] = useState("monthly");
@@ -68,7 +76,17 @@ export default function AdminDashboard({ user }: { user: any }) {
       const ots = MOCK_OTS;
 
       setStats({ totalHeadcount: emps.length, newJoiners: 145, expiringContracts: 28 });
-      setFinancialStats({ totalPayroll: 24500000, totalOtCost: 850000, costTrend: 5.4, otExceed: true });
+      
+      // 🔴 เพิ่มข้อมูลจำลองสำหรับ currentMonthCost และ prevMonthCost
+      setFinancialStats({ 
+        totalPayroll: 24500000, 
+        totalOtCost: 850000, 
+        costTrend: 5.4, 
+        otExceed: true,
+        currentMonthCost: 25350000,
+        prevMonthCost: 24050000
+      });
+
       setPendingApprovals({
         ot: ots.filter((o: any) => o.log_status === "pending").length,
         leave: leaves.filter((l: any) => l.status === "pending").length,
@@ -99,6 +117,16 @@ export default function AdminDashboard({ user }: { user: any }) {
         { rank: 4, dept: "ส่วนงานทรัพยากรบุคคล (HR)", headName: "สมหญิง ใจดี", cost: 1200000, trend: "+0.5%" },
         { rank: 5, dept: "ส่วนงานบัญชีและการเงิน", headName: "ปิติ รักเรียน", cost: 950000, trend: "0.0%" },
       ]);
+
+      // 🔴 จำลองข้อมูล สถิติประเภทสัญญาแยกตามแผนก
+      setContractStats([
+        { dept: "IT", fulltime: 85, contract: 15, probation: 12 },
+        { dept: "Marketing", fulltime: 60, contract: 25, probation: 5 },
+        { dept: "HR", fulltime: 40, contract: 5, probation: 3 },
+        { dept: "Finance", fulltime: 55, contract: 2, probation: 4 },
+        { dept: "Operations", fulltime: 320, contract: 80, probation: 45 },
+      ]);
+
       setLoading(false);
     }, 500);
     return () => clearTimeout(timer);
@@ -141,44 +169,6 @@ export default function AdminDashboard({ user }: { user: any }) {
     ];
   }, [attendanceStats.onLeave, leaveTimeframe, leaveDepartment]);
 
-  const handleOpenAddHoliday = () => { setEditingHolidayId(null); setHolidayForm({ startDate: "", endDate: "", title: "" }); setShowHolidayModal(true); };
-  const handleEditHoliday = (holiday: any) => { setEditingHolidayId(holiday.id); setHolidayForm({ startDate: holiday.startDate, endDate: holiday.endDate, title: holiday.title }); setShowHolidayModal(true); };
-  const handleDeleteHoliday = (id: number) => { if (confirm("ยืนยันการลบวันหยุดนี้?")) setHolidays((prev) => prev.filter((h) => h.id !== id)); };
-  const handleSaveHoliday = () => {
-    if (!holidayForm.startDate || !holidayForm.title) return;
-    const finalEndDate = holidayForm.endDate || holidayForm.startDate;
-    if (new Date(finalEndDate) < new Date(holidayForm.startDate)) { alert("วันที่สิ้นสุดต้องไม่ก่อนวันที่เริ่มต้นครับ"); return; }
-    if (editingHolidayId) setHolidays((prev) => prev.map((h) => (h.id === editingHolidayId ? { ...h, ...holidayForm, endDate: finalEndDate } : h)));
-    else setHolidays((prev) => [...prev, { id: Date.now(), ...holidayForm, endDate: finalEndDate }]);
-    setShowHolidayModal(false); setHolidayForm({ startDate: "", endDate: "", title: "" }); setEditingHolidayId(null);
-  };
-
-  const currentMonthHolidays = useMemo(() => {
-    const year = calendarDate.getFullYear();
-    const month = String(calendarDate.getMonth() + 1).padStart(2, "0");
-    const prefix = `${year}-${month}`;
-    return holidays.filter((h) => h.startDate.startsWith(prefix) || h.endDate.startsWith(prefix)).sort((a, b) => a.startDate.localeCompare(b.startDate));
-  }, [calendarDate, holidays]);
-
-  const adminCalendarData = useMemo(() => {
-    const year = calendarDate.getFullYear();
-    const month = calendarDate.getMonth();
-    let firstDay = new Date(year, month, 1).getDay();
-    firstDay = firstDay === 0 ? 6 : firstDay - 1;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const cells: { day: number; isToday?: boolean; holiday?: any }[] = [];
-    const today = new Date();
-
-    for (let i = 0; i < firstDay; i++) cells.push({ day: 0 });
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const isToday = year === today.getFullYear() && month === today.getMonth() && d === today.getDate();
-      const holiday = holidays.find((h) => dateStr >= h.startDate && dateStr <= h.endDate);
-      cells.push({ day: d, isToday, holiday });
-    }
-    return cells;
-  }, [calendarDate, holidays]);
-
   if (loading) return <div className="flex justify-center items-center h-screen"><Loader className="animate-spin text-blue-600" size={40} /></div>;
 
   return (
@@ -200,11 +190,29 @@ export default function AdminDashboard({ user }: { user: any }) {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <AdminStatCard title="Total Payroll (ยอดรวมเงินเดือน)" value={`฿${(financialStats.totalPayroll / 1000000).toFixed(2)}M`} icon={Wallet} color="purple" />
           <AdminStatCard title="Total OT Cost (ค่าล่วงเวลารวม)" value={`฿${financialStats.totalOtCost.toLocaleString()}`} icon={ClockPlus} color={financialStats.otExceed ? "red" : "green"} highlightValue={financialStats.otExceed} />
-          <AdminStatCard title="Cost Trend (เทียบเดือนก่อน)" value={`+${financialStats.costTrend}%`} icon={TrendingUp} color="amber" />
+          
+          {/* 🔴 ปรับแก้การ์ด Cost Trend ให้แสดงค่าใช้จ่ายทั้ง 2 เดือนแบบละเอียด */}
+          <div className="flex items-center gap-4 p-6 bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+            <div className="p-4 rounded-2xl bg-amber-50 text-amber-600 shrink-0">
+              <TrendingUp size={28} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Cost Trend (เทียบเดือนก่อน)</p>
+              <div className="flex items-end gap-2">
+                <p className="text-2xl font-black text-slate-800 leading-none">+{financialStats.costTrend}%</p>
+              </div>
+              <p className="text-sm font-bold text-slate-500 mt-1.5 truncate">
+                เดือนนี้: <span className="text-amber-600 font-black">฿{(financialStats.currentMonthCost / 1000000).toFixed(2)}M</span> | 
+                เดือนก่อน: ฿{(financialStats.prevMonthCost / 1000000).toFixed(2)}M
+              </p>
+            </div>
+          </div>
+
         </div>
       </div>
 
       {/* ── Pending Actions ── */}
+      {/* 🔴 เพิ่ม onClick ผูกกับ router.push และปรับ hover ให้เหมือนปุ่มกดมากขึ้น */}
       <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
           <CardTitle className="text-lg font-black uppercase flex items-center gap-2 pl-6 pt-6">
@@ -212,26 +220,26 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6 p-6">
-          <div className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-blue-300 hover:shadow-md transition-all cursor-pointer">
+          <div onClick={() => router.push('/overtime')} className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-blue-400 hover:shadow-lg active:scale-95 transition-all cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-blue-50 rounded-xl text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors"><ClockPlus size={24} /></div>
-              <div><span className="font-black text-slate-800 block text-sm">OT Requests</span><span className="text-xs font-bold text-slate-400">คำขอทำล่วงเวลา</span></div>
+              <div><span className="font-black text-slate-800 block text-sm group-hover:text-blue-700 transition-colors">OT Requests</span><span className="text-xs font-bold text-slate-400">คำขอทำล่วงเวลา</span></div>
             </div>
-            <Badge className="bg-slate-100 text-slate-700 font-black text-base px-3 py-1 border-none">{pendingApprovals.ot}</Badge>
+            <Badge className="bg-blue-50 text-blue-700 font-black text-base px-3 py-1 border-none group-hover:bg-blue-100">{pendingApprovals.ot}</Badge>
           </div>
-          <div className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-purple-300 hover:shadow-md transition-all cursor-pointer">
+          <div onClick={() => router.push('/leaves')} className="flex justify-between items-center p-5 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-purple-400 hover:shadow-lg active:scale-95 transition-all cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-purple-50 rounded-xl text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-colors"><CalendarDays size={24} /></div>
-              <div><span className="font-black text-slate-800 block text-sm">Leave Requests</span><span className="text-xs font-bold text-slate-400">คำขอลางาน</span></div>
+              <div><span className="font-black text-slate-800 block text-sm group-hover:text-purple-700 transition-colors">Leave Requests</span><span className="text-xs font-bold text-slate-400">คำขอลางาน</span></div>
             </div>
-            <Badge className="bg-slate-100 text-slate-700 font-black text-base px-3 py-1 border-none">{pendingApprovals.leave}</Badge>
+            <Badge className="bg-purple-50 text-purple-700 font-black text-base px-3 py-1 border-none group-hover:bg-purple-100">{pendingApprovals.leave}</Badge>
           </div>
-          <div className="flex justify-between items-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-amber-300 hover:shadow-md transition-all cursor-pointer">
+          <div onClick={() => router.push('/contracts')} className="flex justify-between items-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm group hover:border-amber-400 hover:shadow-lg active:scale-95 transition-all cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="p-3 bg-amber-50 rounded-xl text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors"><FileSignature size={24} /></div>
-              <div><span className="font-black text-slate-800 block text-sm">Pending Contracts</span><span className="text-xs font-bold text-slate-400">รอเซ็น/อัปโหลดเอกสาร</span></div>
+              <div><span className="font-black text-slate-800 block text-sm group-hover:text-amber-700 transition-colors">Pending Contracts</span><span className="text-xs font-bold text-slate-400">รอเซ็น/อัปโหลดเอกสาร</span></div>
             </div>
-            <Badge className="bg-slate-100 text-slate-700 font-black text-base px-3 py-1 border-none">{pendingApprovals.contracts}</Badge>
+            <Badge className="bg-amber-50 text-amber-700 font-black text-base px-3 py-1 border-none group-hover:bg-amber-100">{pendingApprovals.contracts}</Badge>
           </div>
         </CardContent>
       </Card>
@@ -241,7 +249,7 @@ export default function AdminDashboard({ user }: { user: any }) {
       ══════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-        {/* ── Row 1 Left: Headcount by Division ── */}
+        {/* Headcount by Division */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase">Headcount by Division</CardTitle></CardHeader>
           <CardContent className="h-80 px-6 pb-6 flex items-center justify-center relative">
@@ -255,7 +263,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 1 Right: Cost by Division ── */}
+        {/* Cost by Division*/}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase flex items-center gap-2"> Cost by Division</CardTitle></CardHeader>
           <CardContent className="h-80 px-6 pb-6 flex items-center justify-center relative">
@@ -266,7 +274,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 2 Left: Headcount by Department ── */}
+        {/* Headcount by Department */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase">Headcount - By Department</CardTitle></CardHeader>
           <CardContent className="h-80 px-6 pb-6">
@@ -280,7 +288,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 2 Right: Monthly OT Cost Trend ── */}
+        {/* Monthly OT Cost Trend */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase">Monthly OT Cost Trend</CardTitle></CardHeader>
           <CardContent className="h-80 overflow-x-auto pb-4 custom-scrollbar">
@@ -293,7 +301,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 3 Left: Attendance Overview ── */}
+        {/* Attendance Overview */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between p-6 pb-2">
             <CardTitle className="text-lg font-black uppercase">Attendance Overview</CardTitle>
@@ -327,7 +335,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 3 Right: Monthly Expense Trend ── */}
+        {/*  Monthly Expense Trend */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase">Monthly Expense Trend (6-12 Months)</CardTitle></CardHeader>
           <CardContent className="h-96 overflow-x-auto pb-4 custom-scrollbar">
@@ -340,7 +348,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 4 Left: Leave Breakdown (now 5 types) ── */}
+        {/*Leave Breakdown*/}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 pb-4 border-b border-slate-50">
             <CardTitle className="text-lg font-black uppercase">Leave</CardTitle>
@@ -367,7 +375,6 @@ export default function AdminDashboard({ user }: { user: any }) {
             </div>
           </CardHeader>
           <CardContent className="px-6 pt-6 pb-6">
-            {/* 5 bars — เพิ่มความสูงรองรับ maternity + paternity */}
             <div className="h-[280px] w-full">
               <Bar
                 data={{ labels: displayLeaveBreakdown.map(l => l.name), datasets: [{ data: displayLeaveBreakdown.map(l => l.value), backgroundColor: displayLeaveBreakdown.map(l => l.color), borderRadius: 6, barThickness: 22 }] }}
@@ -377,7 +384,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           </CardContent>
         </Card>
 
-        {/* ── Row 4 Right: Top 5 Cost Centers ── */}
+        {/* Top 5 Cost Centers */}
         <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden pb-3">
           <CardHeader className="bg-slate-50/50 border-b border-slate-100">
             <CardTitle className="text-lg p-6 font-black uppercase">Top 5 Cost Centers (แผนกที่มีค่าใช้จ่ายสูงสุด)</CardTitle>
@@ -406,12 +413,52 @@ export default function AdminDashboard({ user }: { user: any }) {
             </table>
           </CardContent>
         </Card>
+
+        {/* สถิติสัญญาแยกตามแผนก  */}
+        <Card className="rounded-xl border-2 border-slate-300 shadow-sm overflow-hidden lg:col-span-2">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+            <CardTitle className="text-lg p-6 font-black uppercase flex items-center gap-2">
+              สัดส่วนประเภทสัญญาจ้าง
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="h-96 px-6 pt-6 pb-8 overflow-x-auto custom-scrollbar">
+            <div className="min-w-[600px] h-full">
+              <Bar
+                data={{
+                  labels: contractStats.map(c => c.dept),
+                  datasets: [
+                    { label: "พนักงานประจำ", data: contractStats.map(c => c.fulltime), backgroundColor: "#3b82f6", borderRadius: 4 },
+                    { label: "สัญญาจ้าง ", data: contractStats.map(c => c.contract), backgroundColor: "#f59e0b", borderRadius: 4 },
+                    { label: "ทดลองงาน ", data: contractStats.map(c => c.probation), backgroundColor: "#10b981", borderRadius: 4 },
+                  ]
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { position: "top", labels: { font: { weight: "bold", size: 12, padding: 20 } } },
+                    tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw} คน` } }
+                  },
+                  scales: {
+                    x: { 
+                      stacked: true, 
+                      grid: { display: false }, 
+                      ticks: { font: { size: 11, weight: "bold" }, color: "#475569" } 
+                    },
+                    y: { 
+                      stacked: true, 
+                      grid: { color: "#f1f5f9" }, 
+                      border: { display: false }, 
+                      ticks: { font: { size: 11, weight: "bold" }, color: "#475569" } 
+                    }
+                  }
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
       </div>
-      
-
-      {/* ── Company Calendar ── */}
-      
-
     </div>
   );
 }

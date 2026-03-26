@@ -28,7 +28,7 @@ import {
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
-// ✅ ปรับแก้ Card สรุปข้อมูลให้ Responsive (ลด padding เล็กน้อยบนมือถือ)
+// ✅ ปรับแก้ Card สรุปข้อมูลให้ Responsive
 function SelfServiceSummaryCard({
   icon: Icon,
   label,
@@ -45,7 +45,7 @@ function SelfServiceSummaryCard({
 
   return (
     <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
-      <CardContent className="p-5 md:p-6 flex items-center gap-4 md:gap-5">
+      <CardContent className="p-4 md:p-6 flex items-center gap-3 md:gap-5">
         <div
           className={`w-12 h-12 md:w-14 md:h-14 rounded-2xl flex items-center justify-center shrink-0 ${theme}`}
         >
@@ -56,7 +56,7 @@ function SelfServiceSummaryCard({
             {label}
           </p>
           <p
-            className={`text-xl md:text-2xl font-black truncate ${isMono ? "font-mono text-blue-600" : "text-slate-800"}`}
+            className={`text-lg md:text-2xl font-black truncate ${isMono ? "font-mono text-blue-600" : "text-slate-800"}`}
           >
             {value}
           </p>
@@ -228,7 +228,6 @@ export default function EmployeeSelfService({ user }: { user: any }) {
               {employeeProfile?.firstname_th || user?.username}{" "}
               {employeeProfile?.lastname_th || ""}
             </h3>
-            {/* ✅ Badge พนักงาน เรียงตัวใหม่บนมือถือให้อ่านง่าย */}
             <div className="flex flex-wrap justify-center md:justify-start gap-2 md:gap-3 mt-2 text-[10px] md:text-xs font-bold text-slate-500">
               <span className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 md:px-3 md:py-1 rounded-lg border border-slate-100">
                 <Briefcase size={12} className="text-blue-500" />{" "}
@@ -289,87 +288,97 @@ export default function EmployeeSelfService({ user }: { user: any }) {
         </div>
       </div>
 
-      {/* ✅ SECTION เอกสาร: ปรับ flex-col บนมือถือ */}
+      {/* ✅ SECTION เอกสาร: แก้โครงสร้างใหม่ให้มือถือกดง่ายและเรียงสวยงาม */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 ">
-        <Card className="rounded-xl border border-slate-300 shadow-sm p-5 md:p-6 bg-gradient-to-br from-white to-blue-50/30">
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
+        
+        {/* สลิปเงินเดือน */}
+        <Card className="rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6 bg-gradient-to-br from-white to-blue-50/50">
+          {/* Header Card: ไอคอน + ข้อความ ให้อยู่บรรทัดเดียวกันเสมอ */}
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shrink-0">
               <Receipt size={24} />
             </div>
-            <div className="flex-1 w-full">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1">
+            <div>
+              <h3 className="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest mb-0.5">
                 สลิปเงินเดือน (Payslip)
               </h3>
-              <p className="text-xs font-bold text-slate-400 mb-4">
+              <p className="text-[10px] md:text-xs font-bold text-slate-400">
                 ดาวน์โหลดสลิปเงินเดือนประจำเดือน
               </p>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
-                <input
-                  type="month"
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="p-2.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 bg-white w-full sm:w-auto"
-                />
-                <button
-                  onClick={() => handleExport("payslip")}
-                  disabled={isExporting !== null}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isExporting === "payslip" ? (
-                    <Loader size={16} className="animate-spin" />
-                  ) : (
-                    <Download size={16} />
-                  )}
-                  Export
-                </button>
-              </div>
             </div>
+          </div>
+
+          {/* Action Area: Input และ ปุ่ม (บนมือถือเรียงลงล่าง, จอใหญ่เรียงซ้ายขวา) */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="w-full sm:w-1/2 p-3 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white transition-all shadow-sm"
+            />
+            <button
+              onClick={() => handleExport("payslip")}
+              disabled={isExporting !== null}
+              className="w-full sm:w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-black text-[11px] md:text-xs uppercase tracking-widest px-4 py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-md shadow-blue-200"
+            >
+              {isExporting === "payslip" ? (
+                <Loader size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              ดาวน์โหลดสลิป
+            </button>
           </div>
         </Card>
 
-        <Card className="rounded-xl  border border-slate-300 shadow-sm p-5 md:p-6 bg-gradient-to-br from-white to-indigo-50/30">
-          <div className="flex flex-col sm:flex-row items-start gap-4">
-            <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
+        {/* ทวิ 50 */}
+        <Card className="rounded-2xl border border-slate-200 shadow-sm p-5 md:p-6 bg-gradient-to-br from-white to-indigo-50/50">
+          {/* Header Card: ไอคอน + ข้อความ ให้อยู่บรรทัดเดียวกันเสมอ */}
+          <div className="flex items-center gap-4 mb-5">
+            <div className="w-12 h-12 md:w-14 md:h-14 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center shrink-0">
               <FileText size={24} />
             </div>
-            <div className="flex-1 w-full">
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-1">
+            <div>
+              <h3 className="text-sm md:text-base font-black text-slate-800 uppercase tracking-widest mb-0.5">
                 หนังสือรับรอง ทวิ 50
               </h3>
-              <p className="text-xs font-bold text-slate-400 mb-4">
+              <p className="text-[10px] md:text-xs font-bold text-slate-400">
                 ดาวน์โหลดเอกสารหักภาษี ณ ที่จ่ายประจำปี
               </p>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(e.target.value)}
-                  className="p-2.5 px-4 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 bg-white w-full sm:w-auto"
-                >
-                  <option value="2026">2026</option>
-                  <option value="2025">2025</option>
-                  <option value="2024">2024</option>
-                </select>
-                <button
-                  onClick={() => handleExport("twi50")}
-                  disabled={isExporting !== null}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs uppercase tracking-widest px-4 py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  {isExporting === "twi50" ? (
-                    <Loader size={16} className="animate-spin" />
-                  ) : (
-                    <Download size={16} />
-                  )}
-                  Export
-                </button>
-              </div>
             </div>
           </div>
+
+          {/* Action Area: Select และ ปุ่ม (บนมือถือเรียงลงล่าง, จอใหญ่เรียงซ้ายขวา) */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full sm:w-1/2 p-3.5 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white transition-all shadow-sm"
+            >
+              <option value="2026">ประจำปี 2026</option>
+              <option value="2025">ประจำปี 2025</option>
+              <option value="2024">ประจำปี 2024</option>
+            </select>
+            <button
+              onClick={() => handleExport("twi50")}
+              disabled={isExporting !== null}
+              className="w-full sm:w-1/2 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[11px] md:text-xs uppercase tracking-widest px-4 py-3.5 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-md shadow-indigo-200"
+            >
+              {isExporting === "twi50" ? (
+                <Loader size={16} className="animate-spin" />
+              ) : (
+                <Download size={16} />
+              )}
+              โหลด ทวิ 50
+            </button>
+          </div>
         </Card>
+
       </div>
 
       {/* Leaves & Calendar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 rounded-xl border border-slate-300">
-        <Card className="lg:col-span-1 rounded-xl md:rounded-[2.5rem] border-none shadow-sm p-5 md:p-8 bg-white">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 rounded-xl ">
+        <Card className="lg:col-span-1 rounded-xl  border border-slate-300 shadow-sm p-5 md:p-8 bg-white">
           <CardTitle className="text-sm font-black mb-6 md:mb-8 uppercase tracking-[0.2em] text-slate-400">
             โควต้าวันลา
           </CardTitle>
@@ -433,8 +442,8 @@ export default function EmployeeSelfService({ user }: { user: any }) {
           </div>
         </Card>
 
-        {/* ✅ ปฏิทินเข้างาน: ปรับ gap และขนาดความสูงให้พอดีมือถือ */}
-        <Card className="lg:col-span-2 rounded-xl md:rounded-[2.5rem] border-none shadow-sm p-5 md:p-8 bg-white overflow-hidden">
+        {/* ปฏิทินเข้างาน*/}
+        <Card className="lg:col-span-2 rounded-xl border border-slate-300 shadow-sm p-5 md:p-8 bg-white overflow-hidden">
           <CardTitle className="text-sm font-black mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 uppercase tracking-[0.2em] text-slate-400">
             <div className="flex items-center gap-2">
               <Clock size={16} className="text-blue-500" /> ปฏิทินเข้างาน
@@ -489,7 +498,7 @@ export default function EmployeeSelfService({ user }: { user: any }) {
         </Card>
       </div>
 
-      {/* ✅ คำขอ OT ล่าสุด: ปรับ Flex ให้รับมือถือ */}
+      {/* ✅ คำขอ OT ล่าสุด */}
       <Card className="rounded-xl md:rounded-[2.5rem] border-none shadow-sm p-5 md:p-8 bg-white overflow-hidden">
         <CardTitle className="text-sm font-black mb-4 md:mb-6 uppercase tracking-[0.2em] text-slate-400">
           คำขอ OT ล่าสุด

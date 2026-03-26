@@ -25,7 +25,7 @@ exports.login = async (req, res) => {
       const realHash = await bcrypt.hash('123456', 10);
       await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [realHash, user.id]);
       isMatch = true; // บังคับให้ผ่านรอบนี้ไปเลย
-      console.log("✅ ซ่อมฐานข้อมูลเสร็จสมบูรณ์!");
+      console.log(" ซ่อมฐานข้อมูลเสร็จสมบูรณ์!");
     }
 
     if (!isMatch) {

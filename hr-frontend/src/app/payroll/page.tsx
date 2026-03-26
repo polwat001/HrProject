@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
-// ✅ Import ข้อมูลจำลอง (ใช้ข้อมูลที่มี position_name เดิมได้เลย)
+
 import { MOCK_PAYROLL_RECORDS, PayrollRecord } from "@/mocks/payrollData";
 
 const fmt = (n: number | string) => Number(n).toLocaleString("th-TH", { minimumFractionDigits: 2 });
@@ -38,7 +38,7 @@ export default function PayrollPage() {
   const [selectedYear, setSelectedYear] = useState<string>(currentYear);
   const [selectedMonth, setSelectedMonth] = useState<string>("all"); 
   
-  // ✅ เปลี่ยนการเรียงลำดับจากรหัสพนักงานเป็นชื่อพนักงานแทน
+  
   const [sortField, setSortField] = useState<"firstname_th" | "net_pay">("firstname_th");
   const [sortAsc, setSortAsc] = useState(true);
 
@@ -47,7 +47,7 @@ export default function PayrollPage() {
     return years.sort((a, b) => b - a).map(String);
   }, []);
 
-  // ================= LOAD PAYROLL DATA =================
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       const filteredRecords = MOCK_PAYROLL_RECORDS.filter(record => {
@@ -60,7 +60,7 @@ export default function PayrollPage() {
     return () => clearTimeout(timer);
   }, [selectedYear, selectedMonth]);
 
-  // ================= CALCULATE SUMMARIES =================
+  
   const totals = useMemo(() => {
     return payrollRecords.reduce(
       (acc, record) => {
@@ -73,7 +73,7 @@ export default function PayrollPage() {
     );
   }, [payrollRecords]);
 
-  // ================= SORTING =================
+  
   const toggleSort = (field: "firstname_th" | "net_pay") => {
     if (sortField === field) setSortAsc(!sortAsc);
     else { setSortField(field); setSortAsc(true); }
@@ -87,7 +87,7 @@ export default function PayrollPage() {
 
   return (
     <div className="space-y-6 p-8 bg-slate-50/50 min-h-screen">
-      {/* HEADER */}
+      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
           <h2 className="text-4xl font-black text-slate-900 tracking-tighter  uppercase">
@@ -96,7 +96,7 @@ export default function PayrollPage() {
           <p className="text-slate-500 font-bold ml-1">{t.descPayroll || "Manage and view employee salaries"}</p>
         </div>
 
-        {/* ตัวกรอง ปี และ เดือน */}
+        
         <div className="flex flex-wrap gap-3">
           <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-[140px] bg-white border border-slate-200 shadow-sm rounded-xl font-black  hover:bg-slate-50 transition-all cursor-pointer">
@@ -128,19 +128,19 @@ export default function PayrollPage() {
           </Select>
 
           <Button variant="outline" className="bg-white border border-slate-200 shadow-sm rounded-xl font-black px-6 hover:bg-slate-100 transition-all text-slate-700">
-            <Download className="h-4 w-4 mr-2" /> {t.btnExport || "Export"}
+            <Download className="h-4 w-4 mr-2" /> {t.btnImport || "Import"}
           </Button>
         </div>
       </div>
 
-      {/* SUMMARY WIDGETS */}
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
           <div>
             <p className="text-lg font-black text-slate-400 uppercase tracking-widest">{t.lblTotalInc || "รวมรายได้ (Total Income)"}</p>
             <p className="text-3xl font-black mt-1 text-green-600 tracking-tighter">฿ {fmt(totals.income)}</p>
           </div>
-          {/* <div className="p-4 rounded-xl bg-green-50 text-green-500 shadow-inner"><TrendingUp size={28} /></div> */}
+          
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center transition-all hover:shadow-md">
@@ -148,7 +148,7 @@ export default function PayrollPage() {
             <p className="text-lg font-black text-slate-400 uppercase tracking-widest">{t.lblTotalDed || "รวมรายการหัก (Total Deductions)"}</p>
             <p className="text-3xl font-black mt-1 text-red-500 tracking-tighter">฿ {fmt(totals.deduction)}</p>
           </div>
-          {/* <div className="p-4 rounded-xl bg-red-50 text-red-500 shadow-inner"><TrendingDown size={28} /></div> */}
+          
         </div>
 
         <div className="bg- p-6 rounded-xl border border-blue-500  flex justify-between items-center transition-all hover:shadow-xl hover:scale-[1.01]">
@@ -160,7 +160,7 @@ export default function PayrollPage() {
         </div>
       </div>
 
-      {/* TABLE */}
+      
       <Card className="rounded-xl border-2 border-slate-200 shadow-sm overflow-hidden bg-white">
         <CardHeader className="border-b-2 border-slate-200 px-8 py-5 bg-slate-50/50">
           <div className="flex justify-between items-center">
@@ -179,11 +179,11 @@ export default function PayrollPage() {
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent border-slate-100">
-                {/* ✅ เรียงลำดับจากชื่อพนักงานแทน และเอา รหัส/งวด ออก */}
+                
                 <TableHead className="py-5 px-8 cursor-pointer text-slate-400 font-black uppercase text-xs tracking-widest transition-colors hover:text-blue-500" onClick={() => toggleSort("firstname_th")}>
                   {t.colEmployee || "Employee"} <ArrowUpDown size={12} className="inline ml-1" />
                 </TableHead>
-                {/* ✅ แยกแผนกและตำแหน่งคนละคอลัมน์ */}
+                
                 <TableHead className="text-slate-400 font-black uppercase text-xs tracking-widest">{t.lblDepartment || "Department"}</TableHead>
                 <TableHead className="text-slate-400 font-black uppercase text-xs tracking-widest">{t.lblPosition || "Position"}</TableHead>
                 
@@ -207,7 +207,7 @@ export default function PayrollPage() {
                     </div>
                   </TableCell>
                   
-                  {/* ✅ แผนกและตำแหน่งถูกแยกชัดเจน */}
+                  
                   <TableCell className="font-bold text-slate-500 text-xs">
                     {r.department_name}
                   </TableCell>
@@ -239,7 +239,7 @@ export default function PayrollPage() {
         </CardContent>
       </Card>
 
-      {/* PAYSLIP DIALOG */}
+      
       <Dialog open={!!selectedPayslip} onOpenChange={() => setSelectedPayslip(null)}>
         <DialogContent className="max-w-md rounded-xl p-0 overflow-hidden border-none shadow-2xl animate-in zoom-in-95">
           <DialogHeader className="p-8 bg-slate-900 text-white">
@@ -263,9 +263,9 @@ export default function PayrollPage() {
   );
 }
 
-// ==========================================
-// 📄 PAYSLIP COMPONENT
-// ==========================================
+
+
+
 const PayslipContent = ({ record: r, t }: { record: PayrollRecord, t: any }) => (
   <div className="space-y-5">
     <div className="flex items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">

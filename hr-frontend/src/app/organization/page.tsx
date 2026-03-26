@@ -103,7 +103,7 @@ export default function SectionPage() {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header แบบในรูป */}
+      
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-900">Sections Management</h1>
         <button
@@ -114,7 +114,7 @@ export default function SectionPage() {
         </button>
       </div>
 
-      {/* แถบสีม่วงด้านบนตาราง (เหมือนในรูป) */}
+      
       <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-white font-semibold">
         <Map size={20} />
         Sections (ส่วนงาน)
@@ -123,7 +123,7 @@ export default function SectionPage() {
         </span>
       </div>
 
-      {/* กล่อง Filter (เหมือนในรูป) */}
+      
       <div className="flex items-center gap-4 bg-white border border-slate-200 rounded-xl px-5 py-4 shadow-sm">
         <div className="flex items-center gap-2 text-slate-500 font-medium">
           <Filter size={18} />
@@ -143,7 +143,7 @@ export default function SectionPage() {
         </select>
       </div>
 
-      {/* Table */}
+      
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[1000px]">
           <thead>
@@ -166,7 +166,7 @@ export default function SectionPage() {
                 <td className="py-4 px-6 text-sm font-mono text-blue-600 font-medium">{section.code}</td>
                 <td className="py-4 px-6 text-sm font-medium text-slate-800">{section.name}</td>
                 <td className="py-4 px-6 text-sm">
-                  {/* Badge สีม่วงแบบในรูปเป๊ะๆ */}
+                  
                   <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 rounded-full text-xs font-medium">
                     {section.divisionName}
                   </span>
@@ -186,7 +186,7 @@ export default function SectionPage() {
                   )}
                 </td>
                 <td className="py-4 px-6 text-center">
-                  {/* ไอคอน Edit/Delete สีม่วง/แดง แบบในรูป */}
+                  
                   <div className="flex items-center justify-center gap-3">
                     <button onClick={() => handleEdit(section)} className="text-blue-500 hover:text-blue-700 transition-colors">
                       <Edit2 size={16} />
@@ -209,7 +209,7 @@ export default function SectionPage() {
         </table>
       </div>
 
-      {/* Modal */}
+      
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowModal(false)} />

@@ -8,9 +8,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
-// ==========================================
-// 📦 MOCK DATA: อิงจาก 2 Role หลักของระบบ
-// ==========================================
+
 const MOCK_ROLE_GROUPS = [
   { id: 1, name: "Admin / HR", badge: "bg-blue-100 text-blue-700", description: "ผู้ดูแลระบบและฝ่ายบุคคล (เข้าถึงและจัดการได้ทุกเมนู)" },
   { id: 4, name: "Employee", badge: "bg-slate-100 text-slate-700", description: "พนักงานทั่วไป (ระบบ Self-Service ดูเฉพาะข้อมูลตัวเอง)" },
@@ -61,13 +59,13 @@ export default function UserPermissionsPage() {
 
   return (
     <div className="p-8 space-y-8 bg-slate-50 min-h-screen">
-      {/* Header */}
+      
       <div>
         <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">User & Permissions</h1>
         <p className="text-slate-500 font-bold ml-1 mt-1">จัดการผู้ใช้งานและกลุ่มสิทธิ์การเข้าถึง (Role Groups)</p>
       </div>
 
-      {/* Tabs Navigation */}
+      
       <div className="flex gap-4 border-b-2 border-slate-200/60 pb-px">
         <button 
           onClick={() => setActiveTab("users")}
@@ -85,12 +83,10 @@ export default function UserPermissionsPage() {
         </button>
       </div>
 
-      {/* ==========================================
-          TAB 1: USERS (หน้าจัดการผู้ใช้งาน)
-          ========================================== */}
+  
       {activeTab === "users" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-          {/* Filters & Actions */}
+          
           <div className="flex flex-col md:flex-row justify-between gap-4 bg-white p-4 rounded-3xl border border-slate-100 shadow-sm">
             <div className="flex flex-1 gap-4 items-center">
               <div className="flex-1 relative">
@@ -113,7 +109,7 @@ export default function UserPermissionsPage() {
             </button>
           </div>
 
-          {/* Users Table */}
+          
           <Card className="rounded-[2.5rem] border-none shadow-sm overflow-hidden bg-white">
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-left">
@@ -176,9 +172,7 @@ export default function UserPermissionsPage() {
         </div>
       )}
 
-      {/* ==========================================
-          TAB 2: ROLE GROUPS (หน้าตารางสิทธิ์)
-          ========================================== */}
+     
       {activeTab === "roles" && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
           
@@ -236,9 +230,6 @@ export default function UserPermissionsPage() {
         </div>
       )}
 
-      {/* ==========================================
-          MODAL (เพิ่มผู้ใช้งาน)
-          ========================================== */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-md" onClick={() => setShowModal(false)} />

@@ -147,7 +147,7 @@ export default function CompanyCalendar() {
         </div>
     <Card className="rounded-xl border-2 border-slate-300 shadow-sm p-8 flex flex-col min-h-[600px] bg-white">
         
-      {/* Header ปฏิทิน */}
+      
       <CardTitle className="text-xl font-black mb-8 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 uppercase tracking-tight">
         <div className="flex items-center gap-3">
           <CalendarDays className="text-blue-500" size={28} /> 
@@ -168,7 +168,7 @@ export default function CompanyCalendar() {
       </CardTitle>
 
       <div className="flex flex-col lg:flex-row gap-8 h-full">
-        {/* แถบรายชื่อวันหยุดด้านซ้าย */}
+        
         <div className="w-full lg:w-1/3 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-100 pb-6 lg:pb-0 lg:pr-8">
           <h5 className="font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2 text-sm">
             <FileText size={16} /> วันหยุดประจำเดือนนี้
@@ -202,7 +202,7 @@ export default function CompanyCalendar() {
           </div>
         </div>
 
-        {/* ตารางปฏิทิน */}
+        
         <div className="w-full lg:w-2/3">
           <div className="grid grid-cols-7 gap-2 xl:gap-3">
             {["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"].map((d) => (
@@ -238,7 +238,7 @@ export default function CompanyCalendar() {
         </div>
       </div>
 
-      {/* ── Holiday Modal (เพิ่ม/แก้ไขวันหยุด) ── */}
+      
       {showHolidayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowHolidayModal(false)} />

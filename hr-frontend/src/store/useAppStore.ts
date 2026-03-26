@@ -1,9 +1,6 @@
 import { create } from 'zustand';
 import type { User, Company, UserAssignment, Permission, LeaveQuota } from '@/types';
-
-// ✅ นำเข้า Mock Data ของคุณ (เช็ค Path ให้ตรงกับโฟลเดอร์ของคุณนะครับ)
-// สมมติว่าไฟล์ Mock ของคุณอยู่ในโฟลเดอร์ @/mocks/...
-import { MOCK_DIVISIONS } from '@/mocks/shiftData'; 
+import { MOCK_DIVISIONS, Division } from '@/mocks/shiftData'; 
 import { INITIAL_MOCK_SECTIONS as MOCK_SECTIONS, Section } from '@/mocks/sectionData';
 import { INITIAL_MOCK_DEPARTMENTS as MOCK_DEPARTMENTS, Department } from '@/mocks/departmentData';
 import { INITIAL_MOCK_LEVELS as MOCK_LEVELS, LevelMock } from '@/mocks/levelData';
@@ -31,67 +28,47 @@ interface AppState {
   hasPermission: (permission: Permission) => boolean;
   hasPermissionInCompany: (permission: Permission, companyId: number) => boolean;
 
-  // Leave quotas
+
   leaveQuotas: LeaveQuota[];
   setLeaveQuotas: (quotas: LeaveQuota[]) => void;
 
-  // UI State
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
-
-  // Language
+  
   language: 'th' | 'en';
   setLanguage: (lang: 'th' | 'en') => void;
 
-  // ==========================================
-  // 🟢 State สำหรับโครงสร้างองค์กร (Organization)
-  // ==========================================
-  divisions: any[];
+
+  divisions: Division[];
   sections: Section[];
   departments: Department[];
   levels: LevelMock[];
   positions: PositionMock[];
 
-  // ==========================================
-  // 🟢 State สำหรับกะทำงาน (Shift Management)
-  // ==========================================
+ 
   shifts: any[];
   addShifts: (newShifts: any[]) => void;
   deleteShift: (id: number) => void;
-
-  // Logout
   logout: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
-  // Auth State
- user: {
-    id: 999,
-    username: "emp_test",
-    firstName: "สมชาย",
-    lastName: "ใจดี",
-    role_id: 4, // 🔴 เลข 4 คือสิทธิ์พนักงาน
-    is_super_admin: false,
-    department_name: "แผนกพัฒนาซอฟต์แวร์" // ให้ตรงกับ mock department ที่มี
-  } as any, // ใส่ as any ไว้ก่อนกัน Type error (ถ้ามีการบังคับฟิลด์อื่นๆใน Type User)
-  
+  user: null,
   setUser: (userData) => set({ user: userData }),
   token: null,
   setToken: (token) => set({ token }),
 
-  // Company State
+
   availableCompanies: [],
   setAvailableCompanies: (companies) => set({ availableCompanies: companies }),
   currentCompanyId: null,
   setCurrentCompanyId: (companyId) => set({ currentCompanyId: companyId }),
 
-  // Permissions State
   userAssignments: [],
   setUserAssignments: (assignments) => set({ userAssignments: assignments }),
   permissions: [],
   setPermissions: (permissions) => set({ permissions }),
 
-  // Permission helpers
   hasPermission: (permission: Permission) => {
     const { permissions } = get();
     return permissions.includes(permission);
@@ -108,21 +85,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     return hasCompanyAccess;
   },
 
-  // Leave Quotas
+
   leaveQuotas: [],
   setLeaveQuotas: (quotas) => set({ leaveQuotas: quotas }),
-
-  // UI State
   sidebarOpen: true,
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
-
-  // Language
   language: 'th',
   setLanguage: (lang) => set({ language: lang }),
 
-  // ==========================================
-  // 🟢 กำหนดค่าตั้งต้นให้ Organization (จาก Mock Data)
-  // ==========================================
+
   divisions: MOCK_DIVISIONS || [],
   sections: MOCK_SECTIONS || [],
   departments: MOCK_DEPARTMENTS || [],
@@ -130,10 +101,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   positions: MOCK_POSITIONS || [],
   
 
-  // ==========================================
-  // 🟢 กำหนดค่าตั้งต้นให้กะการทำงาน (Shifts)
-  // ==========================================
-  // ใส่ข้อมูลกะตัวอย่างเริ่มต้น เพื่อให้เปิดมาแล้วมีข้อมูลเลย
   shifts: [
     { 
       id: 1, 

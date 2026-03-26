@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { ArrowLeft, CheckCircle, ChevronLeft, ChevronRight, Plus, X, Loader2 } from "lucide-react";
 
-// สร้าง Mock พนักงานเพื่อเทสการจัดโควต้า
+
 const MOCK_SHIFT_EMPLOYEES = Array.from({ length: 150 }).map((_, i) => ({
   id: i + 1, code: `EMP-${String(i + 1).padStart(3, '0')}`, name: `พนักงานคนที่ ${i + 1}`, 
   department: i < 50 ? "แผนกพัฒนาซอฟต์แวร์" : i < 100 ? "แผนกสรรหาบุคลากร" : "แผนกบัญชีทั่วไป"
@@ -21,7 +21,7 @@ function CreateShiftContent() {
   const searchParams = useSearchParams();
   const preSelectedDept = searchParams.get("dept");
   
-  // ✅ ดึงจาก Store
+  
   const { addShifts, divisions, sections, departments } = useAppStore();
   
   const [step, setStep] = useState(1);
@@ -37,16 +37,44 @@ function CreateShiftContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // ✨ สร้าง ORG_HIERARCHY อัตโนมัติจากข้อมูลใน Store
+  
   const ORG_HIERARCHY = useMemo(() => {
-    return divisions.map(div => ({
-      division: div.name,
-      sections: sections.filter(sec => sec.divisionId === div.id || sec.divisionName === div.name).map(sec => ({
-        section: sec.name,
-        departments: departments.filter(dept => dept.sectionName === sec.name || dept.section_id === sec.id).map(dept => dept.name)
-      }))
-    }));
-  }, [divisions, sections, departments]);
+    return divisions.map(div => {
+      
+      const deptsInDiv = departments.filter(dept => {
+        if (!dept.divisionName) return false;
+        if (dept.divisionName === div.name) return true;
+        
+        const divNameStr = div.name || "";
+        const deptDivStr = dept.divisionName || "";
+        
+        if (divNameStr.includes("บริหาร") && deptDivStr.includes("บริหาร")) return true;
+        if (divNameStr.includes("ปฏิบัติการ") && deptDivStr.includes("ปฏิบัติการ")) return true;
+        if (divNameStr.includes("เทคโนโลยี") && deptDivStr.includes("เทคโนโลยี")) return true;
+        if (divNameStr.includes("การตลาด") && deptDivStr.includes("การตลาด")) return true;
+        
+        return false;
+      });
+
+      
+      const uniqueSections = Array.from(new Set(deptsInDiv.map(d => d.sectionName)));
+
+      
+      const sectionsList = uniqueSections.map(secName => {
+        return {
+          section: secName || "ส่วนงานทั่วไป",
+          departments: deptsInDiv
+            .filter(d => d.sectionName === secName)
+            .map(d => d.name)
+        };
+      });
+
+      return {
+        division: div.name,
+        sections: sectionsList
+      };
+    });
+  }, [divisions, departments]); 
 
   useEffect(() => {
     if (preSelectedDept) {
@@ -75,7 +103,7 @@ function CreateShiftContent() {
     if (!selectedDept || !startDate || !endDate) return alert("กรุณากรอกข้อมูลให้ครบถ้วน");
     if (totalQuota !== empInDeptCount) return alert(`โควต้ารวม (${totalQuota}) ไม่ตรงกับจำนวนพนักงาน (${empInDeptCount})`);
 
-    setStep(2); // LOADING
+    setStep(2); 
     setTimeout(() => {
       const sortedEmps = MOCK_SHIFT_EMPLOYEES.filter(e => e.department === selectedDept).sort((a, b) => a.code.localeCompare(b.code));
       let currentIdx = 0;
@@ -103,16 +131,16 @@ function CreateShiftContent() {
       }
       setPreviewData(previewList);
       setGeneratedShifts(newShiftsToStore);
-      setStep(3); // PREVIEW
+      setStep(3); 
     }, 1500); 
   };
 
   const handleConfirmSave = () => {
-    addShifts(generatedShifts); // บันทึกเข้าส่วนกลาง
-    setStep(4); // SUCCESS
+    addShifts(generatedShifts); 
+    setStep(4); 
   };
 
-  // Pagination Logic
+  
   const totalPages = Math.ceil(previewData.length / itemsPerPage);
   const paginatedData = previewData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 

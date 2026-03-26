@@ -3,7 +3,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations'; 
-import { Calendar, Loader, User, XCircle, Search, Download, Upload } from 'lucide-react';
+import { 
+  Calendar, Loader, User, XCircle, Search, Download, Upload, 
+  ExternalLink, Import, Share, Info, X // 🔴 เพิ่ม Info และ X
+} from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MOCK_ATTENDANCE_LOGS, getStatusStyle, translateStatus, formatTime } from '@/mocks/attendanceData';
 
@@ -14,10 +17,12 @@ export default function AdminAttendance() {
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // ✅ Export / Import State
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // 🔴 เพิ่ม State สำหรับเปิด/ปิด Information Modal
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const t = translations[language as keyof typeof translations] || translations['en'];
 
@@ -33,7 +38,6 @@ export default function AdminAttendance() {
     }, 500);
   }, [currentCompanyId]);
 
-  // ✅ filter ที่ใช้แสดง + export
   const displayedLogs = useMemo(() => {
     return attendanceLogs.filter(log => {
       const matchDate = selectedDate ? log.date === selectedDate : true;
@@ -44,7 +48,6 @@ export default function AdminAttendance() {
     });
   }, [attendanceLogs, selectedDate, searchQuery]);
 
-  // ✅ EXPORT CSV (ตาม filter ล่าสุด)
   const handleExport = () => {
     if (displayedLogs.length === 0) {
       alert("ไม่มีข้อมูลสำหรับส่งออก");
@@ -53,7 +56,6 @@ export default function AdminAttendance() {
 
     setIsExporting(true);
 
-    // จำลองเวลาโหลดนิดหน่อยให้ UI ดู Smooth เหมือนหน้าอื่น
     setTimeout(() => {
       const headers = [
         "employee_code",
@@ -92,7 +94,6 @@ export default function AdminAttendance() {
     }, 800);
   };
 
-  // ✅ IMPORT CSV
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -101,7 +102,6 @@ export default function AdminAttendance() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      // หน่วงเวลาให้เห็น Spinner โหลดนิดหน่อย
       setTimeout(() => {
         const text = event.target?.result as string;
         const lines = text.split("\n").filter(line => line.trim() !== "");
@@ -124,8 +124,8 @@ export default function AdminAttendance() {
 
         setAttendanceLogs(data);
         setIsImporting(false);
-        if (fileInputRef.current) fileInputRef.current.value = ""; // รีเซ็ต Input
-        alert(`✅ นำเข้าข้อมูลการเข้างานสำเร็จ!`);
+        if (fileInputRef.current) fileInputRef.current.value = ""; 
+        alert(` นำเข้าข้อมูลการเข้างานสำเร็จ!`);
       }, 1000);
     };
 
@@ -140,14 +140,18 @@ export default function AdminAttendance() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-screen">
-      
-      {/* ✅ Header & Export/Import Buttons ปรับดีไซน์ใหม่ */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
-        <div>
+        <div className="flex items-center gap-3">
           <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tighter uppercase">
             {t.title || "Attendance Logs"}
           </h1>
-          <p className="text-slate-500 font-medium text-sm mt-1">จัดการข้อมูลการเข้างาน (Admin)</p>
+          <button
+            onClick={() => setShowInfoModal(true)}
+            className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+            title="ดูข้อมูลเพิ่มเติม"
+          >
+            <Info size={24} />
+          </button>
         </div>
         
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -157,16 +161,16 @@ export default function AdminAttendance() {
             onClick={() => fileInputRef.current?.click()} disabled={isImporting}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
-            <span className="hidden sm:inline">นำเข้า</span> (Import)
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">นำเข้าข้อมูล</span>
           </button>
 
           <button 
             onClick={handleExport} disabled={isExporting || displayedLogs.length === 0}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
-            <span className="hidden sm:inline">ส่งออก</span> (Export)
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Share size={16} />} 
+            <span className="hidden sm:inline">ส่งออกข้อมูล</span>
           </button>
         </div>
       </div>
@@ -204,13 +208,13 @@ export default function AdminAttendance() {
         </div>
       </div>
 
-      <Card className="rounded-[2rem] border-none shadow-sm overflow-hidden bg-white">
+      <Card className="rounded-xl border border-slate-200 shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 font-black text-[10px] text-slate-400 uppercase tracking-widest border-b border-slate-100">
+              <thead className="bg-slate-50 font-black text-base text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 <tr>
-                  <th className="py-6 px-8 text-left">{t.colEmployee || "พนักงาน"}</th>
+                  <th className="py-6 pl-12 px-8 text-left">{t.colEmployee || "พนักงาน"}</th>
                   <th className="text-center px-4">{language === 'th' ? 'วันที่' : 'Date'}</th> 
                   <th className="text-center px-4">{t.colCheckIn || "เวลาเข้า"}</th>
                   <th className="text-center px-4">{t.colCheckOut || "เวลาออก"}</th>
@@ -272,6 +276,40 @@ export default function AdminAttendance() {
           )}
         </CardContent>
       </Card>
+
+      {/* 🔴 Information Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowInfoModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <Info className="text-blue-600" size={20} />
+                *ตัวอย่างแบบการนำเข้าข้อมูล
+              </h3>
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[300px] p-4">
+              {/* เปลี่ยน src รูปภาพเป็นของข้อมูล Attendance ได้เลยครับ */}
+              <img
+                src="/attendance_tem.png" 
+                alt="Information Detail"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

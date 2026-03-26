@@ -42,7 +42,7 @@ exports.getPayrolls = async (req, res) => {
   }
 };
 
-// 3. ✅ เพิ่มฟังก์ชันนี้กลับเข้าไป (ตัวการที่ทำให้ Error)
+// 3.  เพิ่มฟังก์ชันนี้กลับเข้าไป (ตัวการที่ทำให้ Error)
 exports.getPayrollById = async (req, res) => {
   try {
     const { id } = req.params;

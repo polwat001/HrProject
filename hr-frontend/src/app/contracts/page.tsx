@@ -4,10 +4,10 @@ import { useState, useEffect, useRef } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { translations } from "@/locales/translations";
 import {
-  Plus, Edit2, Trash2, Loader, AlertTriangle, CheckCircle, Recycle, X, Search, Filter, Briefcase, BadgeCheck, Download, Upload
+  Plus, Edit2, Trash2, Loader, AlertTriangle, CheckCircle, Recycle, X, Search, Filter, Briefcase, BadgeCheck, Download, Upload,
+  Share, CalendarRange, Info, ChevronLeft, ChevronRight
 } from "lucide-react";
 
-// ✅ Import ข้อมูลจำลองและตัวแปรคงที่จากไฟล์ Mock
 import { CONTRACT_TYPES, MOCK_COMPANIES, MOCK_EMPLOYEES, MOCK_CONTRACTS } from "@/mocks/contractData";
 
 const EMPTY_FORM = {
@@ -20,9 +20,14 @@ const EMPTY_FORM = {
   status: "active"
 };
 
-// ==========================================
-// 🚀 MAIN COMPONENT
-// ==========================================
+// 🔴 1. สร้างชุดข้อมูลรูปภาพพร้อม "ชื่อหัวข้อ" สำหรับแต่ละรูป
+const INFO_DATA = [
+  { src: "/11.png", title: "1. อธิบายประเภทสัญญาจ้าง" },
+  { src: "/contract-info-2.png", title: "2. การกำหนดวันเริ่มต้น-สิ้นสุด" },
+  { src: "/contract-info-3.png", title: "3. ระบบคำนวณวันหมดอายุอัตโนมัติ" },
+  { src: "/contract-info-4.png", title: "4. ความหมายของสถานะสัญญา" }
+];
+
 export default function ContractsPage() {
   const { currentCompanyId, language } = useAppStore();
 
@@ -34,24 +39,29 @@ export default function ContractsPage() {
   // Search & Filter
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  
   const [filters, setFilters] = useState({
-    status: "all", division: "all", section: "all", department: "all", position: "all", level: "all"
+    status: "all", division: "all", section: "all", department: "all", position: "all", level: "all",
+    expiry_start: "", expiry_end: ""
   });
 
-  // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [employeeSearch, setEmployeeSearch] = useState("");
+  
+  const [expiryOption, setExpiryOption] = useState<string>("custom");
 
-  // ✅ Export / Import State
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // State สำหรับจัดการ Information Modal และรูปภาพ
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
   const t = translations[language as keyof typeof translations] || translations['en'];
 
-  // ================= LOAD MOCK DATA =================
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
@@ -79,7 +89,6 @@ export default function ContractsPage() {
     }, 500);
   }, [currentCompanyId]);
 
-  // ================= EXPORT & IMPORT LOGIC =================
   const handleExport = () => {
     setIsExporting(true);
     setTimeout(() => {
@@ -96,11 +105,10 @@ export default function ContractsPage() {
     setTimeout(() => {
       setIsImporting(false);
       alert(`✅ นำเข้าข้อมูลจากไฟล์ ${file.name} สำเร็จ! (Demo)`);
-      if (fileInputRef.current) fileInputRef.current.value = ""; // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = ""; 
     }, 1500);
   };
 
-  // ================= LOGIC & HELPERS =================
   const getContractStatus = (status: string) => {
     if (status === "terminated") return { type: "terminated", label: t.contractTerminated || "Terminated", icon: AlertTriangle, color: "bg-red-100 text-red-700 border-red-300" };
     if (status === "expiring") return { type: "expiring", label: t.contractExpiring || "Expiring Soon", icon: AlertTriangle, color: "bg-orange-100 text-[#F5A10A] border-orange-300" };
@@ -123,19 +131,49 @@ export default function ContractsPage() {
       `${contract.employee_name} ${contract.employee_code} ${contract.department_name} ${contract.position_name}`.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filters.status === "all" || contract.status === filters.status;
 
-    return matchesSearch && matchesStatus;
+    let matchesExpiry = true;
+    if (filters.expiry_start || filters.expiry_end) {
+      if (!contract.end_date) {
+        matchesExpiry = false;
+      } else {
+        const contractEndDate = new Date(contract.end_date);
+        if (filters.expiry_start) {
+          matchesExpiry = matchesExpiry && contractEndDate >= new Date(filters.expiry_start);
+        }
+        if (filters.expiry_end) {
+          matchesExpiry = matchesExpiry && contractEndDate <= new Date(filters.expiry_end);
+        }
+      }
+    }
+
+    return matchesSearch && matchesStatus && matchesExpiry;
   });
 
   const handleClearFilters = () => {
-    setFilters({ status: "all", division: "all", section: "all", department: "all", position: "all", level: "all" });
+    setFilters({ status: "all", division: "all", section: "all", department: "all", position: "all", level: "all", expiry_start: "", expiry_end: "" });
     setSearchQuery("");
   };
 
-  // ================= SAVE CONTRACT =================
+  const calculateEndDate = (startDate: string, duration: string) => {
+    if (!startDate || duration === "custom") return;
+    
+    const start = new Date(startDate);
+    const end = new Date(start);
+
+    if (duration === "1m") end.setMonth(end.getMonth() + 1);
+    else if (duration === "3m") end.setMonth(end.getMonth() + 3);
+    else if (duration === "6m") end.setMonth(end.getMonth() + 6);
+    else if (duration === "1y") end.setFullYear(end.getFullYear() + 1);
+    
+    end.setDate(end.getDate() - 1); 
+
+    setFormData(prev => ({ ...prev, end_date: end.toISOString().split('T')[0] }));
+  };
+
   const handleSaveContract = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.employee_id || !formData.company_id || !formData.contract_number || !formData.contract_type || !formData.start_date || !formData.end_date) {
-      alert(t.errFormIncomplete || "กรุณากรอกข้อมูลให้ครบถ้วน");
+    if (!formData.employee_id || !formData.company_id || !formData.contract_number || !formData.contract_type || !formData.start_date || (!formData.end_date && expiryOption !== 'none')) {
+      alert(t.errFormIncomplete || "กรุณากรอกข้อมูลที่มีเครื่องหมาย * ให้ครบถ้วน");
       return;
     }
 
@@ -151,7 +189,8 @@ export default function ContractsPage() {
         contract_number: formData.contract_number.toUpperCase(),
         contract_type: formData.contract_type, 
         start_date: formData.start_date,
-        end_date: formData.end_date,
+        
+        end_date: expiryOption === 'none' ? "" : formData.end_date,
         status: formData.status,
         employee_name: selectedEmp ? `${selectedEmp.firstname_th} ${selectedEmp.lastname_th}` : "-",
         employee_code: selectedEmp?.employee_code || "",
@@ -164,11 +203,11 @@ export default function ContractsPage() {
       setIsModalOpen(false);
       setFormData(EMPTY_FORM);
       setEmployeeSearch("");
+      setExpiryOption("custom"); 
       setSaving(false);
     }, 400);
   };
 
-  // ================= DELETE =================
   const handleDelete = (id: number) => {
     if (!confirm(t.confirmDeleteContract || "ยืนยันการลบสัญญาฉบับนี้?")) return;
     setContracts(prev => prev.filter(c => c.id !== id));
@@ -178,7 +217,14 @@ export default function ContractsPage() {
     `${emp.firstname_th} ${emp.lastname_th} ${emp.employee_code}`.toLowerCase().includes(employeeSearch.toLowerCase())
   );
 
-  // ================= LOADING =================
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % INFO_DATA.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + INFO_DATA.length) % INFO_DATA.length);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -192,16 +238,17 @@ export default function ContractsPage() {
 
   return (
     <div className="p-6 space-y-6 min-h-screen bg-slate-50/50">
-      {/* Header */}
+      
       <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t.titleContract || "Contracts Management"}</h1>
-          <p className="text-slate-500 font-medium text-sm">จัดการข้อมูลสัญญาจ้างพนักงาน</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">{t.titleContract || "Contracts Management"}</h1>
+          </div>
+          <p className="text-slate-500 font-medium text-sm mt-1">จัดการข้อมูลสัญญาจ้างพนักงาน</p>
         </div>
         
-        {/* ✅ Action Buttons (Import, Export, Add) */}
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-          {/* ซ่อน Input รับไฟล์ */}
+        <div className="flex flex-wrap items-start gap-3 w-full xl:w-auto">
+          
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -215,8 +262,8 @@ export default function ContractsPage() {
             disabled={isImporting}
             className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
-            <span className="hidden sm:inline">นำเข้า</span> (Import)
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">นำเข้า</span>
           </button>
 
           <button 
@@ -224,23 +271,36 @@ export default function ContractsPage() {
             disabled={isExporting}
             className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 hover:border-slate-300 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
-            <span className="hidden sm:inline">ส่งออก</span> (Export)
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Share size={16} />} 
+            <span className="hidden sm:inline">ส่งออก</span> 
           </button>
 
-          <button 
-            onClick={() => {
-              setFormData({...EMPTY_FORM, company_id: currentCompanyId?.toString() || ""});
-              setIsModalOpen(true);
-            }}
-            className="flex-1 xl:flex-none flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-xs sm:text-sm uppercase tracking-widest"
-          >
-            <Plus size={18} /> {t.btnNewContract || "Add Contract"}
-          </button>
+          {/* ✅ 2. เพิ่มกลุ่มสำหรับปุ่ม Add Contract และปุ่มอธิบายเล็กๆ */}
+          <div className="flex flex-col items-center xl:items-end gap-1.5 flex-1 xl:flex-none w-full xl:w-auto">
+            <button 
+              onClick={() => {
+                setFormData({...EMPTY_FORM, company_id: currentCompanyId?.toString() || ""});
+                setExpiryOption("custom");
+                setIsModalOpen(true);
+              }}
+              className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-xs sm:text-sm uppercase tracking-widest"
+            >
+              <Plus size={18} /> {t.btnNewContract || "Add Contract"}
+            </button>
+            {/* 🔴 ปุ่มอธิบายเล็กๆ ใต้ปุ่ม Add Contract */}
+            <button
+              onClick={() => {
+                setCurrentImageIndex(0); 
+                setShowInfoModal(true);
+              }}
+              className="text-[10px] text-slate-400 hover:text-blue-600 flex items-center gap-1 font-bold tracking-widest uppercase transition-colors"
+            >
+              <Info size={12} /> คำแนะนำการสร้างสัญญา
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Search & Filter Bar */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row items-center gap-4">
           <div className="relative w-full md:flex-1">
@@ -265,7 +325,6 @@ export default function ContractsPage() {
           </button>
         </div>
 
-        {/* Expanded Filters */}
         {showFilters && (
           <div className="pt-4 border-t border-slate-100 animate-in fade-in slide-in-from-top-2">
             <div className="flex justify-between items-center mb-4">
@@ -275,8 +334,8 @@ export default function ContractsPage() {
               </button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+              
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblStatus || "Status"}</label>
                 <select 
@@ -292,32 +351,49 @@ export default function ContractsPage() {
                 </select>
               </div>
 
-              {/* Department (Placeholder UI) */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblDepartment || "Department"}</label>
-                <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                <select className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                   <option value="all">{t.allDepartments || "All Departments"}</option>
                 </select>
               </div>
 
-              {/* Position (Placeholder UI) */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.lblPosition || "Position"}</label>
-                <select className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500">
+                <select className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
                   <option value="all">{t.allPositions || "All Positions"}</option>
                 </select>
               </div>
+
+              <div className="space-y-1.5 md:col-span-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">วันที่หมดอายุสัญญา (Expiry Date Range)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={filters.expiry_start}
+                    onChange={(e) => setFilters({ ...filters, expiry_start: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-slate-400 font-bold">-</span>
+                  <input
+                    type="date"
+                    value={filters.expiry_end}
+                    onChange={(e) => setFilters({ ...filters, expiry_end: e.target.value })}
+                    className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  />
+                </div>
+              </div>
+
             </div>
           </div>
         )}
       </div>
 
-      {/* Contracts Table */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100 uppercase text-base tracking-widest text-slate-500">
+              <tr className="bg-slate-50/50 border-b border-slate-100 uppercase text-base tracking-widest text-slate-500 ">
                 <th className="text-left py-5 px-6">{t.colEmployee || "Employee"}</th>
                 <th className="text-left py-5 px-6">แผนก</th>
                 <th className="text-left py-5 px-6">ตำแหน่ง</th>
@@ -328,40 +404,42 @@ export default function ContractsPage() {
                 <th className="text-center py-5 px-6">{t.colAction || "Actions"}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-50 ">
               {filteredContracts.map((contract: any) => {
                 const status = getContractStatus(contract.status);
                 const StatusIcon = status.icon;
                 return (
-                  <tr key={contract.id} className="hover:bg-blue-50/30 transition-colors group ">
-                    <td className="py-4 px-6">
+                  <tr key={contract.id} className=" transition-colors ">
+                    <td className="py-4 px-6 border-t border-slate-300">
                       <p className="font-black text-slate-900 text-base leading-tight">{contract.employee_name}</p>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 border-t border-slate-300">
                       <p className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-xl">
                        {contract.department_name}
                       </p>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-6 border-t border-slate-300">
                       <span className="inline-flex items-center gap-1.5 text-xs font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-xl">
                        {contract.position_name}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-6 text-center border-t border-slate-300">
                       {getContractTypeBadge(contract.contract_type)}
                     </td>
-                    <td className="py-4 px-6 text-center font-bold text-sm text-slate-600">
+                    <td className="py-4 px-6 text-center font-bold text-sm text-slate-600 border-t border-slate-300">
                       {new Date(contract.start_date).toLocaleDateString(language === 'th' ? "th-TH" : "en-GB")}
                     </td>
-                    <td className="py-4 px-6 text-center font-bold text-sm text-slate-600">
-                      {contract.end_date ? new Date(contract.end_date).toLocaleDateString(language === 'th' ? "th-TH" : "en-GB") : "-"}
+                    <td className="py-4 px-6 text-center font-bold text-sm text-slate-600 border-t border-slate-300">
+                      {contract.end_date ? new Date(contract.end_date).toLocaleDateString(language === 'th' ? "th-TH" : "en-GB") : (
+                        <span className="text-slate-400 italic font-medium text-xs">ไม่มีวันหมดอายุ</span>
+                      )}
                     </td>
-                    <td className="py-4 px-6 text-center ">
+                    <td className="py-4 px-6 text-center border-t border-slate-300">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${status.color}`}>
                         <StatusIcon size={14} /> {status.label}
                       </span>
                     </td>
-                    <td className="py-4 px-6 text-center">
+                    <td className="py-4 px-6 text-center border-t border-slate-300">
                       <div className="flex items-center justify-center gap-2 ">
                         <button className="p-2 bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"><Edit2 size={16} /></button>
                         <button onClick={() => handleDelete(Number(contract.id))} className="p-2 bg-red-50 text-red-600 hover:bg-red-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"><Trash2 size={16} /></button>
@@ -383,7 +461,6 @@ export default function ContractsPage() {
         </div>
       </div>
 
-      {/* ✅ MODAL FOR CREATING CONTRACT */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => !saving && setIsModalOpen(false)} />
@@ -471,24 +548,52 @@ export default function ContractsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 pt-2 pb-2">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.lblStartDate || "Start Date"} <span className="text-red-500">*</span></label>
                   <input 
                     type="date" 
                     value={formData.start_date}
-                    onChange={(e) => setFormData({...formData, start_date: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, start_date: e.target.value});
+                      if (expiryOption !== "custom" && expiryOption !== "none") {
+                        calculateEndDate(e.target.value, expiryOption);
+                      }
+                    }}
                     className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{t.lblEndDate || "End Date"} <span className="text-red-500">*</span></label>
-                  <input 
-                    type="date" 
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({...formData, end_date: e.target.value})}
-                    className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  />
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center justify-between">
+                    <span>{t.lblEndDate || "End Date"} {expiryOption !== 'none' && <span className="text-red-500">*</span>}</span>
+                  </label>
+                  
+                  <div className="flex gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                    <button type="button" onClick={() => { setExpiryOption("1m"); calculateEndDate(formData.start_date, "1m"); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === '1m' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>1 เดือน</button>
+                    <button type="button" onClick={() => { setExpiryOption("3m"); calculateEndDate(formData.start_date, "3m"); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === '3m' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>3 เดือน</button>
+                    <button type="button" onClick={() => { setExpiryOption("6m"); calculateEndDate(formData.start_date, "6m"); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === '6m' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>6 เดือน</button>
+                    <button type="button" onClick={() => { setExpiryOption("1y"); calculateEndDate(formData.start_date, "1y"); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === '1y' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>1 ปี</button>
+                    <button type="button" onClick={() => { setExpiryOption("custom"); setFormData({...formData, end_date: ""}); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === 'custom' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}>กำหนดเอง</button>
+                    <button type="button" onClick={() => { setExpiryOption("none"); setFormData({...formData, end_date: ""}); }} className={`flex-1 py-1.5 text-[10px] font-black rounded-lg transition-all ${expiryOption === 'none' ? 'bg-red-50 text-red-600' : 'text-slate-400 hover:text-slate-600'}`}>ไม่มีวันหมด</button>
+                  </div>
+
+                  {expiryOption !== 'none' && (
+                    <input 
+                      type="date" 
+                      value={formData.end_date}
+                      onChange={(e) => {
+                        setExpiryOption("custom"); 
+                        setFormData({...formData, end_date: e.target.value});
+                      }}
+                      className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer mt-2"
+                    />
+                  )}
+                  {expiryOption === 'none' && (
+                    <div className="w-full px-4 py-3 bg-slate-100 border border-slate-200 border-dashed rounded-xl text-sm font-black text-slate-400 text-center mt-2 flex items-center justify-center gap-2">
+                      <CalendarRange size={16} /> สัญญาฉบับนี้ไม่มีวันหมดอายุ
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -502,6 +607,63 @@ export default function ContractsPage() {
           </div>
         </div>
       )}
+
+     {/* 🔴 3. Modal Information แบบเลื่อนอ่านแนวตั้ง (Scroll Down) */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowInfoModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl p-0 animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+            
+            {/* ส่วน Header ของ Modal ติดอยู่ด้านบนเสมอ */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-slate-100 bg-white sticky top-0 z-10 rounded-t-2xl">
+              <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <Info className="text-blue-600" size={20} />
+                คำแนะนำการสร้างสัญญา
+              </h3>
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* ส่วนเนื้อหาที่เลื่อน (Scroll) ได้ */}
+            <div className="p-6 overflow-y-auto space-y-10 bg-slate-50">
+              {INFO_DATA.map((info, idx) => (
+                <div key={idx} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                  <h4 className="text-base font-black text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-2">
+                    <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
+                    {info.title}
+                  </h4>
+                  <div className="flex justify-center bg-slate-50 rounded-lg p-2">
+                    <img
+                      src={info.src} 
+                      alt={info.title}
+                      className="w-full h-auto object-contain rounded border border-slate-100 max-h-[60vh]"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ส่วน Footer (ทางเลือก เผื่ออยากให้มีปุ่มปิดด้านล่างด้วย) */}
+            <div className="px-6 py-4 border-t border-slate-100 bg-white sticky bottom-0 z-10 rounded-b-2xl flex justify-end">
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="px-6 py-2.5 bg-slate-200 text-slate-600 hover:bg-slate-300 rounded-xl font-black text-xs uppercase tracking-widest transition-all"
+              >
+                ปิด (Close)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

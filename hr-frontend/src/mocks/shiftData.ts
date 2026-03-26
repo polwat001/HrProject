@@ -1,6 +1,6 @@
-// src/mocks/shiftData.ts
 
-// 1. โครงสร้างองค์กร (Org Hierarchy)
+
+
 export const ORG_HIERARCHY = [
   {
     division: "Operations Division (สายงานปฏิบัติการ)",
@@ -31,7 +31,7 @@ export const getHierarchyByDept = (deptName: string) => {
   return { division: "Unknown", section: "Unknown" };
 };
 
-// 2. จำลองพนักงาน 150 คน
+
 const generateEmployees = () => {
   const emps = [];
   for (let i = 1; i <= 150; i++) {
@@ -55,7 +55,7 @@ const generateEmployees = () => {
 
 export const MOCK_SHIFT_EMPLOYEES = generateEmployees();
 
-// 3. ข้อมูลกะเริ่มต้น
+
 export const MOCK_SHIFTS_DATA = [
   { id: 1, department: "Security (แผนกรปภ.)", name: "กะกลางวัน", startDate: "2026-04-01", endDate: "2026-04-15", startTime: "07:00", endTime: "19:00", employeeIds: [91, 92, 93, 94, 95] },
   { id: 2, department: "Security (แผนกรปภ.)", name: "กะกลางคืน", startDate: "2026-04-01", endDate: "2026-04-15", startTime: "19:00", endTime: "07:00", employeeIds: [96, 97, 98, 99, 100] },

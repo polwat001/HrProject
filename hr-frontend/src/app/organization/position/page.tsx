@@ -142,7 +142,7 @@ export default function PositionPage() {
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Position Management</h1>
@@ -156,7 +156,7 @@ export default function PositionPage() {
         </button>
       </div>
 
-      {/* แถบสีม่วงด้านบนตาราง */}
+      
       <div className="flex items-center justify-center w-full gap-2 py-3 border-b-2 border-blue-500 text-blue-600 bg-white font-semibold">
         <Briefcase size={20} />
         Positions (ตำแหน่งงาน)

@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // ✅ 1. เพิ่ม path เข้ามาเพื่อจัดการที่อยู่ไฟล์
+const path = require('path'); //  1. เพิ่ม path เข้ามาเพื่อจัดการที่อยู่ไฟล์
 require('dotenv').config();
 
 const app = express();
@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ✅ 2. เปิดให้หน้าบ้าน (Frontend) สามารถเข้าถึงโฟลเดอร์ uploads ผ่าน URL ได้
+//  2. เปิดให้หน้าบ้าน (Frontend) สามารถเข้าถึงโฟลเดอร์ uploads ผ่าน URL ได้
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // เช็คสถานะ Server

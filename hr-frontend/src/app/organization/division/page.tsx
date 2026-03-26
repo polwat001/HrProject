@@ -3,22 +3,18 @@
 import { useState, useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
 import { Plus, Edit2, Trash2, Loader, Users, X, CheckCircle2, XCircle, Layers } from "lucide-react";
-import { Division } from "@/mocks/shiftData"; // ✅ นำเข้า Type มาจากไฟล์กลาง
+import { Division } from "@/mocks/shiftData"; 
 
 export default function DivisionPage() {
-  // ✅ เรียกใช้ตัวแปรและฟังก์ชันจาก Global Store แทน useState
-  const { currentCompanyId, divisions = [], addDivision, updateDivision, deleteDivision } = useAppStore();
   
+  const { currentCompanyId, divisions = [], addDivision, updateDivision, deleteDivision } = useAppStore();
   const [loading, setLoading] = useState(true);
-
-  // Modal & Edit State
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState("");
-
-  // Form State
+  
   const [divisionForm, setDivisionForm] = useState({ 
     code: "",
     name: "",
@@ -32,7 +28,7 @@ export default function DivisionPage() {
 
   const loadDivisions = () => {
     setLoading(true);
-    // จำลองเวลาโหลดข้อมูล
+    
     setTimeout(() => {
       setLoading(false);
     }, 500);
@@ -60,7 +56,7 @@ export default function DivisionPage() {
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       if (isEditMode && editingId) {
-        // ✅ ส่งข้อมูลไปอัปเดตที่ส่วนกลาง
+        
         updateDivision({ 
           id: editingId,
           code: divisionForm.code.toUpperCase(),
@@ -69,7 +65,7 @@ export default function DivisionPage() {
           status: divisionForm.status
         });
       } else {
-        // ✅ สร้างข้อมูลใหม่แล้วส่งเข้าส่วนกลาง
+        
         const newId = divisions.length > 0 ? Math.max(...divisions.map(d => d.id)) + 1 : 1;
         const newDivision: Division = {
           id: newId,
@@ -113,7 +109,7 @@ export default function DivisionPage() {
     
     await new Promise((resolve) => setTimeout(resolve, 300));
     
-    // ✅ สั่งลบข้อมูลที่ส่วนกลาง
+    
     deleteDivision(id);
   };
 
@@ -134,7 +130,7 @@ export default function DivisionPage() {
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
@@ -162,7 +158,7 @@ export default function DivisionPage() {
         </div>
 
         <div className="p-6">
-          {/* Table */}
+          
           {divisions.length === 0 ? (
             <div className="text-center py-12">
               <Users className="mx-auto text-slate-300 mb-3" size={48} />
@@ -224,7 +220,7 @@ export default function DivisionPage() {
         </div>
       </div>
 
-      {/* Modal */}
+      
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setShowModal(false)} />

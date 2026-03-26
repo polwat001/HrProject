@@ -1,6 +1,3 @@
-// ==========================================
-// 📦 MOCK DATA GENERATOR (อิงจากเดือนปัจจุบันของเครื่อง)
-// ==========================================
 const now = new Date();
 const currentYear = now.getFullYear();
 const currentMonth = now.getMonth();

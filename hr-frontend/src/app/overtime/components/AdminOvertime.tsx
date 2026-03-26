@@ -5,7 +5,8 @@ import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations';
 import { 
   Loader, Search, XCircle, User, Check, X, 
-  ClockPlus, Briefcase, Download, Upload 
+  ClockPlus, Briefcase, Download, Upload, 
+  Share, Info
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
 import { MOCK_OT_REQUESTS, MOCK_DEPARTMENTS_OT } from '@/mocks/otData';
@@ -16,15 +17,15 @@ export default function AdminOvertime() {
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<any[]>([]);
   
-  // States สำหรับ Filters
   const [selectedDate, setSelectedDate] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [filterDepartment, setFilterDepartment] = useState<number | "">("");
 
-  // ✅ Export / Import State
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   const t = translations[language as keyof typeof translations] || translations['en'];
 
@@ -40,12 +41,11 @@ export default function AdminOvertime() {
     }, 500);
   }, [currentCompanyId]);
 
-  // ✅ ฟังก์ชัน Export & Import
   const handleExport = () => {
     setIsExporting(true);
     setTimeout(() => {
       setIsExporting(false);
-      alert("✅ ส่งออกข้อมูล OT สำเร็จ! (Demo)\nระบบได้ดาวน์โหลดไฟล์ ot_records.csv แล้ว");
+      alert("  ส่งออกข้อมูล OT สำเร็จ! (Demo)\nระบบได้ดาวน์โหลดไฟล์ ot_records.csv แล้ว");
     }, 1200);
   };
 
@@ -56,12 +56,11 @@ export default function AdminOvertime() {
     setIsImporting(true);
     setTimeout(() => {
       setIsImporting(false);
-      alert(`✅ นำเข้าข้อมูล OT จากไฟล์ ${file.name} สำเร็จ! (Demo)`);
+      alert(`  นำเข้าข้อมูล OT จากไฟล์ ${file.name} สำเร็จ! (Demo)`);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }, 1500);
   };
 
-  // ประมวลผลตัวกรองข้อมูล
   const displayedRequests = useMemo(() => {
     return requests.filter(r => {
       const matchDate = selectedDate ? r.date === selectedDate : true;
@@ -83,10 +82,19 @@ export default function AdminOvertime() {
   return (
     <div className="p-8 space-y-6 bg-slate-50 min-h-screen">
       
-      {/* ✅ Header พร้อมปุ่ม Export/Import */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">OT Management</h1>
+          {/* เพิ่มปุ่ม Info ข้างๆ หัวข้อ */}
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase ">OT Management</h1>
+            <button
+              onClick={() => setShowInfoModal(true)}
+              className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-all"
+              title="ดูข้อมูลเพิ่มเติม"
+            >
+              <Info size={24} />
+            </button>
+          </div>
           <p className="text-slate-500 font-medium">จัดการคำร้องขอล่วงเวลา (Admin)</p>
         </div>
         
@@ -97,21 +105,20 @@ export default function AdminOvertime() {
             onClick={() => fileInputRef.current?.click()} disabled={isImporting}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isImporting ? <Loader className="animate-spin" size={16} /> : <Upload size={16} />} 
-            <span className="hidden sm:inline">นำเข้า</span> (Import)
+            {isImporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            <span className="hidden sm:inline">นำเข้าข้อมูล</span> 
           </button>
 
           <button 
             onClick={handleExport} disabled={isExporting}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isExporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
-            <span className="hidden sm:inline">ส่งออก</span> (Export)
+            {isExporting ? <Loader className="animate-spin" size={16} /> : <Share size={16} />} 
+            <span className="hidden sm:inline">ส่งออกข้อมูล</span> 
           </button>
         </div>
       </div>
 
-      {/* แถบ Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative">
           <Briefcase className="absolute left-3 top-2.5 text-slate-400" size={18} />
@@ -153,7 +160,6 @@ export default function AdminOvertime() {
         </div>
       </div>
 
-      {/* ตารางข้อมูล */}
       <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -223,6 +229,39 @@ export default function AdminOvertime() {
           )}
         </CardContent>
       </Card>
+
+      {/*Information Modal */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowInfoModal(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl p-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
+              <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+                <Info className="text-blue-600" size={20} />
+                *ตัวอย่างแบบการนำเข้าข้อมูล
+              </h3>
+              <button
+                onClick={() => setShowInfoModal(false)}
+                className="text-slate-400 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 p-2 rounded-xl transition-all"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[300px] p-4">
+              <img
+                src="/ot.png" 
+                alt="Information Detail"
+                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -139,7 +139,7 @@ exports.getOTRecords = async (req, res) => {
   try {
     const { company_id, status } = req.query;
     
-    // ✅ เปลี่ยนชื่อตารางเป็น ot_requests และจับคู่คอลัมน์ให้ตรงกับ Frontend
+    //  เปลี่ยนชื่อตารางเป็น ot_requests และจับคู่คอลัมน์ให้ตรงกับ Frontend
     let query = `
       SELECT 
         o.id, 
@@ -167,7 +167,7 @@ exports.getOTRecords = async (req, res) => {
       params.push(status);
     }
     
-    // ✅ แก้ไขการเรียงลำดับให้ใช้ o.date
+    //  แก้ไขการเรียงลำดับให้ใช้ o.date
     query += ` ORDER BY o.date DESC`;
 
     const [rows] = await db.query(query, params);
@@ -186,7 +186,7 @@ exports.updateOTStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body; // 'approved' หรือ 'rejected'
 
-    // ✅ เปลี่ยนจาก attendance_logs เป็น ot_requests
+    //  เปลี่ยนจาก attendance_logs เป็น ot_requests
     await db.query(
       `UPDATE ot_requests SET status = ? WHERE id = ?`,
       [status, id]

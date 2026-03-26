@@ -15,34 +15,43 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import { MOCK_SHIFTS_DATA, MOCK_SHIFT_EMPLOYEES } from "@/mocks/shiftData";
+
+import { useAppStore } from "@/store/useAppStore";
+
+import { MOCK_SHIFT_EMPLOYEES } from "@/mocks/shiftData";
 
 export default function EditShiftPage() {
   const params = useParams();
   const router = useRouter();
-  const shiftId = Number(params?.id);
+  
+  
+  const { shifts } = useAppStore();
 
   const [loading, setLoading] = useState(true);
   const [shiftData, setShiftData] = useState<any>(null);
 
-  // Search & Pagination States
+  
   const [searchEmp, setSearchEmp] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
   useEffect(() => {
-    // จำลองการดึงข้อมูลจาก API ตาม ID
-    const foundShift = MOCK_SHIFTS_DATA.find((s) => s.id === shiftId);
+    
+    const shiftIdFromUrl = String(params?.id);
+    
+    
+    const foundShift = shifts.find((s) => String(s.id) === shiftIdFromUrl);
+    
     if (foundShift) {
       setShiftData({ ...foundShift });
     }
     setLoading(false);
-  }, [shiftId]);
+  }, [params?.id, shifts]);
 
-  // ================= LOGIC: EMPLOYEES IN SHIFT =================
+  
   const employeesInShift = useMemo(() => {
-    if (!shiftData) return [];
-    // ดึงพนักงานที่มี ID อยู่ในกะ และกรองตาม Search
+    if (!shiftData || !shiftData.employeeIds) return [];
+    
     return MOCK_SHIFT_EMPLOYEES.filter((emp) =>
       shiftData.employeeIds.includes(emp.id),
     ).filter(
@@ -52,14 +61,14 @@ export default function EditShiftPage() {
     );
   }, [shiftData, searchEmp]);
 
-  // ================= LOGIC: PAGINATION =================
+  
   const totalPages = Math.ceil(employeesInShift.length / itemsPerPage);
   const paginatedEmployees = employeesInShift.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage,
   );
 
-  // ฟังก์ชันคำนวณตัวเลข Pagination
+  
   const getPaginationGroup = () => {
     let pages = [];
     if (totalPages <= 7) {
@@ -92,7 +101,7 @@ export default function EditShiftPage() {
     return pages;
   };
 
-  // ================= ACTIONS =================
+  
   const handleRemoveEmployee = (empId: number) => {
     if (confirm("ต้องการนำพนักงานคนนี้ออกจากกะใช่หรือไม่?")) {
       setShiftData((prev: any) => ({
@@ -104,7 +113,7 @@ export default function EditShiftPage() {
 
   const handleSave = () => {
     alert("✅ บันทึกการแก้ไขข้อมูลสำเร็จ!");
-    router.push("/shift"); // กลับหน้าหลัก
+    router.push("/shift"); 
   };
 
   if (loading)
@@ -122,7 +131,7 @@ export default function EditShiftPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 min-h-screen bg-slate-50/50 pb-24">
-      {/* Header & Back Button */}
+      
       <div className="flex items-center justify-between border-b border-slate-200 pb-6">
         <div className="flex items-center gap-4">
           <button
@@ -149,7 +158,7 @@ export default function EditShiftPage() {
       </div>
 
       <div className=" gap-6">
-        {/* 🟢 PANEL 1: ข้อมูลกะ (Edit Form) */}
+        
         <div className=" space-y-6">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-5">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
@@ -188,9 +197,9 @@ export default function EditShiftPage() {
                 />
                 <input
                   type="date"
-                  value={shiftData.date}
+                  value={shiftData.date || shiftData.startDate}
                   onChange={(e) =>
-                    setShiftData({ ...shiftData, date: e.target.value })
+                    setShiftData({ ...shiftData, date: e.target.value, startDate: e.target.value })
                   }
                   className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold outline-none focus:border-blue-500"
                 />
@@ -240,14 +249,14 @@ export default function EditShiftPage() {
           </div>
         </div>
 
-        {/* 🟢 PANEL 2: รายชื่อพนักงานในกะ (Employee List & Pagination) */}
+        
         <div className="lg:mt-6">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex flex-col h-full">
             <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row items-center grid grid-cols-3 gap-4 bg-slate-50/50">
               <h4 className="font-black text-slate-800 text-lg flex items-center grid-span-1 gap-2 uppercase tracking-wide">
                 <Users className="text-blue-600" /> พนักงานในกะ{" "}
                 <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs">
-                  {shiftData.employeeIds.length} คน
+                  {shiftData.employeeIds?.length || 0} คน
                 </span>
               </h4>
 
@@ -290,7 +299,7 @@ export default function EditShiftPage() {
                   {paginatedEmployees.map((emp) => (
                     <tr
                       key={emp.id}
-                      className="hover:bg-indigo-200 transition-colors group"
+                      className="hover:bg-indigo-100 transition-colors group"
                     >
                       <td className="py-2 px-6 text-slate-500 uppercase tracking-widest text-base">
                         {emp.id}
@@ -315,7 +324,7 @@ export default function EditShiftPage() {
                   {paginatedEmployees.length === 0 && (
                     <tr>
                       <td
-                        colSpan={3}
+                        colSpan={4}
                         className="py-16 text-center text-slate-400 font-bold text-sm"
                       >
                         ไม่พบพนักงานที่ค้นหา
@@ -326,9 +335,9 @@ export default function EditShiftPage() {
               </table>
             </div>
 
-            {/* Pagination Controls (ดีไซน์ใหม่) */}
+            
             {totalPages > 1 && (
-              <div className="p-5 border-t border-slate-100 bg-white flex items-center justify-between rounded-b-[2rem]">
+              <div className="p-5 border-t border-slate-100 bg-white flex items-center justify-between rounded-b-lg">
                 <p className="text-sm font-black text-slate-400 uppercase tracking-widest hidden sm:block">
                   Showing {(currentPage - 1) * itemsPerPage + 1} -{" "}
                   {Math.min(
@@ -339,7 +348,6 @@ export default function EditShiftPage() {
                 </p>
 
                 <div className="flex items-center gap-1 sm:gap-2 mx-auto sm:mx-0">
-                  {/* ปุ่มย้อนกลับ */}
                   <button
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage((p) => p - 1)}
@@ -348,7 +356,6 @@ export default function EditShiftPage() {
                     <ChevronLeft size={18} strokeWidth={2.5} />
                   </button>
 
-                  {/* ตัวเลขหน้า */}
                   {getPaginationGroup().map((page, index) => {
                     if (page === "...") {
                       return (
@@ -377,7 +384,6 @@ export default function EditShiftPage() {
                     );
                   })}
 
-                  {/* ปุ่มถัดไป */}
                   <button
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage((p) => p + 1)}

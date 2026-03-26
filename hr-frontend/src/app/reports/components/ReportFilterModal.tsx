@@ -13,7 +13,6 @@ interface ReportFilterModalProps {
 export default function ReportFilterModal({ report, isOpen, onClose }: ReportFilterModalProps) {
   const [generating, setGenerating] = useState<string | null>(null);
 
-  // States สำหรับเก็บค่า Filter
   const [department, setDepartment] = useState("all");
   const [status, setStatus] = useState("all");
   const [startDate, setStartDate] = useState("");
@@ -26,10 +25,9 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
   const handleGenerate = (format: 'excel' | 'pdf') => {
     setGenerating(format);
     
-    // จำลองการโหลดสร้างไฟล์รายงาน 2 วินาที
     setTimeout(() => {
       setGenerating(null);
-      alert(`🎉 สร้างรายงาน "${report.title}" รูปแบบ ${format.toUpperCase()} สำเร็จแล้ว!\n(แผนก: ${department})`);
+      alert(` สร้างรายงาน "${report.title}" รูปแบบ ${format.toUpperCase()} สำเร็จแล้ว!\n(แผนก: ${department})`);
       onClose();
     }, 2000);
   };
@@ -39,7 +37,7 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
       <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => !generating && onClose()} />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         
-        {/* Header */}
+        
         <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-start bg-slate-50/50">
           <div>
             <div className="flex items-center gap-3 mb-1">
@@ -53,10 +51,10 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
           <button onClick={onClose} disabled={generating !== null} className="text-slate-400 hover:text-slate-900 bg-white p-2 rounded-xl shadow-sm transition-all disabled:opacity-50"><X size={20}/></button>
         </div>
         
-        {/* Form Fields */}
+        
         <div className="p-8 space-y-6">
           
-          {/* แผนก (มีทุกรายงาน) */}
+          
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1"><Briefcase size={12}/> แผนก (Department)</label>
             <select value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full px-4 py-3 bg-slate-50 border-none rounded-xl text-sm font-bold outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
@@ -65,7 +63,7 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
             </select>
           </div>
 
-          {/* เงื่อนไข: วันที่ (สำหรับรายงาน Attendance) */}
+          
           {report.filterType === 'date-range' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -80,7 +78,7 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
             </div>
           )}
 
-          {/* เงื่อนไข: เดือน-ปี (สำหรับรายงาน Payroll, Leave) */}
+          
           {report.filterType === 'month-year' && (
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -100,7 +98,7 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
             </div>
           )}
 
-          {/* เงื่อนไข: สถานะ (สำหรับรายงาน Organization) */}
+          
           {report.filterType === 'status-only' && (
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">สถานะพนักงาน</label>
@@ -114,7 +112,7 @@ export default function ReportFilterModal({ report, isOpen, onClose }: ReportFil
           
         </div>
 
-        {/* Footer Buttons */}
+        
         <div className="px-8 py-6 bg-slate-50 flex gap-4 border-t border-slate-100">
           {report.formats.includes('excel') && (
             <button
