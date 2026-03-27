@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAppStore } from '@/store/useAppStore';
 import { translations } from '@/locales/translations';
@@ -252,8 +253,8 @@ export default function AdminOvertime() {
             </div>
 
             <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[300px] p-4">
-              <img
-                src="/ot.png" 
+              <image
+                src='/ot.png'
                 alt="Information Detail"
                 className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
               />

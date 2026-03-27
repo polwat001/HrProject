@@ -6,9 +6,9 @@ import { useAppStore } from '@/store/useAppStore';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { setUser, setAvailableCompanies, setCurrentCompanyId, setToken } = useAppStore();
+  const { setUser, setToken } = useAppStore();
 
-  // 📦 ข้อมูลจำลองสำหรับ HR / Admin (Super Admin)
+  // ข้อมูลจำลองสำหรับ HR / Admin (Super Admin)
   const handleLoginAsAdmin = () => {
     const adminData = {
       id: 1,
@@ -25,9 +25,6 @@ export default function LoginPage() {
     setUser(adminData);
     setToken('mock_admin_token_123');
     
-    // ตั้งค่าบริษัท (null = เห็นทุกบริษัท)
-    setAvailableCompanies([{ company_id: 1, name_th: "สำนักงานใหญ่" }]);
-    setCurrentCompanyId(null); 
 
     router.push('/dashboard');
   };
@@ -52,10 +49,6 @@ export default function LoginPage() {
     setUser(employeeData);
     setToken('mock_employee_token_456');
     
-    // พนักงานมีสิทธิ์ในบริษัทเดียว
-    setAvailableCompanies([{ company_id: 1, name_th: "สำนักงานใหญ่" }]);
-    setCurrentCompanyId(1);
-
     router.push('/dashboard');
   };
 
