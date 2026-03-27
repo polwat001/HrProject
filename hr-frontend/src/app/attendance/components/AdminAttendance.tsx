@@ -1,14 +1,30 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useAppStore } from '@/store/useAppStore';
-import { translations } from '@/locales/translations'; 
-import { 
-  Calendar, Loader, User, XCircle, Search, Download, Upload, 
-  ExternalLink, Import, Share, Info, X // 🔴 เพิ่ม Info และ X
-} from 'lucide-react';
+import Image from "next/image";
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useAppStore } from "@/store/useAppStore";
+import { translations } from "@/locales/translations";
+import {
+  Calendar,
+  Loader,
+  User,
+  XCircle,
+  Search,
+  Download,
+  Upload,
+  ExternalLink,
+  Import,
+  Share,
+  Info,
+  X,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { MOCK_ATTENDANCE_LOGS, getStatusStyle, translateStatus, formatTime } from '@/mocks/attendanceData';
+import {
+  MOCK_ATTENDANCE_LOGS,
+  getStatusStyle,
+  translateStatus,
+  formatTime,
+} from "@/mocks/attendanceData";
 
 export default function AdminAttendance() {
   const { currentCompanyId, language } = useAppStore();
@@ -20,18 +36,20 @@ export default function AdminAttendance() {
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  // 🔴 เพิ่ม State สำหรับเปิด/ปิด Information Modal
+
   const [showInfoModal, setShowInfoModal] = useState(false);
 
-  const t = translations[language as keyof typeof translations] || translations['en'];
+  const t =
+    translations[language as keyof typeof translations] || translations["en"];
 
   useEffect(() => {
     setLoading(true);
     setTimeout(() => {
       let filteredData = MOCK_ATTENDANCE_LOGS;
       if (currentCompanyId) {
-        filteredData = filteredData.filter(log => log.company_id === currentCompanyId);
+        filteredData = filteredData.filter(
+          (log) => log.company_id === currentCompanyId,
+        );
       }
       setAttendanceLogs(filteredData);
       setLoading(false);
@@ -39,10 +57,12 @@ export default function AdminAttendance() {
   }, [currentCompanyId]);
 
   const displayedLogs = useMemo(() => {
-    return attendanceLogs.filter(log => {
+    return attendanceLogs.filter((log) => {
       const matchDate = selectedDate ? log.date === selectedDate : true;
-      const matchSearch = searchQuery 
-        ? `${log.firstname_th} ${log.lastname_th} ${log.employee_code}`.toLowerCase().includes(searchQuery.toLowerCase())
+      const matchSearch = searchQuery
+        ? `${log.firstname_th} ${log.lastname_th} ${log.employee_code}`
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
         : true;
       return matchDate && matchSearch;
     });
@@ -65,10 +85,10 @@ export default function AdminAttendance() {
         "check_in_time",
         "check_out_time",
         "late_minutes",
-        "STATUS"
+        "STATUS",
       ];
 
-      const rows = displayedLogs.map(log => [
+      const rows = displayedLogs.map((log) => [
         log.employee_code,
         log.firstname_th,
         log.lastname_th,
@@ -76,10 +96,12 @@ export default function AdminAttendance() {
         log.check_in_time,
         log.check_out_time,
         log.late_minutes,
-        log.STATUS
+        log.STATUS,
       ]);
 
-      const csvContent = [headers, ...rows].map(row => row.join(",")).join("\n");
+      const csvContent = [headers, ...rows]
+        .map((row) => row.join(","))
+        .join("\n");
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
 
@@ -104,7 +126,7 @@ export default function AdminAttendance() {
     reader.onload = (event) => {
       setTimeout(() => {
         const text = event.target?.result as string;
-        const lines = text.split("\n").filter(line => line.trim() !== "");
+        const lines = text.split("\n").filter((line) => line.trim() !== "");
         const headers = lines[0].split(",");
 
         const data = lines.slice(1).map((line, index) => {
@@ -124,7 +146,7 @@ export default function AdminAttendance() {
 
         setAttendanceLogs(data);
         setIsImporting(false);
-        if (fileInputRef.current) fileInputRef.current.value = ""; 
+        if (fileInputRef.current) fileInputRef.current.value = "";
         alert(` นำเข้าข้อมูลการเข้างานสำเร็จ!`);
       }, 1000);
     };
@@ -132,11 +154,12 @@ export default function AdminAttendance() {
     reader.readAsText(file);
   };
 
-  if (loading) return (
-    <div className="flex justify-center py-20">
-      <Loader className="animate-spin text-blue-600" size={40} />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex justify-center py-20">
+        <Loader className="animate-spin text-blue-600" size={40} />
+      </div>
+    );
 
   return (
     <div className="p-6 md:p-8 space-y-6 bg-slate-50 min-h-screen">
@@ -153,35 +176,54 @@ export default function AdminAttendance() {
             <Info size={24} />
           </button>
         </div>
-        
+
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <input type="file" ref={fileInputRef} onChange={handleImport} className="hidden" accept=".csv" />
-          
-          <button 
-            onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            className="hidden"
+            accept=".csv"
+          />
+
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isImporting}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isImporting ? <Loader className="animate-spin" size={16} /> : <Download size={16} />} 
+            {isImporting ? (
+              <Loader className="animate-spin" size={16} />
+            ) : (
+              <Download size={16} />
+            )}
             <span className="hidden sm:inline">นำเข้าข้อมูล</span>
           </button>
 
-          <button 
-            onClick={handleExport} disabled={isExporting || displayedLogs.length === 0}
+          <button
+            onClick={handleExport}
+            disabled={isExporting || displayedLogs.length === 0}
             className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl shadow-sm hover:bg-slate-50 active:scale-95 transition-all font-black text-xs uppercase tracking-widest disabled:opacity-50"
           >
-            {isExporting ? <Loader className="animate-spin" size={16} /> : <Share size={16} />} 
+            {isExporting ? (
+              <Loader className="animate-spin" size={16} />
+            ) : (
+              <Share size={16} />
+            )}
             <span className="hidden sm:inline">ส่งออกข้อมูล</span>
           </button>
         </div>
       </div>
 
-      {/* ✅ Filters Area */}
+      {/*  Filters Area */}
       <div className="flex flex-col sm:flex-row items-center gap-4">
-        {/* 🔍 Search */}
+        {/*  Search */}
         <div className="relative flex-1 w-full max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text" 
+          <Search
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+            size={18}
+          />
+          <input
+            type="text"
             placeholder="ค้นหารหัส หรือชื่อพนักงาน..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -189,16 +231,16 @@ export default function AdminAttendance() {
           />
         </div>
 
-        {/* 📅 Date */}
+        {/* Date */}
         <div className="relative w-full sm:w-auto">
-          <input 
-            type="date" 
+          <input
+            type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer shadow-sm text-slate-600"
           />
           {selectedDate && (
-            <button 
+            <button
               onClick={() => setSelectedDate("")}
               className="absolute right-10 top-3.5 text-slate-300 hover:text-red-500 transition-colors"
             >
@@ -214,17 +256,30 @@ export default function AdminAttendance() {
             <table className="w-full">
               <thead className="bg-slate-50 font-black text-base text-slate-400 uppercase tracking-widest border-b border-slate-100">
                 <tr>
-                  <th className="py-6 pl-12 px-8 text-left">{t.colEmployee || "พนักงาน"}</th>
-                  <th className="text-center px-4">{language === 'th' ? 'วันที่' : 'Date'}</th> 
-                  <th className="text-center px-4">{t.colCheckIn || "เวลาเข้า"}</th>
-                  <th className="text-center px-4">{t.colCheckOut || "เวลาออก"}</th>
-                  <th className="text-center px-4">{t.colLate || "สาย (นาที)"}</th>
+                  <th className="py-6 pl-12 px-8 text-left">
+                    {t.colEmployee || "พนักงาน"}
+                  </th>
+                  <th className="text-center px-4">
+                    {language === "th" ? "วันที่" : "Date"}
+                  </th>
+                  <th className="text-center px-4">
+                    {t.colCheckIn || "เวลาเข้า"}
+                  </th>
+                  <th className="text-center px-4">
+                    {t.colCheckOut || "เวลาออก"}
+                  </th>
+                  <th className="text-center px-4">
+                    {t.colLate || "สาย (นาที)"}
+                  </th>
                   <th className="text-center px-8">{t.colStatus || "สถานะ"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50 text-sm">
                 {displayedLogs.map((record) => (
-                  <tr key={record.id} className="hover:bg-slate-50 transition-colors group">
+                  <tr
+                    key={record.id}
+                    className="hover:bg-slate-50 transition-colors group"
+                  >
                     <td className="py-5 px-8">
                       <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center font-black group-hover:bg-blue-600 group-hover:text-white transition-all text-slate-400 shrink-0">
@@ -242,7 +297,10 @@ export default function AdminAttendance() {
                     </td>
 
                     <td className="text-center font-bold text-slate-600 py-4 px-4 whitespace-nowrap">
-                      {new Date(record.date).toLocaleDateString(language === 'th' ? 'th-TH' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(record.date).toLocaleDateString(
+                        language === "th" ? "th-TH" : "en-GB",
+                        { year: "numeric", month: "short", day: "numeric" },
+                      )}
                     </td>
 
                     <td className="text-center font-black font-mono text-slate-800 py-4 px-4">
@@ -253,12 +311,18 @@ export default function AdminAttendance() {
                       {formatTime(record.check_out_time)}
                     </td>
 
-                    <td className={`text-center font-black py-4 px-4 ${record.late_minutes > 0 ? 'text-red-500' : 'text-slate-400'}`}>
-                      {record.late_minutes > 0 ? `+${record.late_minutes}` : '-'}
+                    <td
+                      className={`text-center font-black py-4 px-4 ${record.late_minutes > 0 ? "text-red-500" : "text-slate-400"}`}
+                    >
+                      {record.late_minutes > 0
+                        ? `+${record.late_minutes}`
+                        : "-"}
                     </td>
 
                     <td className="text-center px-8 py-4">
-                      <span className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(record.STATUS)}`}>
+                      <span
+                        className={`inline-flex items-center px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${getStatusStyle(record.STATUS)}`}
+                      >
                         {translateStatus(record.STATUS, t)}
                       </span>
                     </td>
@@ -271,13 +335,15 @@ export default function AdminAttendance() {
           {displayedLogs.length === 0 && (
             <div className="py-20 text-center space-y-4">
               <Calendar className="mx-auto text-slate-200" size={64} />
-              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">{t.noRecords || "ไม่พบข้อมูลการลงเวลา"}</p>
+              <p className="text-slate-400 font-black uppercase tracking-widest text-sm">
+                {t.noRecords || "ไม่พบข้อมูลการลงเวลา"}
+              </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* 🔴 Information Modal */}
+      {/* Information Modal */}
       {showInfoModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div
@@ -298,18 +364,17 @@ export default function AdminAttendance() {
               </button>
             </div>
 
-            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[300px] p-4">
-              {/* เปลี่ยน src รูปภาพเป็นของข้อมูล Attendance ได้เลยครับ */}
-              <img
-                src="/attendance_tem.png" 
+            <div className="relative w-full h-[40vh]">
+              <Image
+                src="/attendance_tem.png"
                 alt="Information Detail"
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                fill
+                className="object-contain rounded-lg"
               />
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }

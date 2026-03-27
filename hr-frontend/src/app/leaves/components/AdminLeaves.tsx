@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState, useEffect, useRef, useMemo } from "react";
 import {
   CalendarHeart,
@@ -798,7 +799,7 @@ export default function AdminLeaves() {
             <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
               <h3 className="text-lg font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
                 <Info className="text-blue-600" size={20} />
-               *ตัวอย่างแบบการนำเข้าข้อมูล
+                *ตัวอย่างแบบการนำเข้าข้อมูล
               </h3>
               <button
                 onClick={() => setShowInfoModal(false)}
@@ -808,11 +809,12 @@ export default function AdminLeaves() {
               </button>
             </div>
 
-            <div className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center min-h-[300px] p-4">
-              <img
+            <div className="relative w-full h-[40vh]">
+              <Image
                 src="/leave.png"
                 alt="Information Detail"
-                className="w-full h-auto max-h-[80vh] object-contain rounded-lg"
+                fill
+                className="object-contain rounded-lg"
               />
             </div>
           </div>

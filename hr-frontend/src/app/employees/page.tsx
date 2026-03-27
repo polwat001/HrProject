@@ -311,7 +311,7 @@ export default function EmployeesPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-slate-900">
-            Employee Directory
+           พนักงาน
           </h1>
           <button
             onClick={() => setShowInfoModal(true)}

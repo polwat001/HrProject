@@ -56,49 +56,49 @@ export default function MainLayout({
   const isAdminOrHR = roleId === 1 || roleId === 2 || roleId === 3;
 
   const menuItems = [
-    { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
+    { name: "แดชบอร์ด", path: "/dashboard", icon: LayoutDashboard },
     ...(isAdminOrHR
       ? [
           {
-            name: "Organization",
+            name: "ลำดับขององค์กร",
             path: "/organization",
             icon: Building2,
             subItems: [
-              { name: "Division", path: "/organization/division" },
-              { name: "Section", path: "/organization/section" },
-              { name: "Department", path: "/organization/department" },
-              { name: "Level", path: "/organization/level" },
-              { name: "Position", path: "/organization/position" },
+              { name: "ฝ่าย", path: "/organization/division" },
+              { name: "ส่วน", path: "/organization/section" },
+              { name: "แผนก", path: "/organization/department" },
+              { name: "ขั้น / ลำดับ", path: "/organization/level" },
+              { name: "ตำแหน่ง", path: "/organization/position" },
             ],
           },
           {
-            name: "Employees",
+            name: "การจัดการพนักงาน",
             path: "/employees",
             icon: Users,
           },
         ]
       : []),
 
-    { name: "Attendance Logs", path: "/attendance", icon: Clock },
-    { name: "Shift Management", path: "/shift", icon: CalendarClock }, 
-    { name: "OT Management", path: "/overtime", icon: ClockPlus },
-    { name: "Leaves Management", path: "/leaves", icon: Calendar },
+    { name: "บันทึกการเข้าทำงาน", path: "/attendance", icon: Clock },
+    { name: "การจัดการกะ", path: "/shift", icon: CalendarClock }, 
+    { name: "การจัดการทำงานล่วงเวลา", path: "/overtime", icon: ClockPlus },
+    { name: "การจัดการลา", path: "/leaves", icon: Calendar },
 
     ...(isAdminOrHR
       ? [
-        { name: "Holidays", path: "/holiday", icon: Palmtree },
-          { name: "Contracts Management", path: "/contracts", icon: FileText },
-          { name: "Payroll Management", path: "/payroll", icon: Wallet },
-          { name: "Reports", path: "/reports", icon: BarChart3 },
+        { name: "วันหยุด", path: "/holiday", icon: Palmtree },
+          { name: "การจัดการสัญญา", path: "/contracts", icon: FileText },
+          { name: "การจัดการเงินเดือน", path: "/payroll", icon: Wallet },
+          { name: "รายงาน", path: "/reports", icon: BarChart3 },
           
           { 
-            name: "User & Permissions", 
+            name: "ผู้ใช้งานและสิทธิ์", 
             path: "/settings", 
             icon: Shield,
             subItems: [
-              { name: "Role Management", path: "/settings/roles" },
-              { name: "User Assignments", path: "/settings/users" },
-              { name: "Transaction Log", path: "/settings/logs" },
+              { name: "การจัดการบทบาท", path: "/settings/roles" },
+              { name: "ผู้ใช้งาน", path: "/settings/users" },
+              { name: "บันทึกการแก้ไข", path: "/settings/logs" },
             ]
           },
         ]

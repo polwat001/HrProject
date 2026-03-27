@@ -124,7 +124,7 @@ export default function LevelPage() {
       
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Levels Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">การจัดการขั้น / ลำดับ</h1>
         </div>
         <button
           onClick={handleOpenModal}

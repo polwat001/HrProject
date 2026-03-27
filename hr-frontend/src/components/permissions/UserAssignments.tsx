@@ -42,8 +42,7 @@ export default function UserAssignments({ users = [] }: { users: User[] }) {
       {view === 'list' && (
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">User Assignments</h1>
-            <p className="text-slate-500 text-sm font-medium">จัดการบัญชีผู้ใช้งานและผูกบทบาท</p>
+            <h1 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">การจัดการผู้งานใช้</h1>
           </div>
           
           <div className="flex items-center gap-3">
@@ -59,7 +58,7 @@ export default function UserAssignments({ users = [] }: { users: User[] }) {
             </div>
             <button 
               onClick={() => setView('add')}
-              className="flex items-center gap-2 px-5 py-2.5 bg-red-600 text-white rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-105 active:scale-95 transition-all font-black text-sm uppercase tracking-widest"
+              className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 hover:scale-105 active:scale-95 transition-all font-black text-sm uppercase tracking-widest"
             >
               <Plus size={18} /> เพิ่มผู้ใช้งาน
             </button>

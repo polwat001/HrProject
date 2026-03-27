@@ -2,6 +2,8 @@
 
 export const translations = {
   en: {
+    titledash:"Dashboard",
+
     title: "Attendance Logs",
     filterDate: "Filter by Date",
     searching: "Searching Records...",
@@ -147,6 +149,8 @@ addContract: "Create New Contract",
 
   },
   th: {
+    titledash:"แดชบอร์ด",
+
     title: "บันทึกเวลาเข้า-ออกงาน",
     filterDate: "กรองตามวันที่",
     searching: "กำลังค้นหาข้อมูล...",

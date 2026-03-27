@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation"; // 🔴 Import useRouter เพิ่มเข้ามา
+import { useRouter } from "next/navigation"; //  Import useRouter เพิ่มเข้ามา
 import { useAppStore } from "@/store/useAppStore";
 import {
   Users, UserPlus, FileWarning, Wallet, Clock, TrendingUp, AlertTriangle,
@@ -25,7 +25,7 @@ import { AdminStatCard } from "@/components/dashboard/DashboardCards";
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, ArcElement, Title, ChartJSTooltip, Legend);
 
 export default function AdminDashboard({ user }: { user: any }) {
-  const router = useRouter(); // 🔴 ประกาศใช้งาน router
+  const router = useRouter(); //  ประกาศใช้งาน router
   const { currentCompanyId } = useAppStore();
   const [loading, setLoading] = useState(true);
 
@@ -34,14 +34,14 @@ export default function AdminDashboard({ user }: { user: any }) {
   const [attendanceStats, setAttendanceStats] = useState({ present: 0, absent: 0, late: 0, onLeave: 0 });
   const [pendingApprovals, setPendingApprovals] = useState({ ot: 0, leave: 0, contracts: 0 });
   
-  // 🔴 อัปเดต State Financial ให้มี cost ของ 2 เดือน
+  //  อัปเดต State Financial ให้มี cost ของ 2 เดือน
   const [financialStats, setFinancialStats] = useState({ totalPayroll: 0, totalOtCost: 0, costTrend: 0, otExceed: false, currentMonthCost: 0, prevMonthCost: 0 });
   
   const [otCostHistory, setOtCostHistory] = useState<any[]>([]);
   const [expenseHistory, setExpenseHistory] = useState<any[]>([]);
   const [topCostCenters, setTopCostCenters] = useState<any[]>([]);
   
-  // 🔴 State ใหม่สำหรับ Contract Stats แบบแยกตามแผนก
+  //  State ใหม่สำหรับ Contract Stats แบบแยกตามแผนก
   const [contractStats, setContractStats] = useState<any[]>([]);
 
   const [attendanceTimeframe, setAttendanceTimeframe] = useState("daily");
@@ -77,7 +77,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
       setStats({ totalHeadcount: emps.length, newJoiners: 145, expiringContracts: 28 });
       
-      // 🔴 เพิ่มข้อมูลจำลองสำหรับ currentMonthCost และ prevMonthCost
+      //  เพิ่มข้อมูลจำลองสำหรับ currentMonthCost และ prevMonthCost
       setFinancialStats({ 
         totalPayroll: 24500000, 
         totalOtCost: 850000, 
@@ -118,7 +118,7 @@ export default function AdminDashboard({ user }: { user: any }) {
         { rank: 5, dept: "ส่วนงานบัญชีและการเงิน", headName: "ปิติ รักเรียน", cost: 950000, trend: "0.0%" },
       ]);
 
-      // 🔴 จำลองข้อมูล สถิติประเภทสัญญาแยกตามแผนก
+      //  จำลองข้อมูล สถิติประเภทสัญญาแยกตามแผนก
       setContractStats([
         { dept: "IT", fulltime: 85, contract: 15, probation: 12 },
         { dept: "Marketing", fulltime: 60, contract: 25, probation: 5 },
@@ -176,8 +176,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
       {/* ── Page Header ── */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900 uppercase">Dashboard Overview</h1>
-        <p className="text-slate-500 font-normal mt-1">ยินดีต้อนรับ, ข้อมูลสรุปภาพรวมองค์กรและการเงิน</p>
+        <h1 className="text-3xl font-black text-slate-900 uppercase">แดชบร์ด</h1>
       </div>
 
       {/* ── Stat Cards ── */}
@@ -191,7 +190,7 @@ export default function AdminDashboard({ user }: { user: any }) {
           <AdminStatCard title="Total Payroll (ยอดรวมเงินเดือน)" value={`฿${(financialStats.totalPayroll / 1000000).toFixed(2)}M`} icon={Wallet} color="purple" />
           <AdminStatCard title="Total OT Cost (ค่าล่วงเวลารวม)" value={`฿${financialStats.totalOtCost.toLocaleString()}`} icon={ClockPlus} color={financialStats.otExceed ? "red" : "green"} highlightValue={financialStats.otExceed} />
           
-          {/* 🔴 ปรับแก้การ์ด Cost Trend ให้แสดงค่าใช้จ่ายทั้ง 2 เดือนแบบละเอียด */}
+          {/*  ปรับแก้การ์ด Cost Trend ให้แสดงค่าใช้จ่ายทั้ง 2 เดือนแบบละเอียด */}
           <div className="flex items-center gap-4 p-6 bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
             <div className="p-4 rounded-2xl bg-amber-50 text-amber-600 shrink-0">
               <TrendingUp size={28} />
@@ -212,7 +211,7 @@ export default function AdminDashboard({ user }: { user: any }) {
       </div>
 
       {/* ── Pending Actions ── */}
-      {/* 🔴 เพิ่ม onClick ผูกกับ router.push และปรับ hover ให้เหมือนปุ่มกดมากขึ้น */}
+      {/*  เพิ่ม onClick ผูกกับ router.push และปรับ hover ให้เหมือนปุ่มกดมากขึ้น */}
       <Card className="rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <CardHeader className="bg-slate-50/50 border-b border-slate-100">
           <CardTitle className="text-lg font-black uppercase flex items-center gap-2 pl-6 pt-6">

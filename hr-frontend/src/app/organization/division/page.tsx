@@ -134,7 +134,7 @@ export default function DivisionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">
-            Divisions Management
+            การจัดการฝ่าย
           </h1>
         </div>
         <button

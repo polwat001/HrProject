@@ -145,7 +145,7 @@ export default function PositionPage() {
       
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Position Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">การจัดการตำแหน่ง</h1>
         </div>
         <button
           onClick={handleOpenModal}

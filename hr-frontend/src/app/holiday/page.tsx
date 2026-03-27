@@ -142,7 +142,7 @@ export default function CompanyCalendar() {
     <div className="lg:m-10">
         <div className="lg:mb-6">
             <h1>
-                Holidays Setting
+              ตั้งค่าวันหยุด
             </h1>
         </div>
     <Card className="rounded-xl border-2 border-slate-300 shadow-sm p-8 flex flex-col min-h-[600px] bg-white">
