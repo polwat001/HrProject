@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Bar, Doughnut, Line, Pie } from "react-chartjs-2";
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement,
-  LineElement, ArcElement, Title, Tooltip as ChartJSTooltip, Legend,
+  LineElement, ArcElement, Title, Tooltip as ChartJSTooltip, Legend,TooltipItem, ChartEvent, ActiveElement
 } from "chart.js";
 
 import {
@@ -267,8 +267,8 @@ export default function AdminDashboard({ user }: { user: any }) {
           <CardHeader><CardTitle className="text-lg p-6 font-black uppercase flex items-center gap-2"> Cost by Division</CardTitle></CardHeader>
           <CardContent className="h-80 px-6 pb-6 flex items-center justify-center relative">
             <Doughnut
-              data={{ labels: ["สายงานปฏิบัติการ", "สายงานเทคโนโลยี", "สายงานการตลาด", "สายงานบริหาร", "สายงานบุคคล"], datasets: [{ data: [50, 20, 15, 10, 5], backgroundColor: ["#0ea5e9", "#6366f1", "#ec4899", "#f59e0b", "#14b8a6"], borderWidth: 0, cutout: "65%" }] }}
-              options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { font: { weight: "bold", size: 11 } } }, tooltip: { callbacks: { label: (c) => ` ${c.raw}% ของค่าใช้จ่าย` } } } }}
+              data={{ labels: ["สายงานปฏิบัติการ", "สายงานเทคโนโลยี", "สายงานการตลาด", "สายงานบริหาร", "สายงานบุคคล"], datasets: [{ data: [50, 20, 15, 10, 5], backgroundColor: ["#0ea5e9", "#6366f1", "#ec4899", "#f59e0b", "#14b8a6"], borderWidth: 0 }] }}
+              options={{ cutout: "65%",responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "right", labels: { font: { weight: "bold", size: 11 } }}, tooltip: { callbacks: { label: (c) => ` ${c.raw}% ของค่าใช้จ่าย` } } } }}
             />
           </CardContent>
         </Card>
@@ -294,7 +294,7 @@ export default function AdminDashboard({ user }: { user: any }) {
             <div className="h-full min-w-[400px] px-6 pb-2">
               <Line
                 data={{ labels: otCostHistory.map(d => d.month), datasets: [{ label: "OT Cost", data: otCostHistory.map(d => d.cost), borderColor: "#ef4444", borderWidth: 3, tension: 0.4, pointBackgroundColor: "#ef4444", pointBorderColor: "#ffffff", pointBorderWidth: 2, pointRadius: 4 }] }}
-                options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ฿${c.raw.toLocaleString()}` } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" } } }, y: { grid: { color: "#f1f5f9" }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" }, callback: (v) => `฿${v.toLocaleString()}` } } } }}
+                options={{ responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c: TooltipItem<"line">) =>` ${Number(c.raw).toLocaleString()}` } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" } } }, y: { grid: { color: "#f1f5f9" }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" }, callback: (v: string | number) => `฿${Number(v).toLocaleString()}}` } } } }}
               />
             </div>
           </CardContent>
@@ -315,8 +315,15 @@ export default function AdminDashboard({ user }: { user: any }) {
           <CardContent className="h-96 flex flex-col grid grid-cols-3 items-center pb-2">
             <div className="relative w-full h-[85%] col-span-2 flex items-center justify-center p-4">
               <Doughnut
-                data={{ labels: displayAttendanceData.map(d => d.name), datasets: [{ data: displayAttendanceData.map(d => d.value), backgroundColor: displayAttendanceData.map((d, index) => activePieIndex === null || activePieIndex === index ? d.color : d.color + "33"), borderWidth: 0, cutout: "90%", borderRadius: 10, spacing: 3 }] }}
-                options={{ responsive: true, maintainAspectRatio: false, onClick: (event, elements) => { if (elements.length > 0) { const index = elements[0].index; setActivePieIndex(activePieIndex === index ? null : index); } else { setActivePieIndex(null); } }, plugins: { legend: { display: false }, tooltip: { padding: 12, cornerRadius: 8, callbacks: { label: (context) => ` ${context.raw.toLocaleString()} คน` } } } }}
+                data={{ labels: displayAttendanceData.map(d => d.name), datasets: [{ data: displayAttendanceData.map(d => d.value), backgroundColor: displayAttendanceData.map((d, index) => activePieIndex === null || activePieIndex === index ? d.color : d.color + "33"), borderWidth: 0, borderRadius: 10, spacing: 3 }] }}
+                options={{ 
+                  cutout: "90%",
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  onClick: (event, elements) => { if (elements.length > 0) { const index = elements[0].index; 
+                    setActivePieIndex(activePieIndex === index ? null : index); } 
+                    else { setActivePieIndex(null); } }, plugins: { legend: { display: false }, tooltip: { padding: 12, cornerRadius: 8, 
+                      callbacks: {label: (context: TooltipItem<"doughnut">) =>` ${Number(context.raw ?? 0).toLocaleString()} คน` } } } }}
               />
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none mt-2">
                 <span className="text-lg font-black text-slate-500 transition-colors duration-300">{activePieIndex !== null ? displayAttendanceData[activePieIndex].name : "รวมทั้งหมด"}</span>
@@ -373,11 +380,12 @@ export default function AdminDashboard({ user }: { user: any }) {
               </div>
             </div>
           </CardHeader>
+
           <CardContent className="px-6 pt-6 pb-6">
             <div className="h-[280px] w-full">
               <Bar
                 data={{ labels: displayLeaveBreakdown.map(l => l.name), datasets: [{ data: displayLeaveBreakdown.map(l => l.value), backgroundColor: displayLeaveBreakdown.map(l => l.color), borderRadius: 6, barThickness: 22 }] }}
-                options={{ indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => ` ${context.raw.toLocaleString()} วัน` } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" } } }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: "bold" }, color: "#475569" } } } }}
+                options={{ indexAxis: "y", responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context: TooltipItem<"bar">) =>` ${Number(context.raw ?? 0).toLocaleString()} วัน` } } }, scales: { x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10, weight: "bold" } } }, y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11, weight: "bold" }, color: "#475569" } } } }}
               />
             </div>
           </CardContent>
@@ -401,7 +409,7 @@ export default function AdminDashboard({ user }: { user: any }) {
                 {topCostCenters.map((item) => (
                   <tr key={item.rank} className="hover:bg-slate-50 transition-colors ">
                     <td className="pb-9 px-6 text-center font-black text-slate-400">#{item.rank}</td>
-                    <td className="pb-4 px-6">
+                    <td className="pb-4 px-6 ">
                       <p className="font-bold text-slate-800">{item.dept}</p>
                       <p className="text-[10px] font-bold text-slate-400 mt-0.5">Head: {item.headName}</p>
                     </td>
@@ -435,7 +443,7 @@ export default function AdminDashboard({ user }: { user: any }) {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    legend: { position: "top", labels: { font: { weight: "bold", size: 12, padding: 20 } } },
+                    legend: { position: "top", labels: { font: { weight: "bold", size: 12, },padding: 20 } },
                     tooltip: { mode: 'index', intersect: false, callbacks: { label: (c) => ` ${c.dataset.label}: ${c.raw} คน` } }
                   },
                   scales: {
