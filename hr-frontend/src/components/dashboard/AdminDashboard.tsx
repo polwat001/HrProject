@@ -176,7 +176,7 @@ export default function AdminDashboard({ user }: { user: any }) {
 
       {/* ── Page Header ── */}
       <div>
-        <h1 className="text-3xl font-black text-slate-900 uppercase">แดชบร์ด</h1>
+        <h1 className="text-3xl font-black text-slate-900 uppercase">แดชบอร์ด</h1>
       </div>
 
       {/* ── Stat Cards ── */}
@@ -400,9 +400,9 @@ export default function AdminDashboard({ user }: { user: any }) {
             <table className="w-full text-left text-sm">
               <thead className="bg-white border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
-                  <th className="pb-4 px-6 text-center">Rank</th>
-                  <th className="pb-4 px-6">Department</th>
-                  <th className="pb-4 px-6 text-right">Total Cost (THB)</th>
+                  <th className="py-2 px-6 text-center">Rank</th>
+                  <th className="py-2 px-6">Department</th>
+                  <th className="py-2 px-6 text-right">Total Cost (THB)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
